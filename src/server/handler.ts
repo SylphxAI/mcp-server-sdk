@@ -380,7 +380,7 @@ const handleRequest = async <
 		case Mcp.Method.ResourcesList:
 			return handleResourcesList(baseState, req.params as Mcp.ListParams | undefined)
 
-		case "resources/templates/list":
+		case Mcp.Method.ResourcesTemplatesList:
 			return handleResourceTemplatesList(baseState, req.params as Mcp.ListParams | undefined)
 
 		case Mcp.Method.ResourcesRead:

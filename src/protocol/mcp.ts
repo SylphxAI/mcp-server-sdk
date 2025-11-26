@@ -215,6 +215,7 @@ export const Method = {
 
 	// Resources
 	ResourcesList: "resources/list",
+	ResourcesTemplatesList: "resources/templates/list",
 	ResourcesRead: "resources/read",
 	ResourcesSubscribe: "resources/subscribe",
 	ResourcesUnsubscribe: "resources/unsubscribe",

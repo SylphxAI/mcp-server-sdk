@@ -250,4 +250,173 @@ describe("Server", () => {
 			}
 		})
 	})
+
+	describe("notifications", () => {
+		test("handles initialized notification", async () => {
+			const notification = Rpc.notification(Mcp.Method.Initialized)
+			const response = await server.handleMessage(notification, createContext())
+
+			expect(response).toBeNull()
+		})
+
+		test("handles cancelled notification with callback", async () => {
+			let cancelledId: string | number | undefined
+			let cancelledReason: string | undefined
+
+			const notification = Rpc.notification(Mcp.Method.CancelledNotification, {
+				requestId: 123,
+				reason: "User cancelled",
+			})
+
+			await server.handleMessage(notification, createContext(), {
+				subscriberId: "test",
+				onCancelled: (id, reason) => {
+					cancelledId = id
+					cancelledReason = reason
+				},
+			})
+
+			expect(cancelledId).toBe(123)
+			expect(cancelledReason).toBe("User cancelled")
+		})
+
+		test("handles unknown notification gracefully", async () => {
+			const notification = Rpc.notification("unknown/notification")
+			const response = await server.handleMessage(notification, createContext())
+
+			expect(response).toBeNull()
+		})
+	})
+
+	describe("resource templates", () => {
+		const templateServer = createServer({
+			name: "template-server",
+			version: "1.0.0",
+			resources: [
+				{
+					type: "template",
+					uriTemplate: "file:///{path}",
+					name: "File",
+					handler: (uri: string) => () =>
+						resourceText(uri, `Content of ${uri}`),
+				},
+			],
+		})
+
+		test("lists resource templates", async () => {
+			const req = Rpc.request(1, Mcp.Method.ResourcesTemplatesList)
+			const response = await templateServer.handleMessage(req, createContext())
+
+			expect(Rpc.isSuccess(response!)).toBe(true)
+			if (Rpc.isSuccess(response!)) {
+				const result = response.result as Mcp.ResourceTemplatesListResult
+				expect(result.items).toHaveLength(1)
+				expect(result.items[0]?.uriTemplate).toBe("file:///{path}")
+			}
+		})
+
+		test("reads resource from template", async () => {
+			const req = Rpc.request(1, Mcp.Method.ResourcesRead, {
+				uri: "file:///test.txt",
+			})
+
+			const response = await templateServer.handleMessage(req, createContext())
+
+			expect(Rpc.isSuccess(response!)).toBe(true)
+			if (Rpc.isSuccess(response!)) {
+				const result = response.result as Mcp.ResourcesReadResult
+				expect(result.contents[0]?.text).toBe("Content of file:///test.txt")
+			}
+		})
+	})
+
+	describe("subscriptions", () => {
+		const subServer = createServer({
+			name: "sub-server",
+			version: "1.0.0",
+			resources: [configResource],
+			subscriptions: true,
+		})
+
+		test("subscribes to resource", async () => {
+			const req = Rpc.request(1, Mcp.Method.ResourcesSubscribe, {
+				uri: "config://app",
+			})
+
+			const response = await subServer.handleMessage(req, createContext(), {
+				subscriberId: "session-1",
+			})
+
+			expect(Rpc.isSuccess(response!)).toBe(true)
+			expect(subServer.subscriptions?.hasSubscribers("config://app")).toBe(true)
+		})
+
+		test("unsubscribes from resource", async () => {
+			// First subscribe
+			await subServer.handleMessage(
+				Rpc.request(1, Mcp.Method.ResourcesSubscribe, { uri: "config://app" }),
+				createContext(),
+				{ subscriberId: "session-2" },
+			)
+
+			// Then unsubscribe
+			const response = await subServer.handleMessage(
+				Rpc.request(2, Mcp.Method.ResourcesUnsubscribe, { uri: "config://app" }),
+				createContext(),
+				{ subscriberId: "session-2" },
+			)
+
+			expect(Rpc.isSuccess(response!)).toBe(true)
+		})
+	})
+
+	describe("tool error handling", () => {
+		const errorServer = createServer({
+			name: "error-server",
+			version: "1.0.0",
+			tools: [
+				tool({
+					name: "throws",
+					input: { type: "object", properties: {} },
+					handler: () => () => {
+						throw new Error("Something went wrong")
+					},
+				}),
+			],
+		})
+
+		test("catches and returns tool execution errors", async () => {
+			const req = Rpc.request(1, Mcp.Method.ToolsCall, { name: "throws" })
+			const response = await errorServer.handleMessage(req, createContext())
+
+			expect(Rpc.isSuccess(response!)).toBe(true)
+			if (Rpc.isSuccess(response!)) {
+				const result = response.result as Mcp.ToolsCallResult
+				expect(result.isError).toBe(true)
+				expect((result.content[0] as Mcp.TextContent).text).toContain("Tool error:")
+			}
+		})
+	})
+
+	describe("logging", () => {
+		const loggingServer = createServer({
+			name: "logging-server",
+			version: "1.0.0",
+			logging: true,
+		})
+
+		test("handles logging/setLevel", async () => {
+			const req = Rpc.request(1, Mcp.Method.LoggingSetLevel, {
+				level: "debug",
+			})
+
+			const response = await loggingServer.handleMessage(req, createContext())
+
+			expect(Rpc.isSuccess(response!)).toBe(true)
+		})
+
+		test("includes logging in capabilities", () => {
+			expect(loggingServer.state.capabilities.logging).toBeDefined()
+		})
+	})
 })
