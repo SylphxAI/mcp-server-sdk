@@ -13,6 +13,8 @@ import type {
 	ResourceTemplateDefinition,
 } from "../builders/resource.js"
 import type { ToolContext, ToolDefinition } from "../builders/tool.js"
+import type { Middleware } from "../middleware/types.js"
+import { compose } from "../middleware/compose.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import type * as Mcp from "../protocol/mcp.js"
 import type { HandlerContext, ServerState } from "./handler.js"
@@ -33,6 +35,11 @@ export interface ServerConfig<
 	readonly tools?: readonly ToolDefinition<unknown, TToolCtx>[]
 	readonly resources?: readonly AnyResourceDefinition<TResourceCtx>[]
 	readonly prompts?: readonly PromptDefinition<TPromptCtx>[]
+	/** Middleware to apply to all tool/resource/prompt handlers */
+	readonly middleware?: readonly Middleware<
+		HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
+		unknown
+	>[]
 }
 
 // ============================================================================
@@ -172,6 +179,11 @@ const buildState = <
 		...(prompts.size > 0 && { prompts: {} }),
 	}
 
+	// Compose middleware
+	const middleware = config.middleware?.length
+		? compose(...config.middleware)
+		: undefined
+
 	return {
 		name: config.name,
 		version: config.version,
@@ -181,6 +193,7 @@ const buildState = <
 		resourceTemplates,
 		prompts,
 		capabilities,
+		middleware,
 	}
 }
 

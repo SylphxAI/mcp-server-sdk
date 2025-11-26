@@ -118,3 +118,34 @@ export {
 // Transports
 export { stdio, type StdioTransport, type StdioOptions } from "./transports/stdio.js"
 export { http, type HttpTransport, type HttpOptions } from "./transports/http.js"
+
+// Middleware
+export {
+	// Composition
+	compose,
+	createStack,
+	when,
+	forType,
+	forName,
+	// Built-in
+	logging,
+	timing,
+	errorHandler,
+	toolErrorHandler,
+	timeout,
+	retry,
+	cache,
+	// Types
+	type Middleware,
+	type MiddlewareStack,
+	type RequestInfo,
+	type Next,
+	type ToolMiddleware,
+	type AnyMiddleware,
+	type LoggingOptions,
+	type TimingContext,
+	type ErrorHandlerOptions,
+	type TimeoutOptions,
+	type RetryOptions,
+	type CacheOptions,
+} from "./middleware/index.js"

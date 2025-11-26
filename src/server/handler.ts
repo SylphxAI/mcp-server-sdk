@@ -16,6 +16,8 @@ import type {
 import { matchesTemplate, toProtocolResource, toProtocolTemplate } from "../builders/resource.js"
 import type { ToolContext, ToolDefinition } from "../builders/tool.js"
 import { toProtocolTool } from "../builders/tool.js"
+import type { Middleware, RequestInfo } from "../middleware/types.js"
+import { compose } from "../middleware/compose.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import * as Mcp from "../protocol/mcp.js"
 
@@ -36,6 +38,7 @@ export interface ServerState<
 	readonly resourceTemplates: readonly ResourceTemplateDefinition<TResourceCtx>[]
 	readonly prompts: ReadonlyMap<string, PromptDefinition<TPromptCtx>>
 	readonly capabilities: Mcp.ServerCapabilities
+	readonly middleware?: Middleware<HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>, unknown>
 }
 
 // ============================================================================
@@ -83,10 +86,14 @@ export const handleToolsList = (state: ServerState): Mcp.ToolsListResult => ({
 	items: Array.from(state.tools.values()).map(toProtocolTool),
 })
 
-export const handleToolsCall = async <TToolCtx extends ToolContext>(
-	state: ServerState<TToolCtx>,
+export const handleToolsCall = async <
+	TToolCtx extends ToolContext,
+	TResourceCtx extends ResourceContext,
+	TPromptCtx extends PromptContext,
+>(
+	state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>,
 	params: Mcp.ToolsCallParams,
-	ctx: TToolCtx,
+	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
 ): Promise<Mcp.ToolsCallResult> => {
 	const tool = state.tools.get(params.name)
 	if (!tool) {
@@ -96,17 +103,33 @@ export const handleToolsCall = async <TToolCtx extends ToolContext>(
 		}
 	}
 
-	try {
-		const handler = tool.handler as (
-			input: unknown,
-		) => (ctx: TToolCtx) => Promise<Mcp.ToolsCallResult>
-		return await handler(params.arguments ?? {})(ctx)
-	} catch (error) {
-		return {
-			content: [{ type: "text", text: `Tool error: ${error}` }],
-			isError: true,
+	const info: RequestInfo = {
+		type: "tool",
+		name: params.name,
+		input: params.arguments ?? {},
+		startTime: Date.now(),
+	}
+
+	const executeHandler = async (): Promise<Mcp.ToolsCallResult> => {
+		try {
+			const handler = tool.handler as (
+				input: unknown,
+			) => (ctx: TToolCtx) => Promise<Mcp.ToolsCallResult>
+			return await handler(params.arguments ?? {})(ctx.toolContext)
+		} catch (error) {
+			return {
+				content: [{ type: "text", text: `Tool error: ${error}` }],
+				isError: true,
+			}
 		}
 	}
+
+	// Apply middleware if present
+	if (state.middleware) {
+		return (await state.middleware(ctx, info, executeHandler)) as Mcp.ToolsCallResult
+	}
+
+	return executeHandler()
 }
 
 export const handleResourcesList = (state: ServerState): Mcp.ResourcesListResult => ({
@@ -119,42 +142,82 @@ export const handleResourceTemplatesList = (
 	items: state.resourceTemplates.map(toProtocolTemplate),
 })
 
-export const handleResourcesRead = async <TResourceCtx extends ResourceContext>(
-	state: ServerState<ToolContext, TResourceCtx>,
+export const handleResourcesRead = async <
+	TToolCtx extends ToolContext,
+	TResourceCtx extends ResourceContext,
+	TPromptCtx extends PromptContext,
+>(
+	state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>,
 	params: Mcp.ResourcesReadParams,
-	ctx: TResourceCtx,
+	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
 ): Promise<Mcp.ResourcesReadResult> => {
-	// Try static resource first
-	const staticResource = state.resources.get(params.uri)
-	if (staticResource) {
-		return await staticResource.handler(params.uri)(ctx)
+	const info: RequestInfo = {
+		type: "resource",
+		name: params.uri,
+		input: params,
+		startTime: Date.now(),
 	}
 
-	// Try templates
-	for (const template of state.resourceTemplates) {
-		if (matchesTemplate(template.uriTemplate, params.uri)) {
-			return await template.handler(params.uri)(ctx)
+	const executeHandler = async (): Promise<Mcp.ResourcesReadResult> => {
+		// Try static resource first
+		const staticResource = state.resources.get(params.uri)
+		if (staticResource) {
+			return await staticResource.handler(params.uri)(ctx.resourceContext)
 		}
+
+		// Try templates
+		for (const template of state.resourceTemplates) {
+			if (matchesTemplate(template.uriTemplate, params.uri)) {
+				return await template.handler(params.uri)(ctx.resourceContext)
+			}
+		}
+
+		throw new Error(`Resource not found: ${params.uri}`)
 	}
 
-	throw new Error(`Resource not found: ${params.uri}`)
+	// Apply middleware if present
+	if (state.middleware) {
+		return (await state.middleware(ctx, info, executeHandler)) as Mcp.ResourcesReadResult
+	}
+
+	return executeHandler()
 }
 
 export const handlePromptsList = (state: ServerState): Mcp.PromptsListResult => ({
 	items: Array.from(state.prompts.values()).map(toProtocolPrompt),
 })
 
-export const handlePromptsGet = async <TPromptCtx extends PromptContext>(
-	state: ServerState<ToolContext, ResourceContext, TPromptCtx>,
+export const handlePromptsGet = async <
+	TToolCtx extends ToolContext,
+	TResourceCtx extends ResourceContext,
+	TPromptCtx extends PromptContext,
+>(
+	state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>,
 	params: Mcp.PromptsGetParams,
-	ctx: TPromptCtx,
+	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
 ): Promise<Mcp.PromptsGetResult> => {
 	const prompt = state.prompts.get(params.name)
 	if (!prompt) {
 		throw new Error(`Unknown prompt: ${params.name}`)
 	}
 
-	return await prompt.handler(params.arguments ?? {})(ctx)
+	const info: RequestInfo = {
+		type: "prompt",
+		name: params.name,
+		input: params.arguments ?? {},
+		startTime: Date.now(),
+	}
+
+	const executeHandler = async (): Promise<Mcp.PromptsGetResult> => {
+		return await prompt.handler(params.arguments ?? {})(ctx.promptContext)
+	}
+
+	// Apply middleware if present
+	if (state.middleware) {
+		return (await state.middleware(ctx, info, executeHandler)) as Mcp.PromptsGetResult
+	}
+
+	return executeHandler()
 }
 
 // ============================================================================
@@ -222,7 +285,7 @@ const handleRequest = async <
 			return handleToolsList(state)
 
 		case Mcp.Method.ToolsCall:
-			return handleToolsCall(state, req.params as Mcp.ToolsCallParams, ctx.toolContext)
+			return handleToolsCall(state, req.params as Mcp.ToolsCallParams, ctx)
 
 		case Mcp.Method.ResourcesList:
 			return handleResourcesList(state)
@@ -231,13 +294,13 @@ const handleRequest = async <
 			return handleResourceTemplatesList(state)
 
 		case Mcp.Method.ResourcesRead:
-			return handleResourcesRead(state, req.params as Mcp.ResourcesReadParams, ctx.resourceContext)
+			return handleResourcesRead(state, req.params as Mcp.ResourcesReadParams, ctx)
 
 		case Mcp.Method.PromptsList:
 			return handlePromptsList(state)
 
 		case Mcp.Method.PromptsGet:
-			return handlePromptsGet(state, req.params as Mcp.PromptsGetParams, ctx.promptContext)
+			return handlePromptsGet(state, req.params as Mcp.PromptsGetParams, ctx)
 
 		default:
 			throw new Error(`Unknown method: ${req.method}`)
