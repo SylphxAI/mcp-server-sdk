@@ -1,5 +1,5 @@
 {
-	"name": "@sylphx/mcp-server",
+	"name": "@sylphx/mcp-server-sdk",
 	"version": "0.1.0",
 	"description": "Pure functional MCP server library for Bun - zero dependencies, type-safe, high performance",
 	"type": "module",

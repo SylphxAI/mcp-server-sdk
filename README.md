@@ -1,4 +1,4 @@
-# @sylphx/mcp-server
+# @sylphx/mcp-server-sdk
 
 Pure functional MCP (Model Context Protocol) server library for Bun.
 
@@ -13,13 +13,13 @@ Pure functional MCP (Model Context Protocol) server library for Bun.
 ## Installation
 
 ```bash
-bun add @sylphx/mcp-server
+bun add @sylphx/mcp-server-sdk
 ```
 
 ## Quick Start
 
 ```typescript
-import { createServer, tool, text, stdio } from "@sylphx/mcp-server"
+import { createServer, tool, text, stdio } from "@sylphx/mcp-server-sdk"
 
 const greet = tool({
   name: "greet",
@@ -58,7 +58,7 @@ This enables:
 Tools are callable functions exposed to the AI.
 
 ```typescript
-import { tool, text, contents } from "@sylphx/mcp-server"
+import { tool, text, contents } from "@sylphx/mcp-server-sdk"
 
 // Simple tool
 const echo = tool({
@@ -88,7 +88,7 @@ const info = tool({
 
 ```typescript
 import { z } from "zod/v4"
-import { defineTool, text } from "@sylphx/mcp-server"
+import { defineTool, text } from "@sylphx/mcp-server-sdk"
 
 const calculator = defineTool({
   name: "calculate",
@@ -113,7 +113,7 @@ const calculator = defineTool({
 Resources provide data to the AI.
 
 ```typescript
-import { resource, resourceTemplate, resourceText } from "@sylphx/mcp-server"
+import { resource, resourceTemplate, resourceText } from "@sylphx/mcp-server-sdk"
 
 // Static resource
 const readme = resource({
@@ -141,7 +141,7 @@ const fileResource = resourceTemplate({
 Prompts are reusable conversation templates.
 
 ```typescript
-import { prompt, user, assistant, messages } from "@sylphx/mcp-server"
+import { prompt, user, assistant, messages } from "@sylphx/mcp-server-sdk"
 
 const codeReview = prompt({
   name: "code-review",
@@ -161,7 +161,7 @@ const codeReview = prompt({
 
 ```typescript
 import { z } from "zod/v4"
-import { definePrompt, user, messages } from "@sylphx/mcp-server"
+import { definePrompt, user, messages } from "@sylphx/mcp-server-sdk"
 
 const translate = definePrompt({
   name: "translate",
@@ -191,7 +191,7 @@ import {
   cache,
   forType,
   forName,
-} from "@sylphx/mcp-server"
+} from "@sylphx/mcp-server-sdk"
 
 const server = createServer({
   name: "my-server",
@@ -231,7 +231,7 @@ const server = createServer({
 ### Conditional Middleware
 
 ```typescript
-import { when, forType, forName } from "@sylphx/mcp-server"
+import { when, forType, forName } from "@sylphx/mcp-server-sdk"
 
 // Apply only when condition is true
 when((info) => info.type === "tool", loggingMiddleware)
@@ -248,7 +248,7 @@ forName(/^dangerous_/, confirmMiddleware)
 ### Custom Middleware
 
 ```typescript
-import type { Middleware } from "@sylphx/mcp-server"
+import type { Middleware } from "@sylphx/mcp-server-sdk"
 
 const authMiddleware: Middleware<MyContext, unknown> = async (ctx, info, next) => {
   if (!ctx.toolContext.user) {
@@ -267,7 +267,7 @@ import {
   createLogger,
   createProgressReporter,
   withProgress,
-} from "@sylphx/mcp-server"
+} from "@sylphx/mcp-server-sdk"
 
 const processFiles = tool({
   name: "process-files",
@@ -334,7 +334,7 @@ notify.emit({ type: "prompts/list_changed" })
 For CLI tools and subprocess communication.
 
 ```typescript
-import { stdio } from "@sylphx/mcp-server"
+import { stdio } from "@sylphx/mcp-server-sdk"
 
 const transport = stdio(server)
 await transport.start()
@@ -348,7 +348,7 @@ transport.notify.emit({ type: "log", level: "info", data: "Started" })
 For web services with SSE support.
 
 ```typescript
-import { http } from "@sylphx/mcp-server"
+import { http } from "@sylphx/mcp-server-sdk"
 
 const transport = http(server, {
   port: 3000,
