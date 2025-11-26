@@ -5,9 +5,9 @@
  */
 
 import {
+	http,
 	createContext,
 	createServer,
-	http,
 	prompt,
 	resource,
 	resourceText,

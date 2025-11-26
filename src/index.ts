@@ -36,6 +36,8 @@ export * from "./protocol/index.js"
 export {
 	// Tool
 	tool,
+	defineTool,
+	createTool,
 	text,
 	textContent,
 	contents,
@@ -49,6 +51,8 @@ export {
 	type ToolContext,
 	type ToolDefinition,
 	type ToolHandler,
+	type TypedToolConfig,
+	type TypedToolDefinition,
 	// Resource
 	resource,
 	resourceTemplate,
@@ -68,6 +72,7 @@ export {
 	type AnyResourceDefinition,
 	// Prompt
 	prompt,
+	definePrompt,
 	arg,
 	user,
 	assistant,
@@ -82,7 +87,22 @@ export {
 	type PromptDefinition,
 	type PromptHandler,
 	type PromptArgumentConfig,
+	type TypedPromptConfig,
+	type TypedPromptDefinition,
+	type TypedPromptHandler,
 } from "./builders/index.js"
+
+// Schema utilities
+export {
+	zodToJsonSchema,
+	toJsonSchema,
+	isZodSchema,
+	validate,
+	extractObjectFields,
+	type Infer,
+	type SchemaInput,
+	type ValidationResult,
+} from "./schema/index.js"
 
 // Server
 export {

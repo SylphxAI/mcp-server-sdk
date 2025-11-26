@@ -23,7 +23,9 @@
 		"bench": "bun run bench/index.ts",
 		"prepublishOnly": "bun run build"
 	},
-	"dependencies": {},
+	"dependencies": {
+		"zod": "^4.1.13"
+	},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@types/bun": "^1.2.14",

@@ -4,14 +4,15 @@
  * Prompts are templates that generate messages for LLMs.
  */
 
+import type { z } from "zod"
 import type {
 	Content,
 	Prompt,
 	PromptArgument,
 	PromptMessage,
 	PromptsGetResult,
-	TextContent,
 } from "../protocol/mcp.js"
+import { type Infer, extractObjectFields, validate } from "../schema/zod.js"
 
 // ============================================================================
 // Context Type
@@ -168,3 +169,93 @@ export const templatePrompt = <TContext extends PromptContext = PromptContext>(c
 			messages: [user(interpolate(config.template, args))],
 		}),
 	})
+
+// ============================================================================
+// Zod-Typed Prompt Builder
+// ============================================================================
+
+/** Typed prompt handler with Zod-inferred input */
+export type TypedPromptHandler<TArgs, TContext extends PromptContext = PromptContext> = (
+	args: TArgs,
+) => (ctx: TContext) => Promise<PromptsGetResult> | PromptsGetResult
+
+/** Config for definePrompt with Zod schema */
+export interface TypedPromptConfig<
+	TSchema extends z.ZodType,
+	TContext extends PromptContext = PromptContext,
+> {
+	readonly name: string
+	readonly description?: string
+	readonly args: TSchema
+	readonly handler: TypedPromptHandler<Infer<TSchema>, TContext>
+}
+
+/** Typed prompt definition with Zod schema */
+export interface TypedPromptDefinition<
+	TSchema extends z.ZodType,
+	TContext extends PromptContext = PromptContext,
+> extends PromptDefinition<TContext> {
+	readonly schema: TSchema
+}
+
+/**
+ * Create a prompt with Zod schema validation.
+ *
+ * @example
+ * ```ts
+ * import { z } from "zod"
+ *
+ * const review = definePrompt({
+ *   name: "code_review",
+ *   description: "Review code",
+ *   args: z.object({
+ *     language: z.string(),
+ *     focus: z.string().optional(),
+ *   }),
+ *   handler: ({ language, focus }) => () => ({
+ *     messages: [user(`Review ${language} code${focus ? ` (${focus})` : ""}`)],
+ *   }),
+ * })
+ * ```
+ */
+export const definePrompt = <
+	TSchema extends z.ZodType,
+	TContext extends PromptContext = PromptContext,
+>(
+	config: TypedPromptConfig<TSchema, TContext>,
+): TypedPromptDefinition<TSchema, TContext> => {
+	// Extract arguments from Zod object schema
+	const args = extractPromptArgs(config.args)
+
+	// Wrap handler with validation
+	const validatedHandler: PromptHandler<TContext> = (rawArgs) => async (ctx) => {
+		const result = validate(config.args, rawArgs)
+		if (!result.success) {
+			// Return error as a message
+			return {
+				messages: [user(`Error: ${result.error}`)],
+			}
+		}
+		return config.handler(result.data)(ctx)
+	}
+
+	return {
+		name: config.name,
+		description: config.description,
+		arguments: args,
+		handler: validatedHandler,
+		schema: config.args,
+	}
+}
+
+/**
+ * Extract PromptArgument[] from a Zod object schema.
+ */
+const extractPromptArgs = (schema: z.ZodType): PromptArgument[] => {
+	const fields = extractObjectFields(schema)
+	return fields.map((field) => ({
+		name: field.name,
+		description: field.description,
+		required: field.required,
+	}))
+}

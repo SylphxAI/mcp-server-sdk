@@ -7,6 +7,7 @@
  * 3. Produce content output
  */
 
+import type { z } from "zod"
 import type {
 	Content,
 	JsonSchema,
@@ -15,6 +16,7 @@ import type {
 	ToolAnnotations,
 	ToolsCallResult,
 } from "../protocol/mcp.js"
+import { type Infer, isZodSchema, toJsonSchema, validate } from "../schema/zod.js"
 
 // ============================================================================
 // Context Type (Dependency Injection)
@@ -97,6 +99,121 @@ export const tool = <TInput, TContext extends ToolContext = ToolContext>(
 	annotations: config.annotations,
 	handler: config.handler,
 })
+
+// ============================================================================
+// Zod-Typed Tool Builder
+// ============================================================================
+
+/**
+ * Config for defineTool with Zod schema
+ */
+export interface TypedToolConfig<
+	TSchema extends z.ZodType,
+	TContext extends ToolContext = ToolContext,
+> {
+	readonly name: string
+	readonly description?: string
+	readonly input: TSchema
+	readonly annotations?: ToolAnnotations
+	readonly handler: ToolHandler<Infer<TSchema>, TContext>
+}
+
+/**
+ * Tool definition with Zod schema for validation
+ */
+export interface TypedToolDefinition<
+	TSchema extends z.ZodType,
+	TContext extends ToolContext = ToolContext,
+> extends ToolDefinition<Infer<TSchema>, TContext> {
+	readonly schema: TSchema
+}
+
+/**
+ * Create a tool with Zod schema validation.
+ * Provides full type inference from schema.
+ *
+ * @example
+ * ```ts
+ * import { z } from "zod"
+ *
+ * const greet = defineTool({
+ *   name: "greet",
+ *   description: "Greet someone",
+ *   input: z.object({
+ *     name: z.string().describe("Name to greet"),
+ *     excited: z.boolean().optional().default(false),
+ *   }),
+ *   handler: ({ name, excited }) => () =>
+ *     text(`Hello, ${name}${excited ? "!" : "."}`),
+ * })
+ * ```
+ */
+export const defineTool = <TSchema extends z.ZodType, TContext extends ToolContext = ToolContext>(
+	config: TypedToolConfig<TSchema, TContext>,
+): TypedToolDefinition<TSchema, TContext> => {
+	const jsonSchema = toJsonSchema(config.input)
+
+	// Wrap handler with validation
+	const validatedHandler: ToolHandler<Infer<TSchema>, TContext> = (rawInput) => async (ctx) => {
+		const result = validate(config.input, rawInput)
+		if (!result.success) {
+			return toolError(`Validation error: ${result.error}`)
+		}
+		return config.handler(result.data)(ctx)
+	}
+
+	return {
+		name: config.name,
+		description: config.description,
+		inputSchema: jsonSchema,
+		annotations: config.annotations,
+		handler: validatedHandler,
+		schema: config.input,
+	}
+}
+
+/**
+ * Create a tool that accepts any schema (Zod or JSON Schema).
+ * When Zod is used, provides validation; otherwise uses raw JSON Schema.
+ */
+export const createTool = <TInput, TContext extends ToolContext = ToolContext>(config: {
+	readonly name: string
+	readonly description?: string
+	readonly input: z.ZodType<TInput> | JsonSchema
+	readonly annotations?: ToolAnnotations
+	readonly handler: ToolHandler<TInput, TContext>
+}): ToolDefinition<TInput, TContext> => {
+	const jsonSchema = toJsonSchema(config.input)
+
+	// If Zod schema, add validation
+	if (isZodSchema(config.input)) {
+		const zodSchema = config.input as z.ZodType<TInput>
+		const validatedHandler: ToolHandler<TInput, TContext> = (rawInput) => async (ctx) => {
+			const result = validate(zodSchema, rawInput)
+			if (!result.success) {
+				return toolError(`Validation error: ${result.error}`)
+			}
+			return config.handler(result.data)(ctx)
+		}
+
+		return {
+			name: config.name,
+			description: config.description,
+			inputSchema: jsonSchema,
+			annotations: config.annotations,
+			handler: validatedHandler,
+		}
+	}
+
+	// Raw JSON Schema - no validation
+	return {
+		name: config.name,
+		description: config.description,
+		inputSchema: jsonSchema,
+		annotations: config.annotations,
+		handler: config.handler,
+	}
+}
 
 // ============================================================================
 // Tool Metadata Extraction (for protocol)
