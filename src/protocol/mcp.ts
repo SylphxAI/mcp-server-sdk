@@ -83,8 +83,10 @@ export interface EmbeddedResource {
 
 export interface Tool {
 	readonly name: string
+	readonly title?: string
 	readonly description?: string
 	readonly inputSchema: JsonSchema
+	readonly outputSchema?: JsonSchema
 	readonly annotations?: ToolAnnotations
 }
 
@@ -113,6 +115,7 @@ export interface JsonSchema {
 
 export interface Prompt {
 	readonly name: string
+	readonly title?: string
 	readonly description?: string
 	readonly arguments?: readonly PromptArgument[]
 }
@@ -241,6 +244,9 @@ export const Method = {
 
 	// Sampling (Server → Client)
 	SamplingCreateMessage: "sampling/createMessage",
+
+	// Elicitation (Server → Client)
+	ElicitationCreate: "elicitation/create",
 
 	// Progress & Cancellation
 	ProgressNotification: "notifications/progress",

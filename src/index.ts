@@ -223,3 +223,22 @@ export {
 	type PageResult,
 	type CursorData,
 } from "./pagination/index.js"
+
+// Elicitation (Server → Client user input requests)
+export {
+	createElicitationClient,
+	elicitString,
+	elicitNumber,
+	elicitInteger,
+	elicitBoolean,
+	elicitEnum,
+	elicitSchema,
+	type ElicitationClient,
+	type ElicitationRequestSender,
+	type ElicitationContext,
+	type ElicitationSchema,
+	type ElicitationProperty,
+	type ElicitationCreateParams,
+	type ElicitationCreateResult,
+	type ElicitationAction,
+} from "./elicitation/index.js"
