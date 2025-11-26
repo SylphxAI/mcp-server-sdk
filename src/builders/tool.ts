@@ -17,9 +17,13 @@
 
 import type { z } from "zod"
 import type {
+	AudioContent,
 	Content,
+	ContentAnnotations,
+	EmbeddedResource,
 	ImageContent,
 	JsonSchema,
+	ResourceContent,
 	TextContent,
 	Tool,
 	ToolAnnotations,
@@ -194,34 +198,81 @@ export const toProtocolTool = (name: string, def: ToolDefinition): Tool => ({
 // Content Helpers
 // ============================================================================
 
-export const textContent = (text: string): TextContent => ({
+/** Create text content */
+export const textContent = (
+	text: string,
+	annotations?: ContentAnnotations
+): TextContent => ({
 	type: "text",
 	text,
+	...(annotations && { annotations }),
 })
 
-export const imageContent = (data: string, mimeType: string): ImageContent => ({
+/** Create image content (base64 encoded) */
+export const imageContent = (
+	data: string,
+	mimeType: string,
+	annotations?: ContentAnnotations
+): ImageContent => ({
 	type: "image",
 	data,
 	mimeType,
+	...(annotations && { annotations }),
 })
 
+/** Create audio content (base64 encoded) */
+export const audioContent = (
+	data: string,
+	mimeType: string,
+	annotations?: ContentAnnotations
+): AudioContent => ({
+	type: "audio",
+	data,
+	mimeType,
+	...(annotations && { annotations }),
+})
+
+/** Create resource content (embedded resource) */
+export const resourceContent = (
+	resource: EmbeddedResource,
+	annotations?: ContentAnnotations
+): ResourceContent => ({
+	type: "resource",
+	resource,
+	...(annotations && { annotations }),
+})
+
+// ============================================================================
+// Result Helpers
+// ============================================================================
+
+/** Return text result */
 export const text = (content: string): ToolsCallResult => ({
 	content: [textContent(content)],
 })
 
+/** Return image result */
 export const image = (data: string, mimeType: string): ToolsCallResult => ({
 	content: [imageContent(data, mimeType)],
 })
 
+/** Return audio result */
+export const audio = (data: string, mimeType: string): ToolsCallResult => ({
+	content: [audioContent(data, mimeType)],
+})
+
+/** Return multiple content items */
 export const contents = (...items: Content[]): ToolsCallResult => ({
 	content: items,
 })
 
+/** Return error result */
 export const toolError = (message: string): ToolsCallResult => ({
 	content: [textContent(message)],
 	isError: true,
 })
 
+/** Return JSON as formatted text */
 export const json = <T>(data: T): ToolsCallResult => ({
 	content: [textContent(JSON.stringify(data, null, 2))],
 })

@@ -40,14 +40,21 @@ export type { Transport, TransportFactory } from "./transports/types.js"
 // Tool Builder
 export {
 	tool,
+	// Result helpers
 	text,
-	textContent,
 	image,
-	imageContent,
+	audio,
 	contents,
 	toolError,
 	json,
+	// Content helpers
+	textContent,
+	imageContent,
+	audioContent,
+	resourceContent,
+	// Protocol conversion
 	toProtocolTool,
+	// Types
 	type ToolContext,
 	type ToolDefinition,
 	type ToolHandler,
