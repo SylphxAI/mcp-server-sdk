@@ -1,6 +1,7 @@
 {
 	"name": "@sylphx/mcp-server",
 	"version": "0.1.0",
+	"description": "Pure functional MCP server library for Bun - zero dependencies, type-safe, high performance",
 	"type": "module",
 	"main": "./dist/index.js",
 	"module": "./dist/index.js",
@@ -18,11 +19,15 @@
 		"check:fix": "biome check --write .",
 		"test": "bun test",
 		"bench": "bun run bench/index.ts",
-		"prepublishOnly": "bun run build"
+		"prepublishOnly": "bun run build",
+		"lint": "biome check .",
+		"format": "biome format --write ."
 	},
 	"dependencies": {},
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
+		"@sylphx/biome-config": "^0.1.0",
+		"@sylphx/tsconfig": "^0.1.0",
 		"@types/bun": "^1.2.14",
 		"bunup": "^0.16.10",
 		"mitata": "^1.0.34",

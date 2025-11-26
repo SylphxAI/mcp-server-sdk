@@ -6,7 +6,6 @@
 
 import {
 	http,
-	createContext,
 	createServer,
 	prompt,
 	resource,
@@ -68,7 +67,7 @@ const configResource = resource({
 		resourceText(
 			"config://app",
 			JSON.stringify({ version: "1.0.0", debug: false }, null, 2),
-			"application/json",
+			"application/json"
 		),
 })
 
@@ -88,7 +87,7 @@ const reviewPrompt = prompt({
 		() => ({
 			messages: [
 				user(
-					`Please review this ${language} code${focus ? ` focusing on ${focus}` : ""}. Look for bugs, style issues, and potential improvements.`,
+					`Please review this ${language} code${focus ? ` focusing on ${focus}` : ""}. Look for bugs, style issues, and potential improvements.`
 				),
 			],
 		}),

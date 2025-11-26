@@ -8,7 +8,7 @@
 import type { PromptContext } from "../builders/prompt.js"
 import type { ResourceContext } from "../builders/resource.js"
 import type { ToolContext } from "../builders/tool.js"
-import { createEmitter, type NotificationEmitter } from "../notifications/index.js"
+import { type NotificationEmitter, createEmitter } from "../notifications/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import type { HandlerContext, NotificationContext } from "../server/handler.js"
 import type { Server as McpServer } from "../server/server.js"
@@ -42,7 +42,10 @@ export interface HttpOptions<
 	/** Path prefix for MCP endpoints */
 	readonly basePath?: string
 	/** Custom context factory (receives request and session-specific notification emitter) */
-	readonly createContext?: (req: Request, notify: NotificationEmitter) => HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
+	readonly createContext?: (
+		req: Request,
+		notify: NotificationEmitter
+	) => HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
 	/** CORS origin (set to "*" for all, or specific origin) */
 	readonly cors?: string
 	/** Error handler */
@@ -86,7 +89,7 @@ export const http = <
 	TPromptCtx extends PromptContext,
 >(
 	server: McpServer<TToolCtx, TResourceCtx, TPromptCtx>,
-	options: HttpOptions<TToolCtx, TResourceCtx, TPromptCtx> = {},
+	options: HttpOptions<TToolCtx, TResourceCtx, TPromptCtx> = {}
 ): HttpTransport => {
 	const port = options.port ?? 3000
 	const hostname = options.hostname ?? "localhost"
@@ -125,7 +128,10 @@ export const http = <
 	}
 
 	// Default context factory
-	const defaultContext = (_req: Request, notify: NotificationEmitter): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
+	const defaultContext = (
+		_req: Request,
+		notify: NotificationEmitter
+	): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
 		toolContext: { notify } as unknown as TToolCtx,
 		resourceContext: { notify } as unknown as TResourceCtx,
 		promptContext: { notify } as unknown as TPromptCtx,
@@ -173,7 +179,7 @@ export const http = <
 
 					// Send session ID as first event
 					controller.enqueue(
-						encoder.encode(`event: session\ndata: ${JSON.stringify({ sessionId })}\n\n`),
+						encoder.encode(`event: session\ndata: ${JSON.stringify({ sessionId })}\n\n`)
 					)
 				},
 				cancel() {
@@ -269,7 +275,7 @@ export const http = <
 					server: server.name,
 					version: server.version,
 				}),
-				{ headers: { "Content-Type": "application/json", ...corsHeaders } },
+				{ headers: { "Content-Type": "application/json", ...corsHeaders } }
 			)
 		}
 

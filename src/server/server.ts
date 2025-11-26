@@ -13,15 +13,15 @@ import type {
 	ResourceTemplateDefinition,
 } from "../builders/resource.js"
 import type { ToolContext, ToolDefinition } from "../builders/tool.js"
-import type { CompletionConfig } from "../completions/types.js"
 import { buildCompletionRegistry } from "../completions/handler.js"
-import type { Middleware } from "../middleware/types.js"
+import type { CompletionConfig } from "../completions/types.js"
 import { compose } from "../middleware/compose.js"
+import type { Middleware } from "../middleware/types.js"
 import type { PaginationOptions } from "../pagination/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import type * as Mcp from "../protocol/mcp.js"
-import type { SubscriptionManager } from "../subscriptions/types.js"
 import { createSubscriptionManager } from "../subscriptions/manager.js"
+import type { SubscriptionManager } from "../subscriptions/types.js"
 import type { HandlerContext, NotificationContext, ServerState } from "./handler.js"
 import { dispatch } from "./handler.js"
 
@@ -72,14 +72,14 @@ export interface Server<
 	readonly handle: (
 		message: string,
 		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-		notificationCtx?: NotificationContext,
+		notificationCtx?: NotificationContext
 	) => Promise<string | null>
 
 	/** Process parsed message */
 	readonly handleMessage: (
 		message: Rpc.JsonRpcMessage,
 		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-		notificationCtx?: NotificationContext,
+		notificationCtx?: NotificationContext
 	) => Promise<Rpc.JsonRpcResponse | null>
 
 	/** Get server state (for introspection) */
@@ -116,7 +116,7 @@ export const createServer = <
 	TResourceCtx extends ResourceContext = ResourceContext,
 	TPromptCtx extends PromptContext = PromptContext,
 >(
-	config: ServerConfig<TToolCtx, TResourceCtx, TPromptCtx>,
+	config: ServerConfig<TToolCtx, TResourceCtx, TPromptCtx>
 ): Server<TToolCtx, TResourceCtx, TPromptCtx> => {
 	// Build state from config
 	const state = buildState(config)
@@ -125,7 +125,7 @@ export const createServer = <
 	const handleMessage = async (
 		message: Rpc.JsonRpcMessage,
 		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-		notificationCtx?: NotificationContext,
+		notificationCtx?: NotificationContext
 	): Promise<Rpc.JsonRpcResponse | null> => {
 		const result = await dispatch(state, message, ctx, notificationCtx)
 		return result.type === "response" ? result.response : null
@@ -135,7 +135,7 @@ export const createServer = <
 	const handle = async (
 		input: string,
 		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-		notificationCtx?: NotificationContext,
+		notificationCtx?: NotificationContext
 	): Promise<string | null> => {
 		const parsed = Rpc.parseMessage(input)
 
@@ -167,7 +167,7 @@ const buildState = <
 	TResourceCtx extends ResourceContext,
 	TPromptCtx extends PromptContext,
 >(
-	config: ServerConfig<TToolCtx, TResourceCtx, TPromptCtx>,
+	config: ServerConfig<TToolCtx, TResourceCtx, TPromptCtx>
 ): ServerState<TToolCtx, TResourceCtx, TPromptCtx> => {
 	// Build tools map
 	const tools = new Map<string, ToolDefinition<unknown, TToolCtx>>()
@@ -222,9 +222,7 @@ const buildState = <
 	}
 
 	// Compose middleware
-	const middleware = config.middleware?.length
-		? compose(...config.middleware)
-		: undefined
+	const middleware = config.middleware?.length ? compose(...config.middleware) : undefined
 
 	return {
 		name: config.name,

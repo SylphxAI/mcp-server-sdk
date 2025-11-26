@@ -84,7 +84,7 @@ export const isError = <D>(msg: JsonRpcResponse<unknown, D>): msg is JsonRpcErro
 export const request = <M extends string, P>(
 	id: RequestId,
 	method: M,
-	params?: P,
+	params?: P
 ): JsonRpcRequest<M, P> => ({
 	jsonrpc: JSONRPC_VERSION,
 	id,
@@ -94,7 +94,7 @@ export const request = <M extends string, P>(
 
 export const notification = <M extends string, P>(
 	method: M,
-	params?: P,
+	params?: P
 ): JsonRpcNotification<M, P> => ({
 	jsonrpc: JSONRPC_VERSION,
 	method,
@@ -111,7 +111,7 @@ export const error = <D>(
 	id: RequestId | null,
 	code: number,
 	message: string,
-	data?: D,
+	data?: D
 ): JsonRpcError<D> => ({
 	jsonrpc: JSONRPC_VERSION,
 	id,

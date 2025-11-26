@@ -1,17 +1,17 @@
 import { describe, expect, test } from "bun:test"
 import {
+	cancelled,
 	createEmitter,
-	noopEmitter,
-	createProgressReporter,
 	createLogger,
-	withProgress,
-	progress,
+	createProgressReporter,
 	log,
-	resourcesListChanged,
-	toolsListChanged,
+	noopEmitter,
+	progress,
 	promptsListChanged,
 	resourceUpdated,
-	cancelled,
+	resourcesListChanged,
+	toolsListChanged,
+	withProgress,
 } from "./index.js"
 
 describe("Notifications", () => {
@@ -31,8 +31,8 @@ describe("Notifications", () => {
 			})
 
 			expect(calls).toHaveLength(1)
-			expect(calls[0]![0]).toBe("notifications/progress")
-			expect(calls[0]![1]).toEqual({
+			expect(calls[0]?.[0]).toBe("notifications/progress")
+			expect(calls[0]?.[1]).toEqual({
 				progressToken: "token-123",
 				progress: 50,
 				total: 100,
@@ -54,8 +54,8 @@ describe("Notifications", () => {
 			})
 
 			expect(calls).toHaveLength(1)
-			expect(calls[0]![0]).toBe("notifications/message")
-			expect(calls[0]![1]).toEqual({
+			expect(calls[0]?.[0]).toBe("notifications/message")
+			expect(calls[0]?.[1]).toEqual({
 				level: "info",
 				logger: "my-tool",
 				data: { message: "Hello" },
@@ -73,9 +73,9 @@ describe("Notifications", () => {
 			emitter.emit({ type: "prompts/list_changed" })
 
 			expect(calls).toHaveLength(3)
-			expect(calls[0]![0]).toBe("notifications/resources/list_changed")
-			expect(calls[1]![0]).toBe("notifications/tools/list_changed")
-			expect(calls[2]![0]).toBe("notifications/prompts/list_changed")
+			expect(calls[0]?.[0]).toBe("notifications/resources/list_changed")
+			expect(calls[1]?.[0]).toBe("notifications/tools/list_changed")
+			expect(calls[2]?.[0]).toBe("notifications/prompts/list_changed")
 		})
 
 		test("converts resource updated notification", () => {
@@ -87,8 +87,8 @@ describe("Notifications", () => {
 			emitter.emit({ type: "resource/updated", uri: "file:///test.txt" })
 
 			expect(calls).toHaveLength(1)
-			expect(calls[0]![0]).toBe("notifications/resources/updated")
-			expect(calls[0]![1]).toEqual({ uri: "file:///test.txt" })
+			expect(calls[0]?.[0]).toBe("notifications/resources/updated")
+			expect(calls[0]?.[1]).toEqual({ uri: "file:///test.txt" })
 		})
 
 		test("converts cancelled notification", () => {
@@ -100,8 +100,8 @@ describe("Notifications", () => {
 			emitter.emit({ type: "cancelled", requestId: 123, reason: "User cancelled" })
 
 			expect(calls).toHaveLength(1)
-			expect(calls[0]![0]).toBe("notifications/cancelled")
-			expect(calls[0]![1]).toEqual({ requestId: 123, reason: "User cancelled" })
+			expect(calls[0]?.[0]).toBe("notifications/cancelled")
+			expect(calls[0]?.[1]).toEqual({ requestId: 123, reason: "User cancelled" })
 		})
 	})
 

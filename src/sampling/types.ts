@@ -34,10 +34,7 @@ export interface SamplingClient {
  * Raw request sender for sampling.
  * Transports implement this to send JSON-RPC requests to the client.
  */
-export type SamplingRequestSender = (
-	method: string,
-	params: unknown,
-) => Promise<unknown>
+export type SamplingRequestSender = (method: string, params: unknown) => Promise<unknown>
 
 // ============================================================================
 // Sampling Context Extension

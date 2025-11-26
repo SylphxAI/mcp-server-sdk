@@ -1,10 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import {
-	createSamplingClient,
-	samplingText,
-	samplingImage,
-	modelPreferences,
-} from "./index.js"
+import { createSamplingClient, modelPreferences, samplingImage, samplingText } from "./index.js"
 
 describe("Sampling", () => {
 	describe("createSamplingClient", () => {

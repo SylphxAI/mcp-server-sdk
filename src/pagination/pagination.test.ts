@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test"
 import {
-	paginate,
-	encodeCursor,
-	decodeCursor,
-	createPaginatedHandler,
-	iteratePages,
 	collectAllPages,
+	createPaginatedHandler,
+	decodeCursor,
+	encodeCursor,
+	iteratePages,
+	paginate,
 } from "./index.js"
 
 describe("Pagination", () => {
@@ -82,10 +82,7 @@ describe("Pagination", () => {
 
 	describe("createPaginatedHandler", () => {
 		test("creates handler that paginates", async () => {
-			const handler = createPaginatedHandler(
-				() => [1, 2, 3, 4, 5],
-				{ defaultPageSize: 2 },
-			)
+			const handler = createPaginatedHandler(() => [1, 2, 3, 4, 5], { defaultPageSize: 2 })
 
 			const page1 = await handler()
 			expect(page1.items).toEqual([1, 2])
@@ -99,10 +96,7 @@ describe("Pagination", () => {
 		})
 
 		test("works with async getter", async () => {
-			const handler = createPaginatedHandler(
-				async () => [1, 2, 3],
-				{ defaultPageSize: 10 },
-			)
+			const handler = createPaginatedHandler(async () => [1, 2, 3], { defaultPageSize: 10 })
 
 			const result = await handler()
 			expect(result.items).toEqual([1, 2, 3])
@@ -112,7 +106,7 @@ describe("Pagination", () => {
 	describe("iteratePages", () => {
 		test("iterates through all pages", async () => {
 			const pages: number[][] = []
-			let cursor: string | undefined
+			let _cursor: string | undefined
 
 			const fetchPage = async (c?: string) => {
 				const items = [1, 2, 3, 4, 5]

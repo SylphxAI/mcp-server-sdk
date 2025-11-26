@@ -8,7 +8,7 @@
 import type { PromptContext } from "../builders/prompt.js"
 import type { ResourceContext } from "../builders/resource.js"
 import type { ToolContext } from "../builders/tool.js"
-import { createEmitter, type NotificationEmitter } from "../notifications/index.js"
+import { type NotificationEmitter, createEmitter } from "../notifications/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import type { HandlerContext, NotificationContext } from "../server/handler.js"
 import type { Server } from "../server/server.js"
@@ -32,7 +32,9 @@ export interface StdioOptions<
 	TPromptCtx extends PromptContext,
 > {
 	/** Custom context factory (called for each message, receives notification emitter) */
-	readonly createContext?: (notify: NotificationEmitter) => HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
+	readonly createContext?: (
+		notify: NotificationEmitter
+	) => HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
 	/** Custom stdin (for testing) */
 	readonly stdin?: ReadableStream<Uint8Array>
 	/** Custom stdout (for testing) */
@@ -61,7 +63,7 @@ export const stdio = <
 	TPromptCtx extends PromptContext,
 >(
 	server: Server<TToolCtx, TResourceCtx, TPromptCtx>,
-	options: StdioOptions<TToolCtx, TResourceCtx, TPromptCtx> = {},
+	options: StdioOptions<TToolCtx, TResourceCtx, TPromptCtx> = {}
 ): StdioTransport => {
 	let running = false
 	let abortController: AbortController | null = null
@@ -78,9 +80,14 @@ export const stdio = <
 
 	const notify = createEmitter(sendNotification)
 
-	const defaultContext = (emitter: NotificationEmitter): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
+	const defaultContext = (
+		emitter: NotificationEmitter
+	): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
 		toolContext: { signal: abortController?.signal, notify: emitter } as unknown as TToolCtx,
-		resourceContext: { signal: abortController?.signal, notify: emitter } as unknown as TResourceCtx,
+		resourceContext: {
+			signal: abortController?.signal,
+			notify: emitter,
+		} as unknown as TResourceCtx,
 		promptContext: { signal: abortController?.signal, notify: emitter } as unknown as TPromptCtx,
 	})
 

@@ -36,5 +36,6 @@
 			"semicolons": "asNeeded",
 			"quoteStyle": "double"
 		}
-	}
+	},
+	"extends": ["@sylphx/biome-config"]
 }

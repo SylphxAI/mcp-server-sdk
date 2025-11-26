@@ -4,8 +4,8 @@
  * Middleware wraps handlers to add cross-cutting concerns.
  */
 
-import type { ToolsCallResult } from "../protocol/mcp.js"
 import type { ToolContext } from "../builders/tool.js"
+import type { ToolsCallResult } from "../protocol/mcp.js"
 
 // ============================================================================
 // Core Types
@@ -26,7 +26,7 @@ export type Next<TResult> = () => Promise<TResult>
 export type Middleware<TContext, TResult> = (
 	ctx: TContext,
 	info: RequestInfo,
-	next: Next<TResult>,
+	next: Next<TResult>
 ) => Promise<TResult>
 
 // ============================================================================

@@ -1,11 +1,3 @@
-/**
- * Completions Types
- *
- * Types for auto-complete functionality.
- */
-
-import type * as Mcp from "../protocol/mcp.js"
-
 // ============================================================================
 // Completion Provider
 // ============================================================================
@@ -16,7 +8,7 @@ import type * as Mcp from "../protocol/mcp.js"
  */
 export type CompletionProvider = (
 	argumentName: string,
-	argumentValue: string,
+	argumentValue: string
 ) => CompletionResult | Promise<CompletionResult>
 
 /**

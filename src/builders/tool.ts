@@ -39,7 +39,7 @@ export interface ToolContext {
 
 /** Handler function type - pure function taking input and returning effect */
 export type ToolHandler<TInput, TContext extends ToolContext = ToolContext> = (
-	input: TInput,
+	input: TInput
 ) => (ctx: TContext) => Promise<ToolsCallResult> | ToolsCallResult
 
 /** Tool definition with metadata and handler */
@@ -91,7 +91,7 @@ export interface ToolConfig<TInput, TContext extends ToolContext = ToolContext> 
  * ```
  */
 export const tool = <TInput, TContext extends ToolContext = ToolContext>(
-	config: ToolConfig<TInput, TContext>,
+	config: ToolConfig<TInput, TContext>
 ): ToolDefinition<TInput, TContext> => ({
 	name: config.name,
 	description: config.description,
@@ -149,7 +149,7 @@ export interface TypedToolDefinition<
  * ```
  */
 export const defineTool = <TSchema extends z.ZodType, TContext extends ToolContext = ToolContext>(
-	config: TypedToolConfig<TSchema, TContext>,
+	config: TypedToolConfig<TSchema, TContext>
 ): TypedToolDefinition<TSchema, TContext> => {
 	const jsonSchema = toJsonSchema(config.input)
 
@@ -294,7 +294,7 @@ export const sequence =
 export const guard =
 	<TInput, TContext extends ToolContext>(
 		predicate: (input: TInput) => boolean | string,
-		handler: ToolHandler<TInput, TContext>,
+		handler: ToolHandler<TInput, TContext>
 	): ToolHandler<TInput, TContext> =>
 	(input) =>
 	async (ctx) => {
@@ -314,7 +314,7 @@ export const guard =
 export const mapResult =
 	<TInput, TContext extends ToolContext>(
 		handler: ToolHandler<TInput, TContext>,
-		fn: (result: ToolsCallResult) => ToolsCallResult,
+		fn: (result: ToolsCallResult) => ToolsCallResult
 	): ToolHandler<TInput, TContext> =>
 	(input) =>
 	async (ctx) => {

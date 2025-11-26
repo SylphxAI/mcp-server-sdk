@@ -32,11 +32,11 @@ export interface LoggingOptions {
  * ```
  */
 export const logging = <TContext, TResult>(
-	options: LoggingOptions = {},
+	options: LoggingOptions = {}
 ): Middleware<TContext, TResult> => {
 	const log = options.log ?? console.log
 
-	return async (ctx, info, next) => {
+	return async (_ctx, info, next) => {
 		const start = Date.now()
 		const prefix = `[${info.type}:${info.name}]`
 
@@ -80,7 +80,10 @@ export interface TimingContext {
 /**
  * Timing middleware - adds timing info to context.
  */
-export const timing = <TContext extends TimingContext, TResult>(): Middleware<TContext, TResult> => {
+export const timing = <TContext extends TimingContext, TResult>(): Middleware<
+	TContext,
+	TResult
+> => {
 	return async (ctx, _info, next) => {
 		const mutableCtx = ctx as TimingContext
 		mutableCtx.timing = { start: Date.now() }
@@ -111,7 +114,7 @@ export interface ErrorHandlerOptions<TResult> {
  * Error handling middleware - catches errors and transforms them.
  */
 export const errorHandler = <TContext, TResult>(
-	options: ErrorHandlerOptions<TResult>,
+	options: ErrorHandlerOptions<TResult>
 ): Middleware<TContext, TResult> => {
 	return async (_ctx, info, next) => {
 		try {
@@ -148,7 +151,7 @@ export interface TimeoutOptions {
  * Timeout middleware - fails if handler takes too long.
  */
 export const timeout = <TContext, TResult>(
-	options: TimeoutOptions,
+	options: TimeoutOptions
 ): Middleware<TContext, TResult> => {
 	return async (_ctx, info, next) => {
 		const controller = new AbortController()
@@ -160,7 +163,9 @@ export const timeout = <TContext, TResult>(
 				new Promise<never>((_, reject) => {
 					controller.signal.addEventListener("abort", () => {
 						reject(
-							new Error(options.message ?? `${info.type}:${info.name} timed out after ${options.ms}ms`),
+							new Error(
+								options.message ?? `${info.type}:${info.name} timed out after ${options.ms}ms`
+							)
 						)
 					})
 				}),
@@ -237,7 +242,9 @@ export interface CacheOptions<TResult> {
 /**
  * Cache middleware - caches results.
  */
-export const cache = <TContext, TResult>(options: CacheOptions<TResult>): Middleware<TContext, TResult> => {
+export const cache = <TContext, TResult>(
+	options: CacheOptions<TResult>
+): Middleware<TContext, TResult> => {
 	const defaultStore = new Map<string, { value: TResult; expires: number }>()
 	const store = options.store ?? {
 		get(key: string) {

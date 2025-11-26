@@ -1,17 +1,17 @@
 import { describe, expect, test } from "bun:test"
 import { z } from "zod"
 import {
-	prompt,
-	definePrompt,
 	arg,
-	user,
 	assistant,
+	definePrompt,
+	interpolate,
 	message,
 	messages,
+	prompt,
 	promptResult,
-	interpolate,
 	templatePrompt,
 	toProtocolPrompt,
+	user,
 } from "./prompt.js"
 
 describe("Prompt Builder", () => {
@@ -220,9 +220,11 @@ describe("Prompt Builder", () => {
 				args: z.object({
 					language: z.string(),
 				}),
-				handler: ({ language }) => () => ({
-					messages: [user(`Review ${language} code`)],
-				}),
+				handler:
+					({ language }) =>
+					() => ({
+						messages: [user(`Review ${language} code`)],
+					}),
 			})
 
 			expect(p.name).toBe("review")
@@ -235,9 +237,11 @@ describe("Prompt Builder", () => {
 				args: z.object({
 					count: z.number(),
 				}),
-				handler: ({ count }) => () => ({
-					messages: [user(`Count: ${count}`)],
-				}),
+				handler:
+					({ count }) =>
+					() => ({
+						messages: [user(`Count: ${count}`)],
+					}),
 			})
 
 			const result = await p.handler({ count: 5 })({})
@@ -254,9 +258,11 @@ describe("Prompt Builder", () => {
 				args: z.object({
 					count: z.number(),
 				}),
-				handler: ({ count }) => () => ({
-					messages: [user(`Count: ${count}`)],
-				}),
+				handler:
+					({ count }) =>
+					() => ({
+						messages: [user(`Count: ${count}`)],
+					}),
 			})
 
 			const result = await p.handler({ count: "not a number" } as unknown)({})

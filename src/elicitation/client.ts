@@ -42,7 +42,7 @@ import type {
 export const createElicitationClient = (sender: ElicitationRequestSender): ElicitationClient => {
 	const elicit = async (
 		message: string,
-		schema: ElicitationSchema,
+		schema: ElicitationSchema
 	): Promise<ElicitationCreateResult> => {
 		const params: ElicitationCreateParams = {
 			message,
@@ -118,7 +118,7 @@ export const elicitEnum = <T extends string | number>(
 		description?: string
 		default?: T
 		enumNames?: readonly string[]
-	},
+	}
 ): ElicitationProperty => ({
 	type: typeof values[0] === "string" ? "string" : "number",
 	enum: values,
@@ -129,8 +129,11 @@ export const elicitEnum = <T extends string | number>(
  * Create an elicitation schema from properties.
  */
 export const elicitSchema = (
-	properties: Record<string, ReturnType<typeof elicitString | typeof elicitNumber | typeof elicitBoolean>>,
-	required?: readonly string[],
+	properties: Record<
+		string,
+		ReturnType<typeof elicitString | typeof elicitNumber | typeof elicitBoolean>
+	>,
+	required?: readonly string[]
 ): ElicitationSchema => ({
 	type: "object",
 	properties,

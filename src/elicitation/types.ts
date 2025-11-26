@@ -54,15 +54,12 @@ export interface ElicitationCreateResult {
 
 export type ElicitationRequestSender = (
 	method: string,
-	params: ElicitationCreateParams,
+	params: ElicitationCreateParams
 ) => Promise<ElicitationCreateResult>
 
 export interface ElicitationClient {
 	/** Request user input through the client */
-	readonly elicit: (
-		message: string,
-		schema: ElicitationSchema,
-	) => Promise<ElicitationCreateResult>
+	readonly elicit: (message: string, schema: ElicitationSchema) => Promise<ElicitationCreateResult>
 }
 
 export interface ElicitationContext {

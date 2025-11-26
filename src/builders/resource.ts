@@ -26,7 +26,7 @@ export interface ResourceContext {
 
 /** Handler for reading a resource */
 export type ResourceHandler<TContext extends ResourceContext = ResourceContext> = (
-	uri: string,
+	uri: string
 ) => (ctx: TContext) => Promise<ResourcesReadResult> | ResourcesReadResult
 
 /** Static resource definition */
@@ -98,7 +98,7 @@ export interface ResourceTemplateConfig<TContext extends ResourceContext = Resou
  * ```
  */
 export const resource = <TContext extends ResourceContext = ResourceContext>(
-	config: ResourceConfig<TContext>,
+	config: ResourceConfig<TContext>
 ): ResourceDefinition<TContext> => ({
 	type: "static",
 	uri: config.uri,
@@ -126,7 +126,7 @@ export const resource = <TContext extends ResourceContext = ResourceContext>(
  * ```
  */
 export const resourceTemplate = <TContext extends ResourceContext = ResourceContext>(
-	config: ResourceTemplateConfig<TContext>,
+	config: ResourceTemplateConfig<TContext>
 ): ResourceTemplateDefinition<TContext> => ({
 	type: "template",
 	uriTemplate: config.uriTemplate,
@@ -162,7 +162,7 @@ export const toProtocolTemplate = (def: ResourceTemplateDefinition): ResourceTem
 export const resourceText = (
 	uri: string,
 	text: string,
-	mimeType?: string,
+	mimeType?: string
 ): ResourcesReadResult => ({
 	contents: [
 		{
@@ -178,7 +178,7 @@ export const resourceText = (
 export const resourceBlob = (
 	uri: string,
 	blob: string, // base64
-	mimeType: string,
+	mimeType: string
 ): ResourcesReadResult => ({
 	contents: [
 		{

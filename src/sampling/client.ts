@@ -40,10 +40,7 @@ export const createSamplingClient = (send: SamplingRequestSender): SamplingClien
 /**
  * Create a sampling message with text content.
  */
-export const samplingText = (
-	role: "user" | "assistant",
-	text: string,
-): Mcp.SamplingMessage => ({
+export const samplingText = (role: "user" | "assistant", text: string): Mcp.SamplingMessage => ({
 	role,
 	content: { type: "text", text },
 })
@@ -54,7 +51,7 @@ export const samplingText = (
 export const samplingImage = (
 	role: "user" | "assistant",
 	data: string,
-	mimeType: string,
+	mimeType: string
 ): Mcp.SamplingMessage => ({
 	role,
 	content: { type: "image", data, mimeType },

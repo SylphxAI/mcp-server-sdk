@@ -78,9 +78,7 @@ export const validate = <T>(schema: z.ZodType<T>, input: unknown): ValidationRes
 	}
 	// Zod 4 uses result.error.issues
 	const issues = result.error.issues
-	const errorMsg = issues
-		.map((e) => `${e.path.map(String).join(".")}: ${e.message}`)
-		.join("; ")
+	const errorMsg = issues.map((e) => `${e.path.map(String).join(".")}: ${e.message}`).join("; ")
 	return {
 		success: false,
 		error: errorMsg || "Validation failed",
@@ -96,7 +94,7 @@ export const validate = <T>(schema: z.ZodType<T>, input: unknown): ValidationRes
  * Works with Zod 4's internal structure.
  */
 export const extractObjectFields = (
-	schema: z.ZodType,
+	schema: z.ZodType
 ): Array<{ name: string; description?: string; required: boolean }> => {
 	// Check if it's an object schema by trying to get shape
 	if (!("shape" in schema) || typeof schema.shape !== "object") {

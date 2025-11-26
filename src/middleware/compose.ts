@@ -4,7 +4,7 @@
  * Pure functions for composing middleware.
  */
 
-import type { Middleware, MiddlewareStack, Next, RequestInfo } from "./types.js"
+import type { Middleware, MiddlewareStack, RequestInfo } from "./types.js"
 
 // ============================================================================
 // Compose Function
@@ -66,7 +66,7 @@ export const compose = <TContext, TResult>(
  * ```
  */
 export const createStack = <TContext, TResult>(
-	initial: readonly Middleware<TContext, TResult>[] = [],
+	initial: readonly Middleware<TContext, TResult>[] = []
 ): MiddlewareStack<TContext, TResult> => ({
 	middlewares: initial,
 
@@ -89,7 +89,7 @@ export const createStack = <TContext, TResult>(
  */
 export const when = <TContext, TResult>(
 	predicate: (info: RequestInfo) => boolean,
-	middleware: Middleware<TContext, TResult>,
+	middleware: Middleware<TContext, TResult>
 ): Middleware<TContext, TResult> => {
 	return (ctx, info, next) => {
 		if (predicate(info)) {
@@ -104,7 +104,7 @@ export const when = <TContext, TResult>(
  */
 export const forType = <TContext, TResult>(
 	type: "tool" | "resource" | "prompt",
-	middleware: Middleware<TContext, TResult>,
+	middleware: Middleware<TContext, TResult>
 ): Middleware<TContext, TResult> => when((info) => info.type === type, middleware)
 
 /**
@@ -112,7 +112,7 @@ export const forType = <TContext, TResult>(
  */
 export const forName = <TContext, TResult>(
 	pattern: string | RegExp,
-	middleware: Middleware<TContext, TResult>,
+	middleware: Middleware<TContext, TResult>
 ): Middleware<TContext, TResult> => {
 	const regex = typeof pattern === "string" ? globToRegex(pattern) : pattern
 	return when((info) => regex.test(info.name), middleware)

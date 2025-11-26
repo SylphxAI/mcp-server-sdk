@@ -68,7 +68,7 @@ export const decodeCursor = (cursor: string): CursorData | null => {
 export const paginate = <T>(
 	items: readonly T[],
 	cursor?: string,
-	options?: PaginationOptions,
+	options?: PaginationOptions
 ): PageResult<T> => {
 	const defaultPageSize = options?.defaultPageSize ?? 50
 	const maxPageSize = options?.maxPageSize ?? 100
@@ -107,7 +107,7 @@ export const paginate = <T>(
  */
 export const createPaginatedHandler = <T>(
 	getItems: () => readonly T[] | Promise<readonly T[]>,
-	options?: PaginationOptions,
+	options?: PaginationOptions
 ) => {
 	return async (cursor?: string): Promise<PageResult<T>> => {
 		const items = await getItems()
@@ -126,7 +126,7 @@ export const createPaginatedHandler = <T>(
  * ```
  */
 export async function* iteratePages<T>(
-	fetchPage: (cursor?: string) => Promise<PageResult<T>>,
+	fetchPage: (cursor?: string) => Promise<PageResult<T>>
 ): AsyncGenerator<readonly T[], void, unknown> {
 	let cursor: string | undefined
 
@@ -141,7 +141,7 @@ export async function* iteratePages<T>(
  * Collect all pages into a single array.
  */
 export const collectAllPages = async <T>(
-	fetchPage: (cursor?: string) => Promise<PageResult<T>>,
+	fetchPage: (cursor?: string) => Promise<PageResult<T>>
 ): Promise<T[]> => {
 	const all: T[] = []
 	for await (const items of iteratePages(fetchPage)) {

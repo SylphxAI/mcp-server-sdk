@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test"
 import {
 	buildCompletionRegistry,
-	handleComplete,
-	staticCompletions,
 	dynamicCompletions,
+	handleComplete,
 	mergeCompletions,
+	staticCompletions,
 } from "./index.js"
 
 describe("Completions", () => {
@@ -131,7 +131,7 @@ describe("Completions", () => {
 		test("combines multiple providers", async () => {
 			const provider = mergeCompletions(
 				staticCompletions(["a", "b"]),
-				staticCompletions(["c", "d"]),
+				staticCompletions(["c", "d"])
 			)
 
 			const result = await provider("name", "")
@@ -145,7 +145,7 @@ describe("Completions", () => {
 		test("deduplicates values", async () => {
 			const provider = mergeCompletions(
 				staticCompletions(["a", "b"]),
-				staticCompletions(["b", "c"]),
+				staticCompletions(["b", "c"])
 			)
 
 			const result = await provider("name", "")

@@ -297,8 +297,7 @@ describe("Server", () => {
 					type: "template",
 					uriTemplate: "file:///{path}",
 					name: "File",
-					handler: (uri: string) => () =>
-						resourceText(uri, `Content of ${uri}`),
+					handler: (uri: string) => () => resourceText(uri, `Content of ${uri}`),
 				},
 			],
 		})
@@ -356,14 +355,14 @@ describe("Server", () => {
 			await subServer.handleMessage(
 				Rpc.request(1, Mcp.Method.ResourcesSubscribe, { uri: "config://app" }),
 				createContext(),
-				{ subscriberId: "session-2" },
+				{ subscriberId: "session-2" }
 			)
 
 			// Then unsubscribe
 			const response = await subServer.handleMessage(
 				Rpc.request(2, Mcp.Method.ResourcesUnsubscribe, { uri: "config://app" }),
 				createContext(),
-				{ subscriberId: "session-2" },
+				{ subscriberId: "session-2" }
 			)
 
 			expect(Rpc.isSuccess(response!)).toBe(true)

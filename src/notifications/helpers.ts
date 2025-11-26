@@ -5,7 +5,7 @@
  */
 
 import type * as Mcp from "../protocol/mcp.js"
-import type { NotificationEmitter, Notification } from "./types.js"
+import type { Notification, NotificationEmitter } from "./types.js"
 
 // ============================================================================
 // Progress Helpers
@@ -17,7 +17,7 @@ import type { NotificationEmitter, Notification } from "./types.js"
 export const progress = (
 	progressToken: Mcp.ProgressToken,
 	current: number,
-	options?: { total?: number; message?: string },
+	options?: { total?: number; message?: string }
 ): Notification => ({
 	type: "progress",
 	progressToken,
@@ -40,7 +40,7 @@ export const progress = (
 export const createProgressReporter = (
 	emitter: NotificationEmitter,
 	token: Mcp.ProgressToken,
-	total?: number,
+	total?: number
 ) => {
 	return (current: number, message?: string): void => {
 		emitter.emit(progress(token, current, { total, message }))
@@ -62,7 +62,7 @@ export const withProgress = async <T, R>(
 	emitter: NotificationEmitter,
 	token: Mcp.ProgressToken,
 	items: readonly T[],
-	processor: (item: T, report: (message?: string) => void) => Promise<R>,
+	processor: (item: T, report: (message?: string) => void) => Promise<R>
 ): Promise<R[]> => {
 	const total = items.length
 	const results: R[] = []
@@ -85,11 +85,7 @@ export const withProgress = async <T, R>(
 /**
  * Create a log notification.
  */
-export const log = (
-	level: Mcp.LogLevel,
-	data: unknown,
-	logger?: string,
-): Notification => ({
+export const log = (level: Mcp.LogLevel, data: unknown, logger?: string): Notification => ({
 	type: "log",
 	level,
 	logger,
@@ -174,10 +170,7 @@ export const resourceUpdated = (uri: string): Notification => ({
 /**
  * Emit a cancelled notification.
  */
-export const cancelled = (
-	requestId: string | number,
-	reason?: string,
-): Notification => ({
+export const cancelled = (requestId: string | number, reason?: string): Notification => ({
 	type: "cancelled",
 	requestId,
 	reason,

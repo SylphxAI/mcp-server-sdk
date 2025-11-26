@@ -6,14 +6,7 @@
  */
 
 import { z } from "zod"
-import {
-	createServer,
-	definePrompt,
-	defineTool,
-	stdio,
-	text,
-	user,
-} from "../src/index.js"
+import { createServer, definePrompt, defineTool, stdio, text, user } from "../src/index.js"
 
 // ============================================================================
 // Define Tools with Zod (Full Type Safety)
@@ -42,7 +35,8 @@ const calculator = defineTool({
 					result = a * b
 					break
 				case "divide":
-					if (b === 0) return { content: [{ type: "text", text: "Cannot divide by zero" }], isError: true }
+					if (b === 0)
+						return { content: [{ type: "text", text: "Cannot divide by zero" }], isError: true }
 					result = a / b
 					break
 			}
@@ -90,7 +84,7 @@ const codeReview = definePrompt({
 			messages: [
 				user(
 					`Review this ${language} code${focus ? ` with focus on ${focus}` : ""}. ` +
-					`${strict ? "Apply strict standards and flag all issues." : "Provide constructive feedback."}`
+						`${strict ? "Apply strict standards and flag all issues." : "Provide constructive feedback."}`
 				),
 			],
 		}),

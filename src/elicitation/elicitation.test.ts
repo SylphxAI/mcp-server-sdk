@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test"
 import {
 	createElicitationClient,
-	elicitString,
-	elicitNumber,
-	elicitInteger,
 	elicitBoolean,
 	elicitEnum,
+	elicitInteger,
+	elicitNumber,
 	elicitSchema,
+	elicitString,
 } from "./index.js"
 
 describe("Elicitation", () => {
@@ -145,7 +145,7 @@ describe("Elicitation", () => {
 					name: elicitString({ description: "Name" }),
 					age: elicitNumber({ minimum: 0 }),
 				},
-				["name"],
+				["name"]
 			)
 
 			expect(schema.type).toBe("object")

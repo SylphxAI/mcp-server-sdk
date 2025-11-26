@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test"
 import {
+	extractParams,
+	matchesTemplate,
 	resource,
-	resourceTemplate,
-	resourceText,
 	resourceBlob,
 	resourceContents,
-	matchesTemplate,
-	extractParams,
+	resourceTemplate,
+	resourceText,
 	toProtocolResource,
 	toProtocolTemplate,
 } from "./resource.js"
@@ -108,7 +108,7 @@ describe("Resource Builder", () => {
 		test("wraps multiple contents", () => {
 			const result = resourceContents(
 				{ type: "resource", uri: "a", text: "A" },
-				{ type: "resource", uri: "b", text: "B" },
+				{ type: "resource", uri: "b", text: "B" }
 			)
 
 			expect(result.contents).toHaveLength(2)

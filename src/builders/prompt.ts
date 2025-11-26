@@ -28,7 +28,7 @@ export interface PromptContext {
 
 /** Handler for generating prompt messages */
 export type PromptHandler<TContext extends PromptContext = PromptContext> = (
-	args: Record<string, string>,
+	args: Record<string, string>
 ) => (ctx: TContext) => Promise<PromptsGetResult> | PromptsGetResult
 
 /** Prompt definition with metadata and handler */
@@ -81,7 +81,7 @@ export interface PromptArgumentConfig {
  * ```
  */
 export const prompt = <TContext extends PromptContext = PromptContext>(
-	config: PromptConfig<TContext>,
+	config: PromptConfig<TContext>
 ): PromptDefinition<TContext> => ({
 	name: config.name,
 	description: config.description,
@@ -176,7 +176,7 @@ export const templatePrompt = <TContext extends PromptContext = PromptContext>(c
 
 /** Typed prompt handler with Zod-inferred input */
 export type TypedPromptHandler<TArgs, TContext extends PromptContext = PromptContext> = (
-	args: TArgs,
+	args: TArgs
 ) => (ctx: TContext) => Promise<PromptsGetResult> | PromptsGetResult
 
 /** Config for definePrompt with Zod schema */
@@ -222,7 +222,7 @@ export const definePrompt = <
 	TSchema extends z.ZodType,
 	TContext extends PromptContext = PromptContext,
 >(
-	config: TypedPromptConfig<TSchema, TContext>,
+	config: TypedPromptConfig<TSchema, TContext>
 ): TypedPromptDefinition<TSchema, TContext> => {
 	// Extract arguments from Zod object schema
 	const args = extractPromptArgs(config.args)

@@ -4,7 +4,7 @@
  * Manages resource subscriptions.
  */
 
-import type { SubscriptionManager, SubscriptionEventHandler } from "./types.js"
+import type { SubscriptionManager } from "./types.js"
 
 // ============================================================================
 // Subscription Manager Factory
@@ -125,7 +125,7 @@ export const createSubscriptionManager = (options?: {
 export const notifySubscribers = (
 	manager: SubscriptionManager,
 	uri: string,
-	notify: (subscriberId: string) => void,
+	notify: (subscriberId: string) => void
 ): void => {
 	const subscribers = manager.getSubscribers(uri)
 	for (const subscriberId of subscribers) {

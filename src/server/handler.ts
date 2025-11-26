@@ -8,7 +8,6 @@
 import type { PromptContext, PromptDefinition } from "../builders/prompt.js"
 import { toProtocolPrompt } from "../builders/prompt.js"
 import type {
-	AnyResourceDefinition,
 	ResourceContext,
 	ResourceDefinition,
 	ResourceTemplateDefinition,
@@ -19,7 +18,7 @@ import { toProtocolTool } from "../builders/tool.js"
 import type { CompletionRegistry } from "../completions/index.js"
 import { handleComplete } from "../completions/index.js"
 import type { Middleware, RequestInfo } from "../middleware/types.js"
-import { paginate, type PaginationOptions } from "../pagination/index.js"
+import { type PaginationOptions, paginate } from "../pagination/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import * as Mcp from "../protocol/mcp.js"
 import type { SubscriptionManager } from "../subscriptions/index.js"
@@ -76,7 +75,7 @@ export type HandlerResult =
 
 export const handleInitialize = (
 	state: ServerState,
-	_params: Mcp.InitializeParams,
+	_params: Mcp.InitializeParams
 ): Mcp.InitializeResult => ({
 	protocolVersion: Mcp.LATEST_PROTOCOL_VERSION,
 	capabilities: state.capabilities,
@@ -91,7 +90,7 @@ export const handlePing = (): Record<string, never> => ({})
 
 export const handleToolsList = (
 	state: ServerState,
-	params?: Mcp.ListParams,
+	params?: Mcp.ListParams
 ): Mcp.ToolsListResult => {
 	const allItems = Array.from(state.tools.values()).map(toProtocolTool)
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
@@ -105,7 +104,7 @@ export const handleToolsCall = async <
 >(
 	state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>,
 	params: Mcp.ToolsCallParams,
-	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
+	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
 ): Promise<Mcp.ToolsCallResult> => {
 	const tool = state.tools.get(params.name)
 	if (!tool) {
@@ -125,7 +124,7 @@ export const handleToolsCall = async <
 	const executeHandler = async (): Promise<Mcp.ToolsCallResult> => {
 		try {
 			const handler = tool.handler as (
-				input: unknown,
+				input: unknown
 			) => (ctx: TToolCtx) => Promise<Mcp.ToolsCallResult>
 			return await handler(params.arguments ?? {})(ctx.toolContext)
 		} catch (error) {
@@ -146,7 +145,7 @@ export const handleToolsCall = async <
 
 export const handleResourcesList = (
 	state: ServerState,
-	params?: Mcp.ListParams,
+	params?: Mcp.ListParams
 ): Mcp.ResourcesListResult => {
 	const allItems = Array.from(state.resources.values()).map(toProtocolResource)
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
@@ -155,7 +154,7 @@ export const handleResourcesList = (
 
 export const handleResourceTemplatesList = (
 	state: ServerState,
-	params?: Mcp.ListParams,
+	params?: Mcp.ListParams
 ): Mcp.ResourceTemplatesListResult => {
 	const allItems = state.resourceTemplates.map(toProtocolTemplate)
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
@@ -169,7 +168,7 @@ export const handleResourcesRead = async <
 >(
 	state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>,
 	params: Mcp.ResourcesReadParams,
-	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
+	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
 ): Promise<Mcp.ResourcesReadResult> => {
 	const info: RequestInfo = {
 		type: "resource",
@@ -205,7 +204,7 @@ export const handleResourcesRead = async <
 
 export const handlePromptsList = (
 	state: ServerState,
-	params?: Mcp.ListParams,
+	params?: Mcp.ListParams
 ): Mcp.PromptsListResult => {
 	const allItems = Array.from(state.prompts.values()).map(toProtocolPrompt)
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
@@ -219,7 +218,7 @@ export const handlePromptsGet = async <
 >(
 	state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>,
 	params: Mcp.PromptsGetParams,
-	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
+	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
 ): Promise<Mcp.PromptsGetResult> => {
 	const prompt = state.prompts.get(params.name)
 	if (!prompt) {
@@ -252,7 +251,7 @@ export const handlePromptsGet = async <
 export const handleResourcesSubscribe = (
 	state: ServerState,
 	params: Mcp.ResourcesSubscribeParams,
-	subscriberId: string,
+	subscriberId: string
 ): Record<string, never> => {
 	state.subscriptions?.subscribe(params.uri, subscriberId)
 	return {}
@@ -261,14 +260,14 @@ export const handleResourcesSubscribe = (
 export const handleResourcesUnsubscribe = (
 	state: ServerState,
 	params: Mcp.ResourcesUnsubscribeParams,
-	subscriberId: string,
+	subscriberId: string
 ): Record<string, never> => {
 	state.subscriptions?.unsubscribe(params.uri, subscriberId)
 	return {}
 }
 
 export const handleLoggingSetLevel = (
-	params: Mcp.LoggingSetLevelParams,
+	_params: Mcp.LoggingSetLevelParams
 ): Record<string, never> => {
 	// Note: The caller should update the state.logLevel
 	// This handler just validates and returns success
@@ -286,7 +285,7 @@ export interface NotificationContext {
 
 export const handleNotification = (
 	notification: Rpc.JsonRpcNotification,
-	ctx: NotificationContext,
+	ctx: NotificationContext
 ): void => {
 	switch (notification.method) {
 		case Mcp.Method.Initialized:
@@ -317,7 +316,7 @@ export const dispatch = async <
 	state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>,
 	message: Rpc.JsonRpcMessage,
 	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-	notificationCtx?: NotificationContext,
+	notificationCtx?: NotificationContext
 ): Promise<HandlerResult> => {
 	// Handle notifications (no response)
 	if (Rpc.isNotification(message)) {
@@ -339,7 +338,7 @@ export const dispatch = async <
 				response: Rpc.error(
 					message.id,
 					Rpc.ErrorCode.InternalError,
-					error instanceof Error ? error.message : String(error),
+					error instanceof Error ? error.message : String(error)
 				),
 			}
 		}
@@ -357,7 +356,7 @@ const handleRequest = async <
 	state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>,
 	req: Rpc.JsonRpcRequest,
 	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-	notificationCtx?: NotificationContext,
+	notificationCtx?: NotificationContext
 ): Promise<unknown> => {
 	// Cast to base ServerState for handlers that don't need context types
 	const baseState = state as ServerState
@@ -390,14 +389,14 @@ const handleRequest = async <
 			return handleResourcesSubscribe(
 				baseState,
 				req.params as Mcp.ResourcesSubscribeParams,
-				notificationCtx?.subscriberId ?? "default",
+				notificationCtx?.subscriberId ?? "default"
 			)
 
 		case Mcp.Method.ResourcesUnsubscribe:
 			return handleResourcesUnsubscribe(
 				baseState,
 				req.params as Mcp.ResourcesUnsubscribeParams,
-				notificationCtx?.subscriberId ?? "default",
+				notificationCtx?.subscriberId ?? "default"
 			)
 
 		// Prompts

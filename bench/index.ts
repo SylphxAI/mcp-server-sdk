@@ -72,7 +72,7 @@ const initializeReq = Rpc.stringify(
 		protocolVersion: Mcp.LATEST_PROTOCOL_VERSION,
 		capabilities: {},
 		clientInfo: { name: "bench", version: "1.0.0" },
-	}),
+	})
 )
 
 const pingReq = Rpc.stringify(Rpc.request(1, Mcp.Method.Ping))
@@ -83,20 +83,20 @@ const toolsCallReq = Rpc.stringify(
 	Rpc.request(1, Mcp.Method.ToolsCall, {
 		name: "greet",
 		arguments: { name: "World" },
-	}),
+	})
 )
 
 const asyncToolCallReq = Rpc.stringify(
 	Rpc.request(1, Mcp.Method.ToolsCall, {
 		name: "async_op",
 		arguments: {},
-	}),
+	})
 )
 
 const resourcesListReq = Rpc.stringify(Rpc.request(1, Mcp.Method.ResourcesList))
 
 const resourcesReadReq = Rpc.stringify(
-	Rpc.request(1, Mcp.Method.ResourcesRead, { uri: "config://app" }),
+	Rpc.request(1, Mcp.Method.ResourcesRead, { uri: "config://app" })
 )
 
 const promptsListReq = Rpc.stringify(Rpc.request(1, Mcp.Method.PromptsList))
@@ -105,7 +105,7 @@ const promptsGetReq = Rpc.stringify(
 	Rpc.request(1, Mcp.Method.PromptsGet, {
 		name: "greet",
 		arguments: { name: "User" },
-	}),
+	})
 )
 
 // =============================================================================

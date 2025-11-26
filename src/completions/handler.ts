@@ -5,7 +5,7 @@
  */
 
 import type * as Mcp from "../protocol/mcp.js"
-import type { CompletionConfig, CompletionProvider, CompletionResult } from "./types.js"
+import type { CompletionConfig, CompletionProvider } from "./types.js"
 
 // ============================================================================
 // Completion Registry
@@ -20,7 +20,7 @@ export interface CompletionRegistry {
  * Build a completion registry from configs.
  */
 export const buildCompletionRegistry = (
-	configs: readonly CompletionConfig[],
+	configs: readonly CompletionConfig[]
 ): CompletionRegistry => {
 	const prompts = new Map<string, CompletionProvider>()
 	const resources = new Map<string, CompletionProvider>()
@@ -45,7 +45,7 @@ export const buildCompletionRegistry = (
  */
 export const handleComplete = async (
 	registry: CompletionRegistry,
-	params: Mcp.CompletionCompleteParams,
+	params: Mcp.CompletionCompleteParams
 ): Promise<Mcp.CompletionCompleteResult> => {
 	const { ref, argument } = params
 
@@ -98,9 +98,7 @@ const matchesTemplate = (template: string, uri: string): boolean => {
  */
 export const staticCompletions = (values: readonly string[]): CompletionProvider => {
 	return (_, prefix) => {
-		const filtered = values.filter((v) =>
-			v.toLowerCase().startsWith(prefix.toLowerCase()),
-		)
+		const filtered = values.filter((v) => v.toLowerCase().startsWith(prefix.toLowerCase()))
 		return {
 			values: filtered,
 			total: filtered.length,
@@ -113,7 +111,7 @@ export const staticCompletions = (values: readonly string[]): CompletionProvider
  * Create a completion provider from a function.
  */
 export const dynamicCompletions = (
-	fn: (prefix: string) => readonly string[] | Promise<readonly string[]>,
+	fn: (prefix: string) => readonly string[] | Promise<readonly string[]>
 ): CompletionProvider => {
 	return async (_, prefix) => {
 		const values = await fn(prefix)

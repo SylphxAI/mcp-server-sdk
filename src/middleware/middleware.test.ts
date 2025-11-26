@@ -1,5 +1,15 @@
-import { describe, expect, mock, test } from "bun:test"
-import { cache, compose, createStack, forName, forType, logging, retry, timeout, when } from "./index.js"
+import { describe, expect, test } from "bun:test"
+import {
+	cache,
+	compose,
+	createStack,
+	forName,
+	forType,
+	logging,
+	retry,
+	timeout,
+	when,
+} from "./index.js"
 import type { Middleware, RequestInfo } from "./types.js"
 
 describe("Middleware", () => {
@@ -60,7 +70,7 @@ describe("Middleware", () => {
 
 			const composed = compose(mw)
 			await expect(composed({}, makeInfo(), async () => "done")).rejects.toThrow(
-				"next() called multiple times",
+				"next() called multiple times"
 			)
 		})
 	})
@@ -228,7 +238,7 @@ describe("Middleware", () => {
 			await expect(
 				mw({}, makeInfo(), async () => {
 					throw new Error("oops")
-				}),
+				})
 			).rejects.toThrow("oops")
 
 			expect(logs[1]).toContain("failed")
@@ -248,7 +258,7 @@ describe("Middleware", () => {
 				mw({}, makeInfo(), async () => {
 					await new Promise((r) => setTimeout(r, 50))
 					return "done"
-				}),
+				})
 			).rejects.toThrow("timed out")
 		})
 	})
@@ -289,7 +299,7 @@ describe("Middleware", () => {
 				mw({}, makeInfo(), async () => {
 					attempts++
 					throw new Error("fail")
-				}),
+				})
 			).rejects.toThrow("fail")
 
 			expect(attempts).toBe(3)
@@ -306,7 +316,7 @@ describe("Middleware", () => {
 				mw({}, makeInfo(), async () => {
 					attempts++
 					throw new Error("fatal")
-				}),
+				})
 			).rejects.toThrow("fatal")
 
 			expect(attempts).toBe(1)
