@@ -10,7 +10,7 @@ import type { ResourceContext } from "../builders/resource.js"
 import type { ToolContext } from "../builders/tool.js"
 import { createEmitter, type NotificationEmitter } from "../notifications/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
-import type { HandlerContext } from "../server/handler.js"
+import type { HandlerContext, NotificationContext } from "../server/handler.js"
 import type { Server as McpServer } from "../server/server.js"
 
 // ============================================================================
@@ -126,9 +126,9 @@ export const http = <
 
 	// Default context factory
 	const defaultContext = (_req: Request, notify: NotificationEmitter): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
-		toolContext: { notify } as TToolCtx,
-		resourceContext: { notify } as TResourceCtx,
-		promptContext: { notify } as TPromptCtx,
+		toolContext: { notify } as unknown as TToolCtx,
+		resourceContext: { notify } as unknown as TResourceCtx,
+		promptContext: { notify } as unknown as TPromptCtx,
 	})
 
 	const createContext = options.createContext ?? defaultContext
@@ -212,7 +212,10 @@ export const http = <
 			try {
 				const body = await req.text()
 				const ctx = createContext(req, session.notify)
-				const response = await server.handle(body, ctx)
+				const notificationCtx: NotificationContext = {
+					subscriberId: sessionId,
+				}
+				const response = await server.handle(body, ctx, notificationCtx)
 
 				if (response && session.controller) {
 					session.controller.enqueue(encoder.encode(`event: message\ndata: ${response}\n\n`))
@@ -236,7 +239,10 @@ export const http = <
 				const body = await req.text()
 				// Use broadcast emitter for non-session requests
 				const ctx = createContext(req, broadcast)
-				const response = await server.handle(body, ctx)
+				const notificationCtx: NotificationContext = {
+					subscriberId: "http-post",
+				}
+				const response = await server.handle(body, ctx, notificationCtx)
 
 				return new Response(response ?? "", {
 					status: response ? 200 : 204,

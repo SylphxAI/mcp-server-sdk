@@ -10,7 +10,7 @@ import type { ResourceContext } from "../builders/resource.js"
 import type { ToolContext } from "../builders/tool.js"
 import { createEmitter, type NotificationEmitter } from "../notifications/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
-import type { HandlerContext } from "../server/handler.js"
+import type { HandlerContext, NotificationContext } from "../server/handler.js"
 import type { Server } from "../server/server.js"
 
 // ============================================================================
@@ -79,9 +79,9 @@ export const stdio = <
 	const notify = createEmitter(sendNotification)
 
 	const defaultContext = (emitter: NotificationEmitter): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
-		toolContext: { signal: abortController?.signal, notify: emitter } as TToolCtx,
-		resourceContext: { signal: abortController?.signal, notify: emitter } as TResourceCtx,
-		promptContext: { signal: abortController?.signal, notify: emitter } as TPromptCtx,
+		toolContext: { signal: abortController?.signal, notify: emitter } as unknown as TToolCtx,
+		resourceContext: { signal: abortController?.signal, notify: emitter } as unknown as TResourceCtx,
+		promptContext: { signal: abortController?.signal, notify: emitter } as unknown as TPromptCtx,
 	})
 
 	const createContext = options.createContext ?? defaultContext
@@ -97,6 +97,19 @@ export const stdio = <
 
 		const decoder = new TextDecoder()
 		let buffer = ""
+
+		// Track in-flight requests for cancellation
+		const inFlightRequests = new Map<string | number, AbortController>()
+
+		// Notification context for handling cancellations
+		const notificationCtx: NotificationContext = {
+			subscriberId: "stdio",
+			onCancelled: (requestId, _reason) => {
+				const controller = inFlightRequests.get(requestId)
+				controller?.abort()
+				inFlightRequests.delete(requestId)
+			},
+		}
 
 		const reader = stdin.getReader()
 
@@ -121,7 +134,7 @@ export const stdio = <
 
 					try {
 						const ctx = createContext(notify)
-						const response = await server.handle(line, ctx)
+						const response = await server.handle(line, ctx, notificationCtx)
 
 						if (response) {
 							writer.write(encoder.encode(`${response}\n`))

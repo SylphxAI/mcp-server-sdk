@@ -236,7 +236,7 @@ export const definePrompt = <
 				messages: [user(`Error: ${result.error}`)],
 			}
 		}
-		return config.handler(result.data)(ctx)
+		return config.handler(result.data as Infer<TSchema>)(ctx)
 	}
 
 	return {

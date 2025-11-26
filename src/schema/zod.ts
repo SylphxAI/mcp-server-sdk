@@ -77,9 +77,9 @@ export const validate = <T>(schema: z.ZodType<T>, input: unknown): ValidationRes
 		return { success: true, data: result.data }
 	}
 	// Zod 4 uses result.error.issues
-	const issues = result.error.issues ?? result.error.errors ?? []
+	const issues = result.error.issues
 	const errorMsg = issues
-		.map((e: { path: (string | number)[]; message: string }) => `${e.path.join(".")}: ${e.message}`)
+		.map((e) => `${e.path.map(String).join(".")}: ${e.message}`)
 		.join("; ")
 	return {
 		success: false,

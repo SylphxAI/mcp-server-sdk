@@ -126,8 +126,8 @@ export const errorHandler = <TContext, TResult>(
  * Tool-specific error handler that returns proper ToolsCallResult.
  */
 export const toolErrorHandler = <TContext>(): Middleware<TContext, ToolsCallResult> =>
-	errorHandler({
-		onError: (error, _info) => ({
+	errorHandler<TContext, ToolsCallResult>({
+		onError: (error, _info): ToolsCallResult => ({
 			content: [{ type: "text", text: `Error: ${error}` }],
 			isError: true,
 		}),

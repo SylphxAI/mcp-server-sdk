@@ -13,11 +13,16 @@ import type {
 	ResourceTemplateDefinition,
 } from "../builders/resource.js"
 import type { ToolContext, ToolDefinition } from "../builders/tool.js"
+import type { CompletionConfig } from "../completions/types.js"
+import { buildCompletionRegistry } from "../completions/handler.js"
 import type { Middleware } from "../middleware/types.js"
 import { compose } from "../middleware/compose.js"
+import type { PaginationOptions } from "../pagination/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import type * as Mcp from "../protocol/mcp.js"
-import type { HandlerContext, ServerState } from "./handler.js"
+import type { SubscriptionManager } from "../subscriptions/types.js"
+import { createSubscriptionManager } from "../subscriptions/manager.js"
+import type { HandlerContext, NotificationContext, ServerState } from "./handler.js"
 import { dispatch } from "./handler.js"
 
 // ============================================================================
@@ -40,6 +45,14 @@ export interface ServerConfig<
 		HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
 		unknown
 	>[]
+	/** Completion providers for auto-complete */
+	readonly completions?: readonly CompletionConfig[]
+	/** Enable resource subscriptions */
+	readonly subscriptions?: boolean | SubscriptionManager
+	/** Pagination options */
+	readonly pagination?: PaginationOptions
+	/** Enable logging capability */
+	readonly logging?: boolean
 }
 
 // ============================================================================
@@ -59,16 +72,21 @@ export interface Server<
 	readonly handle: (
 		message: string,
 		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
+		notificationCtx?: NotificationContext,
 	) => Promise<string | null>
 
 	/** Process parsed message */
 	readonly handleMessage: (
 		message: Rpc.JsonRpcMessage,
 		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
+		notificationCtx?: NotificationContext,
 	) => Promise<Rpc.JsonRpcResponse | null>
 
 	/** Get server state (for introspection) */
 	readonly state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>
+
+	/** Get subscription manager (if enabled) */
+	readonly subscriptions?: SubscriptionManager
 }
 
 // ============================================================================
@@ -107,8 +125,9 @@ export const createServer = <
 	const handleMessage = async (
 		message: Rpc.JsonRpcMessage,
 		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
+		notificationCtx?: NotificationContext,
 	): Promise<Rpc.JsonRpcResponse | null> => {
-		const result = await dispatch(state, message, ctx)
+		const result = await dispatch(state, message, ctx, notificationCtx)
 		return result.type === "response" ? result.response : null
 	}
 
@@ -116,6 +135,7 @@ export const createServer = <
 	const handle = async (
 		input: string,
 		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
+		notificationCtx?: NotificationContext,
 	): Promise<string | null> => {
 		const parsed = Rpc.parseMessage(input)
 
@@ -124,7 +144,7 @@ export const createServer = <
 			return Rpc.stringify(errorResponse)
 		}
 
-		const response = await handleMessage(parsed.value, ctx)
+		const response = await handleMessage(parsed.value, ctx, notificationCtx)
 		return response ? Rpc.stringify(response) : null
 	}
 
@@ -134,6 +154,7 @@ export const createServer = <
 		handle,
 		handleMessage,
 		state,
+		subscriptions: state.subscriptions,
 	}
 }
 
@@ -172,11 +193,32 @@ const buildState = <
 		prompts.set(prompt.name, prompt)
 	}
 
+	// Build completions registry
+	const completions = config.completions?.length
+		? buildCompletionRegistry(config.completions)
+		: undefined
+
+	// Build subscription manager
+	const subscriptions =
+		config.subscriptions === true
+			? createSubscriptionManager()
+			: config.subscriptions === false
+				? undefined
+				: config.subscriptions
+
 	// Build capabilities
+	const hasResources = resources.size > 0 || resourceTemplates.length > 0
 	const capabilities: Mcp.ServerCapabilities = {
-		...(tools.size > 0 && { tools: {} }),
-		...((resources.size > 0 || resourceTemplates.length > 0) && { resources: {} }),
-		...(prompts.size > 0 && { prompts: {} }),
+		...(tools.size > 0 && { tools: { listChanged: true } }),
+		...(hasResources && {
+			resources: {
+				subscribe: !!subscriptions,
+				listChanged: true,
+			},
+		}),
+		...(prompts.size > 0 && { prompts: { listChanged: true } }),
+		...(completions && { completions: {} }),
+		...(config.logging && { logging: {} }),
 	}
 
 	// Compose middleware
@@ -194,6 +236,9 @@ const buildState = <
 		prompts,
 		capabilities,
 		middleware,
+		completions,
+		subscriptions,
+		pagination: config.pagination,
 	}
 }
 

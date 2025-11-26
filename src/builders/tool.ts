@@ -159,7 +159,7 @@ export const defineTool = <TSchema extends z.ZodType, TContext extends ToolConte
 		if (!result.success) {
 			return toolError(`Validation error: ${result.error}`)
 		}
-		return config.handler(result.data)(ctx)
+		return config.handler(result.data as Infer<TSchema>)(ctx)
 	}
 
 	return {

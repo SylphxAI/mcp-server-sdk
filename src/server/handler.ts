@@ -285,7 +285,6 @@ export interface NotificationContext {
 }
 
 export const handleNotification = (
-	state: ServerState,
 	notification: Rpc.JsonRpcNotification,
 	ctx: NotificationContext,
 ): void => {
@@ -322,7 +321,7 @@ export const dispatch = async <
 ): Promise<HandlerResult> => {
 	// Handle notifications (no response)
 	if (Rpc.isNotification(message)) {
-		handleNotification(state, message, notificationCtx ?? {})
+		handleNotification(message, notificationCtx ?? {})
 		return { type: "none" }
 	}
 
@@ -360,47 +359,50 @@ const handleRequest = async <
 	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
 	notificationCtx?: NotificationContext,
 ): Promise<unknown> => {
+	// Cast to base ServerState for handlers that don't need context types
+	const baseState = state as ServerState
+
 	switch (req.method) {
 		case Mcp.Method.Initialize:
-			return handleInitialize(state, req.params as Mcp.InitializeParams)
+			return handleInitialize(baseState, req.params as Mcp.InitializeParams)
 
 		case Mcp.Method.Ping:
 			return handlePing()
 
 		// Tools
 		case Mcp.Method.ToolsList:
-			return handleToolsList(state, req.params as Mcp.ListParams | undefined)
+			return handleToolsList(baseState, req.params as Mcp.ListParams | undefined)
 
 		case Mcp.Method.ToolsCall:
 			return handleToolsCall(state, req.params as Mcp.ToolsCallParams, ctx)
 
 		// Resources
 		case Mcp.Method.ResourcesList:
-			return handleResourcesList(state, req.params as Mcp.ListParams | undefined)
+			return handleResourcesList(baseState, req.params as Mcp.ListParams | undefined)
 
 		case "resources/templates/list":
-			return handleResourceTemplatesList(state, req.params as Mcp.ListParams | undefined)
+			return handleResourceTemplatesList(baseState, req.params as Mcp.ListParams | undefined)
 
 		case Mcp.Method.ResourcesRead:
 			return handleResourcesRead(state, req.params as Mcp.ResourcesReadParams, ctx)
 
 		case Mcp.Method.ResourcesSubscribe:
 			return handleResourcesSubscribe(
-				state,
+				baseState,
 				req.params as Mcp.ResourcesSubscribeParams,
 				notificationCtx?.subscriberId ?? "default",
 			)
 
 		case Mcp.Method.ResourcesUnsubscribe:
 			return handleResourcesUnsubscribe(
-				state,
+				baseState,
 				req.params as Mcp.ResourcesUnsubscribeParams,
 				notificationCtx?.subscriberId ?? "default",
 			)
 
 		// Prompts
 		case Mcp.Method.PromptsList:
-			return handlePromptsList(state, req.params as Mcp.ListParams | undefined)
+			return handlePromptsList(baseState, req.params as Mcp.ListParams | undefined)
 
 		case Mcp.Method.PromptsGet:
 			return handlePromptsGet(state, req.params as Mcp.PromptsGetParams, ctx)
