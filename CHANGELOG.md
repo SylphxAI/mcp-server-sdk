@@ -1,0 +1,44 @@
+# Changelog
+
+## 0.2.0 (2025-11-26)
+
+### ✨ Features
+
+- **tool:** add complete content type support ([c878811](https://github.com/SylphxAI/mcp-server-sdk/commit/c8788115b070bd8422bf04d3f762efe59d030cf0))
+- **tool:** add image and imageContent helpers ([6311520](https://github.com/SylphxAI/mcp-server-sdk/commit/6311520a6da79a2dd57af0685533cc00994e0cae))
+- add elicitation support and update protocol types ([758d674](https://github.com/SylphxAI/mcp-server-sdk/commit/758d674a909792820016f0370a0abbe09bfd1c78))
+- complete MCP protocol implementation ([158568f](https://github.com/SylphxAI/mcp-server-sdk/commit/158568f7607fda3d3befc0fff31ace2093cfd574))
+- add notification system ([1532223](https://github.com/SylphxAI/mcp-server-sdk/commit/1532223592e1983f15a59e4eae9d49511eadff92))
+- add middleware system ([42266de](https://github.com/SylphxAI/mcp-server-sdk/commit/42266de5dcd8fc5d8849fe8b4f44a105f1392e5c))
+- add Zod schema integration ([88f4290](https://github.com/SylphxAI/mcp-server-sdk/commit/88f4290ae341872782fb194caf895c3cf74c0747))
+- initial implementation of @sylphx/mcp-server ([7974dd2](https://github.com/SylphxAI/mcp-server-sdk/commit/7974dd246fbf5afcb5984f0e0cd9fa3b241a8a35))
+
+### 🐛 Bug Fixes
+
+- complete MCP protocol verification ([0744bdf](https://github.com/SylphxAI/mcp-server-sdk/commit/0744bdfb7a2dcf3e6d575e25f8e5c86d2cae826a))
+
+### ♻️ Refactoring
+
+- **tool:** simplify content API - return Content directly ([40de7cd](https://github.com/SylphxAI/mcp-server-sdk/commit/40de7cdba9ad70d1586481ce9f57ac826fec8b4b))
+- **api:** simplify to builder pattern with pure function transports ([e00cd1e](https://github.com/SylphxAI/mcp-server-sdk/commit/e00cd1efe6d408d6974b8898a9acbd01b395f241))
+
+### 📚 Documentation
+
+- add comprehensive README ([a222141](https://github.com/SylphxAI/mcp-server-sdk/commit/a22214184b39a4725f9f547158e524b84d6b83eb))
+
+### ✅ Tests
+
+- add comprehensive tests for builders and handlers ([652fae0](https://github.com/SylphxAI/mcp-server-sdk/commit/652fae0657b80122581e3a91baf57c3f289e04e8))
+
+### 📦 Build
+
+- switch to bunup for proper .d.ts generation ([f2d9027](https://github.com/SylphxAI/mcp-server-sdk/commit/f2d90277ae1a4ba989ec0912bfa4dcd21916763a))
+
+### 🔧 Chores
+
+- add progress.md ([b21d91d](https://github.com/SylphxAI/mcp-server-sdk/commit/b21d91ddb59d674a46686a102008da3d97a33a3b))
+- remove outdated progress.md ([d16720c](https://github.com/SylphxAI/mcp-server-sdk/commit/d16720c040211eacf475d8b504900e586f4edf14))
+- update benchmarks for new API and minor optimizations ([d9593c1](https://github.com/SylphxAI/mcp-server-sdk/commit/d9593c1f6617ae88e7db39da1146840e0ace3656))
+- cleanup technical debt and remove unused code ([5df9d72](https://github.com/SylphxAI/mcp-server-sdk/commit/5df9d72b3d323d221c1250d99b78c20ccdece044))
+- rename package to @sylphx/mcp-server-sdk ([544f927](https://github.com/SylphxAI/mcp-server-sdk/commit/544f927af57d7abbd1332b44241f17e06700848f))
+- apply sylphx shared config and formatting ([5848004](https://github.com/SylphxAI/mcp-server-sdk/commit/584800402144e63fc608ff24cc036122161fcd28))
