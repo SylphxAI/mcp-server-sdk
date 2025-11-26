@@ -47,7 +47,7 @@ await server.start()
 Tools are callable functions exposed to the AI.
 
 ```typescript
-import { tool, text, contents, json, toolError } from "@sylphx/mcp-server-sdk"
+import { tool, text, image, audio, json, toolError } from "@sylphx/mcp-server-sdk"
 import { z } from "zod"
 
 // Simple tool (no input)
@@ -72,13 +72,21 @@ const calculator = tool()
     return text(`${a} ${op} ${b} = ${result}`)
   })
 
-// Tool with multiple content items
+// Multiple content items - just return an array
 const systemInfo = tool()
   .description("Get system information")
-  .handler(() => contents(
-    { type: "text", text: "CPU: 8 cores" },
-    { type: "text", text: "Memory: 16GB" }
-  ))
+  .handler(() => [
+    text("CPU: 8 cores"),
+    text("Memory: 16GB")
+  ])
+
+// Mixed content types
+const screenshot = tool()
+  .description("Take screenshot with description")
+  .handler(() => [
+    text("Here's the screenshot:"),
+    image(base64Data, "image/png")
+  ])
 
 // Return JSON data
 const getUser = tool()
@@ -352,14 +360,16 @@ tool()
   .input(ZodSchema)                       // Optional input schema
   .handler(fn: HandlerFn) -> ToolDefinition
 
+// Handler can return:
+// - Single content:  text("hello")
+// - Array:           [text("hi"), image(data, "image/png")]
+// - Full result:     { content: [...], isError: true }
+
 // Handler signature (with input)
-({ input, ctx }) => ToolsCallResult | Promise<ToolsCallResult>
+({ input, ctx }) => ToolResult | Promise<ToolResult>
 
 // Handler signature (without input)
-({ ctx }) => ToolsCallResult | Promise<ToolsCallResult>
-
-// Or simplified (no ctx needed)
-() => ToolsCallResult
+({ ctx }) => ToolResult | Promise<ToolResult>
 ```
 
 ### Resource Builder
@@ -394,11 +404,13 @@ prompt()
 ### Content Helpers
 
 ```typescript
-// Tools
-text(content: string): ToolsCallResult
-json(data: unknown): ToolsCallResult
-contents(...items: Content[]): ToolsCallResult
-toolError(message: string): ToolsCallResult
+// Tool content (return single or array)
+text(content: string, annotations?): TextContent
+image(data: string, mimeType: string, annotations?): ImageContent
+audio(data: string, mimeType: string, annotations?): AudioContent
+embedded(resource: EmbeddedResource, annotations?): ResourceContent
+json(data: unknown): TextContent          // JSON as formatted text
+toolError(message: string): ToolsCallResult  // Error result
 
 // Resources
 resourceText(uri: string, text: string, mimeType?: string): ResourcesReadResult

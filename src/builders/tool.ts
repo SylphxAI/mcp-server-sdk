@@ -12,6 +12,10 @@
  *
  * const ping = tool()
  *   .handler(() => text('pong'))
+ *
+ * // Multiple content items
+ * const analyze = tool()
+ *   .handler(() => [text("Result:"), image(data, "image/png")])
  * ```
  */
 
@@ -46,14 +50,17 @@ export interface ToolContext {
 // Handler Types
 // ============================================================================
 
+/** Handler can return single content, array, or full result */
+export type ToolResult = Content | Content[] | ToolsCallResult
+
 export interface ToolHandlerArgs<TInput = void> {
 	readonly input: TInput
 	readonly ctx: ToolContext
 }
 
 export type ToolHandler<TInput = void> = TInput extends void
-	? (args: { ctx: ToolContext }) => ToolsCallResult | Promise<ToolsCallResult>
-	: (args: ToolHandlerArgs<TInput>) => ToolsCallResult | Promise<ToolsCallResult>
+	? (args: { ctx: ToolContext }) => ToolResult | Promise<ToolResult>
+	: (args: ToolHandlerArgs<TInput>) => ToolResult | Promise<ToolResult>
 
 // ============================================================================
 // Tool Definition
@@ -76,7 +83,7 @@ interface ToolBuilderWithoutInput {
 	annotations(annotations: ToolAnnotations): ToolBuilderWithoutInput
 	input<T>(schema: z.ZodType<T>): ToolBuilderWithInput<T>
 	handler(
-		fn: (args: { ctx: ToolContext }) => ToolsCallResult | Promise<ToolsCallResult>
+		fn: (args: { ctx: ToolContext }) => ToolResult | Promise<ToolResult>
 	): ToolDefinition<void>
 }
 
@@ -84,8 +91,26 @@ interface ToolBuilderWithInput<TInput> {
 	description(desc: string): ToolBuilderWithInput<TInput>
 	annotations(annotations: ToolAnnotations): ToolBuilderWithInput<TInput>
 	handler(
-		fn: (args: ToolHandlerArgs<TInput>) => ToolsCallResult | Promise<ToolsCallResult>
+		fn: (args: ToolHandlerArgs<TInput>) => ToolResult | Promise<ToolResult>
 	): ToolDefinition<TInput>
+}
+
+// ============================================================================
+// Result Normalization
+// ============================================================================
+
+/** Convert handler result to ToolsCallResult */
+const normalizeResult = (result: ToolResult): ToolsCallResult => {
+	// Already a full result (has content array)
+	if ("content" in result && Array.isArray(result.content)) {
+		return result as ToolsCallResult
+	}
+	// Array of content items
+	if (Array.isArray(result)) {
+		return { content: result }
+	}
+	// Single content item
+	return { content: [result as Content] }
 }
 
 // ============================================================================
@@ -132,18 +157,18 @@ const createBuilder = <TInput = void>(state: BuilderState = {}): ToolBuilderWith
 
 const createDefinitionNoInput = (
 	state: BuilderState,
-	fn: (args: { ctx: ToolContext }) => ToolsCallResult | Promise<ToolsCallResult>
+	fn: (args: { ctx: ToolContext }) => ToolResult | Promise<ToolResult>
 ): ToolDefinition<void> => ({
 	description: state.description,
 	inputSchema: { type: "object", properties: {} },
 	annotations: state.annotations,
-	handler: async ({ ctx }) => fn({ ctx }),
+	handler: async ({ ctx }) => normalizeResult(await fn({ ctx })),
 })
 
 const createDefinitionWithInput = <T>(
 	state: BuilderState,
 	schema: z.ZodType<T>,
-	fn: (args: ToolHandlerArgs<T>) => ToolsCallResult | Promise<ToolsCallResult>
+	fn: (args: ToolHandlerArgs<T>) => ToolResult | Promise<ToolResult>
 ): ToolDefinition<T> => ({
 	description: state.description,
 	inputSchema: toJsonSchema(schema),
@@ -151,9 +176,9 @@ const createDefinitionWithInput = <T>(
 	handler: async ({ input, ctx }) => {
 		const result = validate(schema, input)
 		if (!result.success) {
-			return toolError(`Validation error: ${result.error}`)
+			return { content: [text(`Validation error: ${result.error}`)], isError: true }
 		}
-		return fn({ input: result.data as T, ctx })
+		return normalizeResult(await fn({ input: result.data as T, ctx }))
 	},
 })
 
@@ -176,6 +201,10 @@ const createDefinitionWithInput = <T>(
  * const ping = tool()
  *   .description('Ping the server')
  *   .handler(() => text('pong'))
+ *
+ * // Multiple content
+ * const multi = tool()
+ *   .handler(() => [text("Hello"), image(data, "image/png")])
  * ```
  */
 export const tool = (): ToolBuilderWithoutInput => createBuilder()
@@ -199,17 +228,14 @@ export const toProtocolTool = (name: string, def: ToolDefinition): Tool => ({
 // ============================================================================
 
 /** Create text content */
-export const textContent = (
-	text: string,
-	annotations?: ContentAnnotations
-): TextContent => ({
+export const text = (content: string, annotations?: ContentAnnotations): TextContent => ({
 	type: "text",
-	text,
+	text: content,
 	...(annotations && { annotations }),
 })
 
 /** Create image content (base64 encoded) */
-export const imageContent = (
+export const image = (
 	data: string,
 	mimeType: string,
 	annotations?: ContentAnnotations
@@ -221,7 +247,7 @@ export const imageContent = (
 })
 
 /** Create audio content (base64 encoded) */
-export const audioContent = (
+export const audio = (
 	data: string,
 	mimeType: string,
 	annotations?: ContentAnnotations
@@ -232,8 +258,8 @@ export const audioContent = (
 	...(annotations && { annotations }),
 })
 
-/** Create resource content (embedded resource) */
-export const resourceContent = (
+/** Create embedded resource content */
+export const embedded = (
 	resource: EmbeddedResource,
 	annotations?: ContentAnnotations
 ): ResourceContent => ({
@@ -246,33 +272,11 @@ export const resourceContent = (
 // Result Helpers
 // ============================================================================
 
-/** Return text result */
-export const text = (content: string): ToolsCallResult => ({
-	content: [textContent(content)],
-})
-
-/** Return image result */
-export const image = (data: string, mimeType: string): ToolsCallResult => ({
-	content: [imageContent(data, mimeType)],
-})
-
-/** Return audio result */
-export const audio = (data: string, mimeType: string): ToolsCallResult => ({
-	content: [audioContent(data, mimeType)],
-})
-
-/** Return multiple content items */
-export const contents = (...items: Content[]): ToolsCallResult => ({
-	content: items,
-})
-
 /** Return error result */
 export const toolError = (message: string): ToolsCallResult => ({
-	content: [textContent(message)],
+	content: [text(message)],
 	isError: true,
 })
 
 /** Return JSON as formatted text */
-export const json = <T>(data: T): ToolsCallResult => ({
-	content: [textContent(JSON.stringify(data, null, 2))],
-})
+export const json = <T>(data: T): TextContent => text(JSON.stringify(data, null, 2))
