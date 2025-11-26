@@ -1,112 +1,94 @@
 /**
- * Benchmarks for @sylphx/mcp-server
+ * Benchmarks for @sylphx/mcp-server-sdk
  *
  * Run with: bun run bench
  */
 
 import { bench, group, run } from "mitata"
-import { prompt, user } from "../src/builders/prompt.js"
+import { z } from "zod"
+import { messages, prompt, user } from "../src/builders/prompt.js"
 import { resource, resourceText } from "../src/builders/resource.js"
 import { text, tool } from "../src/builders/tool.js"
 import * as Rpc from "../src/protocol/jsonrpc.js"
 import * as Mcp from "../src/protocol/mcp.js"
-import { createContext, createServer } from "../src/server/server.js"
+import { type ServerState, dispatch } from "../src/server/handler.js"
 
 // =============================================================================
 // Setup
 // =============================================================================
 
-const greetTool = tool({
-	name: "greet",
-	description: "Greet someone",
-	input: {
-		type: "object",
-		properties: { name: { type: "string" } },
-		required: ["name"],
-	},
-	handler:
-		({ name }: { name: string }) =>
-		() =>
-			text(`Hello, ${name}!`),
-})
+const greetTool = tool()
+	.description("Greet someone")
+	.input(z.object({ name: z.string() }))
+	.handler(({ input }) => text(`Hello, ${input.name}!`))
 
-const asyncTool = tool({
-	name: "async_op",
-	description: "Async operation",
-	input: { type: "object" },
-	handler: () => async () => {
-		// Simulate minimal async work
+const asyncTool = tool()
+	.description("Async operation")
+	.handler(async () => {
 		await Promise.resolve()
 		return text("done")
-	},
-})
+	})
 
-const configResource = resource({
-	uri: "config://app",
-	name: "Config",
-	handler: () => () => resourceText("config://app", '{"version":"1.0"}'),
-})
+const configResource = resource()
+	.uri("config://app")
+	.handler(({ uri }) => resourceText(uri, '{"version":"1.0"}'))
 
-const greetPrompt = prompt({
-	name: "greet",
-	handler:
-		({ name }: Record<string, string>) =>
-		() => ({
-			messages: [user(`Hello ${name}`)],
-		}),
-})
+const greetPrompt = prompt()
+	.args(z.object({ name: z.string() }))
+	.handler(({ args }) => messages(user(`Hello ${args.name}`)))
 
-const server = createServer({
+// Create server state directly for benchmarking
+const state: ServerState = {
 	name: "bench-server",
 	version: "1.0.0",
-	tools: [greetTool, asyncTool],
-	resources: [configResource],
-	prompts: [greetPrompt],
-})
+	tools: new Map([
+		["greet", greetTool],
+		["async_op", asyncTool],
+	]),
+	resources: new Map([["config", configResource]]),
+	resourceTemplates: new Map(),
+	prompts: new Map([["greet", greetPrompt]]),
+	capabilities: {
+		tools: { listChanged: true },
+		resources: { subscribe: false, listChanged: true },
+		prompts: { listChanged: true },
+	},
+}
 
-const ctx = createContext()
+const ctx = { signal: undefined }
 
 // Pre-built requests
-const initializeReq = Rpc.stringify(
-	Rpc.request(1, Mcp.Method.Initialize, {
-		protocolVersion: Mcp.LATEST_PROTOCOL_VERSION,
-		capabilities: {},
-		clientInfo: { name: "bench", version: "1.0.0" },
-	})
-)
+const initializeReq = Rpc.request(1, Mcp.Method.Initialize, {
+	protocolVersion: Mcp.LATEST_PROTOCOL_VERSION,
+	capabilities: {},
+	clientInfo: { name: "bench", version: "1.0.0" },
+})
 
-const pingReq = Rpc.stringify(Rpc.request(1, Mcp.Method.Ping))
+const pingReq = Rpc.request(1, Mcp.Method.Ping)
+const toolsListReq = Rpc.request(1, Mcp.Method.ToolsList)
 
-const toolsListReq = Rpc.stringify(Rpc.request(1, Mcp.Method.ToolsList))
+const toolsCallReq = Rpc.request(1, Mcp.Method.ToolsCall, {
+	name: "greet",
+	arguments: { name: "World" },
+})
 
-const toolsCallReq = Rpc.stringify(
-	Rpc.request(1, Mcp.Method.ToolsCall, {
-		name: "greet",
-		arguments: { name: "World" },
-	})
-)
+const asyncToolCallReq = Rpc.request(1, Mcp.Method.ToolsCall, {
+	name: "async_op",
+	arguments: {},
+})
 
-const asyncToolCallReq = Rpc.stringify(
-	Rpc.request(1, Mcp.Method.ToolsCall, {
-		name: "async_op",
-		arguments: {},
-	})
-)
+const resourcesListReq = Rpc.request(1, Mcp.Method.ResourcesList)
 
-const resourcesListReq = Rpc.stringify(Rpc.request(1, Mcp.Method.ResourcesList))
+const resourcesReadReq = Rpc.request(1, Mcp.Method.ResourcesRead, {
+	uri: "config://app",
+})
 
-const resourcesReadReq = Rpc.stringify(
-	Rpc.request(1, Mcp.Method.ResourcesRead, { uri: "config://app" })
-)
+const promptsListReq = Rpc.request(1, Mcp.Method.PromptsList)
 
-const promptsListReq = Rpc.stringify(Rpc.request(1, Mcp.Method.PromptsList))
-
-const promptsGetReq = Rpc.stringify(
-	Rpc.request(1, Mcp.Method.PromptsGet, {
-		name: "greet",
-		arguments: { name: "User" },
-	})
-)
+const promptsGetReq = Rpc.request(1, Mcp.Method.PromptsGet, {
+	name: "greet",
+	arguments: { name: "User" },
+})
 
 // =============================================================================
 // Benchmarks
@@ -131,58 +113,57 @@ group("JSON-RPC Parsing", () => {
 
 group("Server Lifecycle", () => {
 	bench("initialize", async () => {
-		await server.handle(initializeReq, ctx)
+		await dispatch(state, initializeReq, ctx)
 	})
 
 	bench("ping", async () => {
-		await server.handle(pingReq, ctx)
+		await dispatch(state, pingReq, ctx)
 	})
 })
 
 group("Tools", () => {
 	bench("tools/list", async () => {
-		await server.handle(toolsListReq, ctx)
+		await dispatch(state, toolsListReq, ctx)
 	})
 
 	bench("tools/call (sync)", async () => {
-		await server.handle(toolsCallReq, ctx)
+		await dispatch(state, toolsCallReq, ctx)
 	})
 
 	bench("tools/call (async)", async () => {
-		await server.handle(asyncToolCallReq, ctx)
+		await dispatch(state, asyncToolCallReq, ctx)
 	})
 })
 
 group("Resources", () => {
 	bench("resources/list", async () => {
-		await server.handle(resourcesListReq, ctx)
+		await dispatch(state, resourcesListReq, ctx)
 	})
 
 	bench("resources/read", async () => {
-		await server.handle(resourcesReadReq, ctx)
+		await dispatch(state, resourcesReadReq, ctx)
 	})
 })
 
 group("Prompts", () => {
 	bench("prompts/list", async () => {
-		await server.handle(promptsListReq, ctx)
+		await dispatch(state, promptsListReq, ctx)
 	})
 
 	bench("prompts/get", async () => {
-		await server.handle(promptsGetReq, ctx)
+		await dispatch(state, promptsGetReq, ctx)
 	})
 })
 
 group("Full Request Cycle", () => {
-	// Measure complete request/response including parsing and serialization
 	bench("ping (full cycle)", async () => {
-		const response = await server.handle(pingReq, ctx)
-		if (response) JSON.parse(response)
+		const result = await dispatch(state, pingReq, ctx)
+		if (result.type === "response") Rpc.stringify(result.response)
 	})
 
 	bench("tools/call (full cycle)", async () => {
-		const response = await server.handle(toolsCallReq, ctx)
-		if (response) JSON.parse(response)
+		const result = await dispatch(state, toolsCallReq, ctx)
+		if (result.type === "response") Rpc.stringify(result.response)
 	})
 })
 
