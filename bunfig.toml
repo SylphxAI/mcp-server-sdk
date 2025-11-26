@@ -1,0 +1,6 @@
+[test]
+coverage = true
+coverageDir = "coverage"
+
+[install]
+peer = true

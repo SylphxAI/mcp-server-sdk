@@ -1,0 +1,43 @@
+{
+	"name": "@sylphx/mcp-server",
+	"version": "0.1.0",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		},
+		"./transports": {
+			"import": "./dist/transports/index.js",
+			"types": "./dist/transports/index.d.ts"
+		}
+	},
+	"files": ["dist"],
+	"scripts": {
+		"build": "bun build ./src/index.ts --outdir ./dist --target bun",
+		"check": "biome check .",
+		"check:fix": "biome check --write .",
+		"test": "bun test",
+		"bench": "bun run bench/index.ts",
+		"prepublishOnly": "bun run build"
+	},
+	"dependencies": {},
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@types/bun": "^1.2.14",
+		"mitata": "^1.0.34",
+		"typescript": "^5.8.3"
+	},
+	"peerDependencies": {
+		"typescript": "^5.0.0"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/sylphx/mcp-server"
+	},
+	"keywords": ["mcp", "model-context-protocol", "ai", "llm", "bun"],
+	"author": "sylphx",
+	"license": "MIT"
+}
