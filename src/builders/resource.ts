@@ -1,16 +1,30 @@
 /**
- * Pure Functional Resource Builder
+ * Resource Builder
  *
- * Resources expose data to clients.
- * They are application-controlled (client decides when to read).
+ * Builder pattern for creating MCP resources and resource templates.
+ *
+ * @example
+ * ```ts
+ * // Static resource
+ * const readme = resource()
+ *   .uri('file:///README.md')
+ *   .description('README file')
+ *   .handler(({ uri }) => resourceText(uri, '# Hello'))
+ *
+ * // Resource template
+ * const file = resourceTemplate()
+ *   .uriTemplate('file:///{path}')
+ *   .description('Read any file')
+ *   .handler(({ uri, params }) => resourceText(uri, `Content of ${params.path}`))
+ * ```
  */
 
 import type {
 	EmbeddedResource,
 	Resource,
-	ResourceTemplate,
 	ResourcesReadResult,
-} from "../protocol/mcp.js"
+	ResourceTemplate,
+} from '../protocol/mcp.js'
 
 // ============================================================================
 // Context Type
@@ -21,202 +35,208 @@ export interface ResourceContext {
 }
 
 // ============================================================================
-// Resource Definition Types
+// Handler Types
 // ============================================================================
 
-/** Handler for reading a resource */
-export type ResourceHandler<TContext extends ResourceContext = ResourceContext> = (
-	uri: string
-) => (ctx: TContext) => Promise<ResourcesReadResult> | ResourcesReadResult
-
-/** Static resource definition */
-export interface ResourceDefinition<TContext extends ResourceContext = ResourceContext> {
-	readonly type: "static"
+export interface ResourceHandlerArgs {
 	readonly uri: string
-	readonly name: string
-	readonly description?: string
-	readonly mimeType?: string
-	readonly handler: ResourceHandler<TContext>
+	readonly ctx: ResourceContext
 }
 
-/** Template resource definition (dynamic URIs) */
-export interface ResourceTemplateDefinition<TContext extends ResourceContext = ResourceContext> {
-	readonly type: "template"
-	readonly uriTemplate: string
-	readonly name: string
-	readonly description?: string
-	readonly mimeType?: string
-	readonly handler: ResourceHandler<TContext>
-}
-
-export type AnyResourceDefinition<TContext extends ResourceContext = ResourceContext> =
-	| ResourceDefinition<TContext>
-	| ResourceTemplateDefinition<TContext>
-
-// ============================================================================
-// Builder Configs
-// ============================================================================
-
-export interface ResourceConfig<TContext extends ResourceContext = ResourceContext> {
+export interface TemplateHandlerArgs<TParams = Record<string, string>> {
 	readonly uri: string
-	readonly name: string
-	readonly description?: string
-	readonly mimeType?: string
-	readonly handler: ResourceHandler<TContext>
+	readonly params: TParams
+	readonly ctx: ResourceContext
 }
 
-export interface ResourceTemplateConfig<TContext extends ResourceContext = ResourceContext> {
+export type ResourceHandler = (
+	args: ResourceHandlerArgs
+) => ResourcesReadResult | Promise<ResourcesReadResult>
+
+export type TemplateHandler<TParams = Record<string, string>> = (
+	args: TemplateHandlerArgs<TParams>
+) => ResourcesReadResult | Promise<ResourcesReadResult>
+
+// ============================================================================
+// Resource Definition
+// ============================================================================
+
+export interface ResourceDefinition {
+	readonly uri: string
+	readonly description?: string
+	readonly mimeType?: string
+	readonly handler: (uri: string, ctx: ResourceContext) => Promise<ResourcesReadResult>
+}
+
+export interface ResourceTemplateDefinition {
 	readonly uriTemplate: string
-	readonly name: string
 	readonly description?: string
 	readonly mimeType?: string
-	readonly handler: ResourceHandler<TContext>
+	readonly handler: (uri: string, ctx: ResourceContext) => Promise<ResourcesReadResult>
 }
 
 // ============================================================================
-// Pure Builder Functions
+// Static Resource Builder
 // ============================================================================
 
-/**
- * Create a static resource definition.
- *
- * @example
- * ```ts
- * const configResource = resource({
- *   uri: "config://app",
- *   name: "App Configuration",
- *   mimeType: "application/json",
- *   handler: (uri) => async (ctx) => ({
- *     contents: [{
- *       type: "resource",
- *       uri,
- *       mimeType: "application/json",
- *       text: JSON.stringify(ctx.config)
- *     }]
- *   })
- * })
- * ```
- */
-export const resource = <TContext extends ResourceContext = ResourceContext>(
-	config: ResourceConfig<TContext>
-): ResourceDefinition<TContext> => ({
-	type: "static",
-	uri: config.uri,
-	name: config.name,
-	description: config.description,
-	mimeType: config.mimeType,
-	handler: config.handler,
-})
+interface ResourceBuilderStart {
+	uri(uri: string): ResourceBuilder
+}
 
-/**
- * Create a template resource definition.
- * URI templates follow RFC 6570.
- *
- * @example
- * ```ts
- * const fileResource = resourceTemplate({
- *   uriTemplate: "file:///{path}",
- *   name: "File",
- *   handler: (uri) => async (ctx) => {
- *     const path = extractPath(uri)
- *     const content = await ctx.fs.read(path)
- *     return resourceText(uri, content)
- *   }
- * })
- * ```
- */
-export const resourceTemplate = <TContext extends ResourceContext = ResourceContext>(
-	config: ResourceTemplateConfig<TContext>
-): ResourceTemplateDefinition<TContext> => ({
-	type: "template",
-	uriTemplate: config.uriTemplate,
-	name: config.name,
-	description: config.description,
-	mimeType: config.mimeType,
-	handler: config.handler,
-})
+interface ResourceBuilder {
+	description(desc: string): ResourceBuilder
+	mimeType(mime: string): ResourceBuilder
+	handler(fn: ResourceHandler): ResourceDefinition
+}
 
-// ============================================================================
-// Metadata Extraction
-// ============================================================================
-
-export const toProtocolResource = (def: ResourceDefinition): Resource => ({
-	uri: def.uri,
-	name: def.name,
-	description: def.description,
-	mimeType: def.mimeType,
-})
-
-export const toProtocolTemplate = (def: ResourceTemplateDefinition): ResourceTemplate => ({
-	uriTemplate: def.uriTemplate,
-	name: def.name,
-	description: def.description,
-	mimeType: def.mimeType,
-})
-
-// ============================================================================
-// Content Helpers
-// ============================================================================
-
-/** Create text resource content */
-export const resourceText = (
-	uri: string,
-	text: string,
+interface ResourceState {
+	uri?: string
+	description?: string
 	mimeType?: string
-): ResourcesReadResult => ({
-	contents: [
-		{
-			type: "resource",
-			uri,
-			text,
-			mimeType,
-		},
-	],
+}
+
+const createResourceBuilderStart = (): ResourceBuilderStart => ({
+	uri(uri: string) {
+		return createResourceBuilder({ uri })
+	},
 })
 
-/** Create binary resource content */
-export const resourceBlob = (
-	uri: string,
-	blob: string, // base64
-	mimeType: string
-): ResourcesReadResult => ({
-	contents: [
-		{
-			type: "resource",
-			uri,
-			blob,
-			mimeType,
-		},
-	],
-})
-
-/** Create multiple resource contents */
-export const resourceContents = (...contents: EmbeddedResource[]): ResourcesReadResult => ({
-	contents,
+const createResourceBuilder = (state: ResourceState): ResourceBuilder => ({
+	description(desc: string) {
+		return createResourceBuilder({ ...state, description: desc })
+	},
+	mimeType(mime: string) {
+		return createResourceBuilder({ ...state, mimeType: mime })
+	},
+	handler(fn: ResourceHandler): ResourceDefinition {
+		if (!state.uri) throw new Error('Resource URI is required')
+		return {
+			uri: state.uri,
+			description: state.description,
+			mimeType: state.mimeType,
+			handler: async (uri, ctx) => fn({ uri, ctx }),
+		}
+	},
 })
 
 // ============================================================================
-// URI Matching
+// Resource Template Builder
+// ============================================================================
+
+interface TemplateBuilderStart {
+	uriTemplate(template: string): TemplateBuilder
+}
+
+interface TemplateBuilder {
+	description(desc: string): TemplateBuilder
+	mimeType(mime: string): TemplateBuilder
+	handler<TParams = Record<string, string>>(fn: TemplateHandler<TParams>): ResourceTemplateDefinition
+}
+
+interface TemplateState {
+	uriTemplate?: string
+	description?: string
+	mimeType?: string
+}
+
+const createTemplateBuilderStart = (): TemplateBuilderStart => ({
+	uriTemplate(template: string) {
+		return createTemplateBuilder({ uriTemplate: template })
+	},
+})
+
+const createTemplateBuilder = (state: TemplateState): TemplateBuilder => ({
+	description(desc: string) {
+		return createTemplateBuilder({ ...state, description: desc })
+	},
+	mimeType(mime: string) {
+		return createTemplateBuilder({ ...state, mimeType: mime })
+	},
+	handler<TParams = Record<string, string>>(fn: TemplateHandler<TParams>): ResourceTemplateDefinition {
+		if (!state.uriTemplate) throw new Error('URI template is required')
+		const template = state.uriTemplate
+		return {
+			uriTemplate: template,
+			description: state.description,
+			mimeType: state.mimeType,
+			handler: async (uri, ctx) => {
+				const params = extractParams(template, uri) as TParams
+				return fn({ uri, params, ctx })
+			},
+		}
+	},
+})
+
+// ============================================================================
+// Public API
 // ============================================================================
 
 /**
- * Check if URI matches a template pattern.
- * Simple implementation - supports {param} syntax.
+ * Create a static resource.
+ *
+ * @example
+ * ```ts
+ * const config = resource()
+ *   .uri('config://app')
+ *   .description('App configuration')
+ *   .mimeType('application/json')
+ *   .handler(({ uri }) => resourceText(uri, '{"version": "1.0"}'))
+ * ```
+ */
+export const resource = (): ResourceBuilderStart => createResourceBuilderStart()
+
+/**
+ * Create a resource template for dynamic URIs.
+ *
+ * @example
+ * ```ts
+ * const file = resourceTemplate()
+ *   .uriTemplate('file:///{path}')
+ *   .description('Read any file')
+ *   .handler(({ uri, params }) => resourceText(uri, `File: ${params.path}`))
+ * ```
+ */
+export const resourceTemplate = (): TemplateBuilderStart => createTemplateBuilderStart()
+
+// ============================================================================
+// Protocol Conversion
+// ============================================================================
+
+export const toProtocolResource = (name: string, def: ResourceDefinition): Resource => ({
+	uri: def.uri,
+	name,
+	description: def.description,
+	mimeType: def.mimeType,
+})
+
+export const toProtocolTemplate = (name: string, def: ResourceTemplateDefinition): ResourceTemplate => ({
+	uriTemplate: def.uriTemplate,
+	name,
+	description: def.description,
+	mimeType: def.mimeType,
+})
+
+// ============================================================================
+// URI Template Matching
+// ============================================================================
+
+/**
+ * Check if a URI matches a template pattern.
  */
 export const matchesTemplate = (template: string, uri: string): boolean => {
-	const pattern = template.replace(/\{[^}]+\}/g, "[^/]+")
+	const pattern = template.replace(/\{[^}]+\}/g, '[^/]+')
 	const regex = new RegExp(`^${pattern}$`)
 	return regex.test(uri)
 }
 
 /**
- * Extract parameters from URI based on template.
+ * Extract parameters from a URI based on template.
  */
 export const extractParams = (template: string, uri: string): Record<string, string> | null => {
 	const paramNames: string[] = []
 	const pattern = template.replace(/\{([^}]+)\}/g, (_, name) => {
 		paramNames.push(name)
-		return "([^/]+)"
+		return '([^/]+)'
 	})
 
 	const regex = new RegExp(`^${pattern}$`)
@@ -231,3 +251,19 @@ export const extractParams = (template: string, uri: string): Record<string, str
 	})
 	return params
 }
+
+// ============================================================================
+// Content Helpers
+// ============================================================================
+
+export const resourceText = (uri: string, text: string, mimeType?: string): ResourcesReadResult => ({
+	contents: [{ type: 'resource', uri, text, mimeType }],
+})
+
+export const resourceBlob = (uri: string, blob: string, mimeType: string): ResourcesReadResult => ({
+	contents: [{ type: 'resource', uri, blob, mimeType }],
+})
+
+export const resourceContents = (...items: EmbeddedResource[]): ResourcesReadResult => ({
+	contents: items,
+})

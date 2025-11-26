@@ -1,12 +1,14 @@
 /**
- * Basic Example - @sylphx/mcp-server
+ * Basic Example - @sylphx/mcp-server-sdk
  *
  * Run with: bun run examples/basic.ts
  */
 
+import { z } from "zod"
 import {
-	http,
 	createServer,
+	http,
+	messages,
 	prompt,
 	resource,
 	resourceText,
@@ -17,113 +19,84 @@ import {
 } from "../src/index.js"
 
 // ============================================================================
-// Define Tools (Pure Functions)
+// Define Tools (Builder Pattern)
 // ============================================================================
 
-const greet = tool({
-	name: "greet",
-	description: "Greet someone by name",
-	input: {
-		type: "object",
-		properties: {
-			name: { type: "string", description: "Name to greet" },
-		},
-		required: ["name"],
-	},
-	// Handler is a pure function: input -> context -> result
-	handler:
-		({ name }: { name: string }) =>
-		() =>
-			text(`Hello, ${name}!`),
-})
+const greet = tool()
+	.description("Greet someone by name")
+	.input(z.object({ name: z.string().describe("Name to greet") }))
+	.handler(({ input }) => text(`Hello, ${input.name}!`))
 
-const add = tool({
-	name: "add",
-	description: "Add two numbers",
-	input: {
-		type: "object",
-		properties: {
-			a: { type: "number" },
-			b: { type: "number" },
-		},
-		required: ["a", "b"],
-	},
-	handler:
-		({ a, b }: { a: number; b: number }) =>
-		() =>
-			text(`${a} + ${b} = ${a + b}`),
-})
+const add = tool()
+	.description("Add two numbers")
+	.input(z.object({ a: z.number(), b: z.number() }))
+	.handler(({ input }) => text(`${input.a} + ${input.b} = ${input.a + input.b}`))
+
+const ping = tool()
+	.description("Health check")
+	.handler(() => text("pong"))
 
 // ============================================================================
 // Define Resources
 // ============================================================================
 
-const configResource = resource({
-	uri: "config://app",
-	name: "Application Config",
-	description: "Current application configuration",
-	mimeType: "application/json",
-	handler: () => () =>
-		resourceText(
-			"config://app",
-			JSON.stringify({ version: "1.0.0", debug: false }, null, 2),
-			"application/json"
-		),
-})
+const config = resource()
+	.uri("config://app")
+	.description("Current application configuration")
+	.mimeType("application/json")
+	.handler(({ uri }) =>
+		resourceText(uri, JSON.stringify({ version: "1.0.0", debug: false }, null, 2), "application/json")
+	)
 
 // ============================================================================
 // Define Prompts
 // ============================================================================
 
-const reviewPrompt = prompt({
-	name: "code_review",
-	description: "Generate a code review prompt",
-	arguments: [
-		{ name: "language", required: true },
-		{ name: "focus", description: "What to focus on" },
-	],
-	handler:
-		({ language, focus }) =>
-		() => ({
-			messages: [
-				user(
-					`Please review this ${language} code${focus ? ` focusing on ${focus}` : ""}. Look for bugs, style issues, and potential improvements.`
-				),
-			],
-		}),
-})
+const codeReview = prompt()
+	.description("Generate a code review prompt")
+	.args(
+		z.object({
+			language: z.string().describe("Programming language"),
+			focus: z.string().optional().describe("What to focus on"),
+		})
+	)
+	.handler(({ args }) =>
+		messages(
+			user(
+				`Please review this ${args.language} code${args.focus ? ` focusing on ${args.focus}` : ""}. Look for bugs, style issues, and potential improvements.`
+			)
+		)
+	)
 
 // ============================================================================
 // Create Server
 // ============================================================================
 
-const server = createServer({
-	name: "example-server",
-	version: "1.0.0",
-	instructions: "A simple example MCP server demonstrating @sylphx/mcp-server",
-	tools: [greet, add],
-	resources: [configResource],
-	prompts: [reviewPrompt],
-})
-
-// ============================================================================
-// Choose Transport
-// ============================================================================
-
 const mode = process.argv[2] ?? "stdio"
 
 if (mode === "http") {
-	// HTTP transport with Bun.serve
-	const transport = http(server, {
-		port: 3000,
-		cors: "*",
+	const server = createServer({
+		name: "example-server",
+		version: "1.0.0",
+		instructions: "A simple example MCP server demonstrating @sylphx/mcp-server-sdk",
+		tools: { greet, add, ping },
+		resources: { config },
+		prompts: { codeReview },
+		transport: http({ port: 3000 }),
 	})
 
-	await transport.start()
-	console.log(`MCP server running at ${transport.url}`)
-	console.log(`Health check: ${transport.url}/health`)
+	await server.start()
+	console.log("MCP server running at http://localhost:3000")
 } else {
-	// Stdio transport (default)
-	const transport = stdio(server)
-	await transport.start()
+	const server = createServer({
+		name: "example-server",
+		version: "1.0.0",
+		instructions: "A simple example MCP server demonstrating @sylphx/mcp-server-sdk",
+		tools: { greet, add, ping },
+		resources: { config },
+		prompts: { codeReview },
+		transport: stdio(),
+	})
+
+	await server.start()
 }

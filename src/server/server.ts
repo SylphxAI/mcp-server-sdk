@@ -1,92 +1,74 @@
 /**
  * Server Factory
  *
- * Creates an MCP server from tool/resource/prompt definitions.
- * Pure composition - no I/O until transport is connected.
+ * Creates and starts an MCP server.
+ *
+ * @example
+ * ```ts
+ * import { createServer, tool, text, stdio } from '@sylphx/mcp-server-sdk'
+ * import { z } from 'zod'
+ *
+ * const greet = tool()
+ *   .description('Greet someone')
+ *   .input(z.object({ name: z.string() }))
+ *   .handler(({ input }) => text(`Hello ${input.name}`))
+ *
+ * const ping = tool()
+ *   .handler(() => text('pong'))
+ *
+ * const server = createServer({
+ *   tools: { greet, ping },
+ *   transport: stdio()
+ * })
+ *
+ * await server.start()
+ * ```
  */
 
-import type { PromptContext, PromptDefinition } from "../builders/prompt.js"
-import type {
-	AnyResourceDefinition,
-	ResourceContext,
-	ResourceDefinition,
-	ResourceTemplateDefinition,
-} from "../builders/resource.js"
-import type { ToolContext, ToolDefinition } from "../builders/tool.js"
-import { buildCompletionRegistry } from "../completions/handler.js"
-import type { CompletionConfig } from "../completions/types.js"
-import { compose } from "../middleware/compose.js"
-import type { Middleware } from "../middleware/types.js"
-import type { PaginationOptions } from "../pagination/index.js"
-import * as Rpc from "../protocol/jsonrpc.js"
-import type * as Mcp from "../protocol/mcp.js"
-import { createSubscriptionManager } from "../subscriptions/manager.js"
-import type { SubscriptionManager } from "../subscriptions/types.js"
-import type { HandlerContext, NotificationContext, ServerState } from "./handler.js"
-import { dispatch } from "./handler.js"
+import type { PromptDefinition } from '../builders/prompt.js'
+import type { ResourceDefinition, ResourceTemplateDefinition } from '../builders/resource.js'
+import type { ToolDefinition } from '../builders/tool.js'
+import { noopEmitter } from '../notifications/index.js'
+import type { PaginationOptions } from '../pagination/index.js'
+import * as Rpc from '../protocol/jsonrpc.js'
+import type * as Mcp from '../protocol/mcp.js'
+import type { Transport, TransportFactory } from '../transports/types.js'
+import { type HandlerContext, type ServerState, dispatch } from './handler.js'
 
 // ============================================================================
 // Server Config
 // ============================================================================
 
-export interface ServerConfig<
-	TToolCtx extends ToolContext = ToolContext,
-	TResourceCtx extends ResourceContext = ResourceContext,
-	TPromptCtx extends PromptContext = PromptContext,
-> {
-	readonly name: string
-	readonly version: string
+export interface ServerConfig {
+	/** Server name (default: "mcp-server") */
+	readonly name?: string
+	/** Server version (default: "1.0.0") */
+	readonly version?: string
+	/** Instructions for the LLM */
 	readonly instructions?: string
-	readonly tools?: readonly ToolDefinition<unknown, TToolCtx>[]
-	readonly resources?: readonly AnyResourceDefinition<TResourceCtx>[]
-	readonly prompts?: readonly PromptDefinition<TPromptCtx>[]
-	/** Middleware to apply to all tool/resource/prompt handlers */
-	readonly middleware?: readonly Middleware<
-		HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-		unknown
-	>[]
-	/** Completion providers for auto-complete */
-	readonly completions?: readonly CompletionConfig[]
-	/** Enable resource subscriptions */
-	readonly subscriptions?: boolean | SubscriptionManager
+	/** Tool definitions (key = tool name) */
+	readonly tools?: Record<string, ToolDefinition>
+	/** Resource definitions (key = resource name) */
+	readonly resources?: Record<string, ResourceDefinition>
+	/** Resource template definitions (key = template name) */
+	readonly resourceTemplates?: Record<string, ResourceTemplateDefinition>
+	/** Prompt definitions (key = prompt name) */
+	readonly prompts?: Record<string, PromptDefinition>
 	/** Pagination options */
 	readonly pagination?: PaginationOptions
-	/** Enable logging capability */
-	readonly logging?: boolean
+	/** Transport factory */
+	readonly transport: TransportFactory
 }
 
 // ============================================================================
 // Server Instance
 // ============================================================================
 
-export interface Server<
-	TToolCtx extends ToolContext = ToolContext,
-	TResourceCtx extends ResourceContext = ResourceContext,
-	TPromptCtx extends PromptContext = PromptContext,
-> {
-	/** Server metadata */
+export interface Server {
 	readonly name: string
 	readonly version: string
-
-	/** Process a single message and return response (if any) */
-	readonly handle: (
-		message: string,
-		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-		notificationCtx?: NotificationContext
-	) => Promise<string | null>
-
-	/** Process parsed message */
-	readonly handleMessage: (
-		message: Rpc.JsonRpcMessage,
-		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-		notificationCtx?: NotificationContext
-	) => Promise<Rpc.JsonRpcResponse | null>
-
-	/** Get server state (for introspection) */
-	readonly state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>
-
-	/** Get subscription manager (if enabled) */
-	readonly subscriptions?: SubscriptionManager
+	readonly start: () => Promise<void>
+	readonly stop: () => Promise<void>
 }
 
 // ============================================================================
@@ -94,49 +76,32 @@ export interface Server<
 // ============================================================================
 
 /**
- * Create an MCP server from configuration.
+ * Create an MCP server.
  *
  * @example
  * ```ts
  * const server = createServer({
- *   name: "my-server",
- *   version: "1.0.0",
- *   tools: [readFileTool, writeFileTool],
- *   resources: [configResource],
- *   prompts: [codeReviewPrompt],
+ *   tools: { greet, ping },
+ *   transport: stdio()
  * })
  *
- * // Use with transport
- * const transport = stdio(server)
- * await transport.start()
+ * await server.start()
  * ```
  */
-export const createServer = <
-	TToolCtx extends ToolContext = ToolContext,
-	TResourceCtx extends ResourceContext = ResourceContext,
-	TPromptCtx extends PromptContext = PromptContext,
->(
-	config: ServerConfig<TToolCtx, TResourceCtx, TPromptCtx>
-): Server<TToolCtx, TResourceCtx, TPromptCtx> => {
-	// Build state from config
-	const state = buildState(config)
+export const createServer = (config: ServerConfig): Server => {
+	const name = config.name ?? 'mcp-server'
+	const version = config.version ?? '1.0.0'
 
-	// Message handler
-	const handleMessage = async (
-		message: Rpc.JsonRpcMessage,
-		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-		notificationCtx?: NotificationContext
-	): Promise<Rpc.JsonRpcResponse | null> => {
-		const result = await dispatch(state, message, ctx, notificationCtx)
-		return result.type === "response" ? result.response : null
+	// Build state
+	const state = buildState(config, name, version)
+
+	// Create handler context
+	const ctx: HandlerContext = {
+		signal: undefined,
 	}
 
-	// String message handler
-	const handle = async (
-		input: string,
-		ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
-		notificationCtx?: NotificationContext
-	): Promise<string | null> => {
+	// Message handler
+	const handle = async (input: string): Promise<string | null> => {
 		const parsed = Rpc.parseMessage(input)
 
 		if (!parsed.ok) {
@@ -144,120 +109,49 @@ export const createServer = <
 			return Rpc.stringify(errorResponse)
 		}
 
-		const response = await handleMessage(parsed.value, ctx, notificationCtx)
-		return response ? Rpc.stringify(response) : null
+		const result = await dispatch(state, parsed.value, ctx)
+		return result.type === 'response' ? Rpc.stringify(result.response) : null
 	}
 
+	// Create transport
+	const transport: Transport = config.transport({ name, version, handle }, noopEmitter)
+
 	return {
-		name: config.name,
-		version: config.version,
-		handle,
-		handleMessage,
-		state,
-		subscriptions: state.subscriptions,
+		name,
+		version,
+		start: transport.start,
+		stop: transport.stop,
 	}
 }
 
 // ============================================================================
-// State Builder (Pure)
+// State Builder
 // ============================================================================
 
-const buildState = <
-	TToolCtx extends ToolContext,
-	TResourceCtx extends ResourceContext,
-	TPromptCtx extends PromptContext,
->(
-	config: ServerConfig<TToolCtx, TResourceCtx, TPromptCtx>
-): ServerState<TToolCtx, TResourceCtx, TPromptCtx> => {
-	// Build tools map
-	const tools = new Map<string, ToolDefinition<unknown, TToolCtx>>()
-	for (const tool of config.tools ?? []) {
-		tools.set(tool.name, tool)
-	}
-
-	// Build resources (separate static and templates)
-	const resources = new Map<string, ResourceDefinition<TResourceCtx>>()
-	const resourceTemplates: ResourceTemplateDefinition<TResourceCtx>[] = []
-
-	for (const res of config.resources ?? []) {
-		if (res.type === "static") {
-			resources.set(res.uri, res)
-		} else {
-			resourceTemplates.push(res)
-		}
-	}
-
-	// Build prompts map
-	const prompts = new Map<string, PromptDefinition<TPromptCtx>>()
-	for (const prompt of config.prompts ?? []) {
-		prompts.set(prompt.name, prompt)
-	}
-
-	// Build completions registry
-	const completions = config.completions?.length
-		? buildCompletionRegistry(config.completions)
-		: undefined
-
-	// Build subscription manager
-	const subscriptions =
-		config.subscriptions === true
-			? createSubscriptionManager()
-			: config.subscriptions === false
-				? undefined
-				: config.subscriptions
+const buildState = (config: ServerConfig, name: string, version: string): ServerState => {
+	const tools = new Map(Object.entries(config.tools ?? {}))
+	const resources = new Map(Object.entries(config.resources ?? {}))
+	const resourceTemplates = new Map(Object.entries(config.resourceTemplates ?? {}))
+	const prompts = new Map(Object.entries(config.prompts ?? {}))
 
 	// Build capabilities
-	const hasResources = resources.size > 0 || resourceTemplates.length > 0
 	const capabilities: Mcp.ServerCapabilities = {
 		...(tools.size > 0 && { tools: { listChanged: true } }),
-		...(hasResources && {
-			resources: {
-				subscribe: !!subscriptions,
-				listChanged: true,
-			},
+		...((resources.size > 0 || resourceTemplates.size > 0) && {
+			resources: { subscribe: false, listChanged: true },
 		}),
 		...(prompts.size > 0 && { prompts: { listChanged: true } }),
-		...(completions && { completions: {} }),
-		...(config.logging && { logging: {} }),
 	}
 
-	// Compose middleware
-	const middleware = config.middleware?.length ? compose(...config.middleware) : undefined
-
 	return {
-		name: config.name,
-		version: config.version,
+		name,
+		version,
 		instructions: config.instructions,
 		tools,
 		resources,
 		resourceTemplates,
 		prompts,
 		capabilities,
-		middleware,
-		completions,
-		subscriptions,
 		pagination: config.pagination,
 	}
 }
-
-// ============================================================================
-// Utility: Default Context Factory
-// ============================================================================
-
-/**
- * Create a minimal handler context.
- * Extend this for custom contexts with additional dependencies.
- */
-export const createContext = <
-	TToolCtx extends ToolContext = ToolContext,
-	TResourceCtx extends ResourceContext = ResourceContext,
-	TPromptCtx extends PromptContext = PromptContext,
->(overrides?: {
-	tool?: Partial<TToolCtx>
-	resource?: Partial<TResourceCtx>
-	prompt?: Partial<TPromptCtx>
-}): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
-	toolContext: { signal: undefined, ...overrides?.tool } as TToolCtx,
-	resourceContext: { signal: undefined, ...overrides?.resource } as TResourceCtx,
-	promptContext: { signal: undefined, ...overrides?.prompt } as TPromptCtx,
-})

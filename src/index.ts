@@ -1,59 +1,59 @@
 /**
- * @sylphx/mcp-server
+ * @sylphx/mcp-server-sdk
  *
- * Pure functional MCP server library for Bun.
+ * Pure functional MCP server SDK for Bun.
  *
  * @example
  * ```ts
- * import { createServer, tool, text, stdio } from "@sylphx/mcp-server"
+ * import { createServer, tool, text, stdio } from '@sylphx/mcp-server-sdk'
+ * import { z } from 'zod'
  *
- * const greet = tool({
- *   name: "greet",
- *   description: "Greet someone",
- *   input: {
- *     type: "object",
- *     properties: { name: { type: "string" } },
- *     required: ["name"],
- *   },
- *   handler: ({ name }) => () => text(`Hello, ${name}!`),
- * })
+ * const greet = tool()
+ *   .description('Greet someone')
+ *   .input(z.object({ name: z.string() }))
+ *   .handler(({ input }) => text(`Hello ${input.name}`))
+ *
+ * const ping = tool()
+ *   .handler(() => text('pong'))
  *
  * const server = createServer({
- *   name: "my-server",
- *   version: "1.0.0",
- *   tools: [greet],
+ *   tools: { greet, ping },
+ *   transport: stdio()
  * })
  *
- * const transport = stdio(server)
- * await transport.start()
+ * await server.start()
  * ```
  */
 
-// Protocol types
-export * from "./protocol/index.js"
+// ============================================================================
+// Core API
+// ============================================================================
 
-// Builders
+// Server
+export { createServer, type Server, type ServerConfig } from './server/server.js'
+
+// Transports
+export { stdio, type StdioOptions } from './transports/stdio.js'
+export { http, type HttpOptions } from './transports/http.js'
+export type { Transport, TransportFactory } from './transports/types.js'
+
+// Tool Builder
 export {
-	// Tool
 	tool,
-	defineTool,
-	createTool,
 	text,
 	textContent,
 	contents,
 	toolError,
-	structured,
-	sequence,
-	guard,
-	mapResult,
+	json,
 	toProtocolTool,
-	type ToolConfig,
 	type ToolContext,
 	type ToolDefinition,
 	type ToolHandler,
-	type TypedToolConfig,
-	type TypedToolDefinition,
-	// Resource
+	type ToolHandlerArgs,
+} from './builders/tool.js'
+
+// Resource Builder
+export {
 	resource,
 	resourceTemplate,
 	resourceText,
@@ -63,36 +63,35 @@ export {
 	extractParams,
 	toProtocolResource,
 	toProtocolTemplate,
-	type ResourceConfig,
 	type ResourceContext,
 	type ResourceDefinition,
-	type ResourceHandler,
-	type ResourceTemplateConfig,
 	type ResourceTemplateDefinition,
-	type AnyResourceDefinition,
-	// Prompt
+	type ResourceHandler,
+	type TemplateHandler,
+	type ResourceHandlerArgs,
+	type TemplateHandlerArgs,
+} from './builders/resource.js'
+
+// Prompt Builder
+export {
 	prompt,
-	definePrompt,
-	arg,
 	user,
 	assistant,
 	message,
 	messages,
 	promptResult,
 	interpolate,
-	templatePrompt,
 	toProtocolPrompt,
-	type PromptConfig,
 	type PromptContext,
 	type PromptDefinition,
 	type PromptHandler,
-	type PromptArgumentConfig,
-	type TypedPromptConfig,
-	type TypedPromptDefinition,
-	type TypedPromptHandler,
-} from "./builders/index.js"
+	type PromptHandlerArgs,
+} from './builders/prompt.js'
 
-// Schema utilities
+// ============================================================================
+// Schema
+// ============================================================================
+
 export {
 	zodToJsonSchema,
 	toJsonSchema,
@@ -102,60 +101,22 @@ export {
 	type Infer,
 	type SchemaInput,
 	type ValidationResult,
-} from "./schema/index.js"
+} from './schema/index.js'
 
-// Server
-export {
-	createServer,
-	createContext,
-	type Server,
-	type ServerConfig,
-	type ServerState,
-	type HandlerContext,
-	type HandlerResult,
-} from "./server/index.js"
+// ============================================================================
+// Protocol Types
+// ============================================================================
 
-// Transports
-export { stdio, type StdioTransport, type StdioOptions } from "./transports/stdio.js"
-export { http, type HttpTransport, type HttpOptions } from "./transports/http.js"
+export * from './protocol/index.js'
 
-// Middleware
-export {
-	// Composition
-	compose,
-	createStack,
-	when,
-	forType,
-	forName,
-	// Built-in
-	logging,
-	timing,
-	errorHandler,
-	toolErrorHandler,
-	timeout,
-	retry,
-	cache,
-	// Types
-	type Middleware,
-	type MiddlewareStack,
-	type RequestInfo,
-	type Next,
-	type ToolMiddleware,
-	type AnyMiddleware,
-	type LoggingOptions,
-	type TimingContext,
-	type ErrorHandlerOptions,
-	type TimeoutOptions,
-	type RetryOptions,
-	type CacheOptions,
-} from "./middleware/index.js"
+// ============================================================================
+// Advanced Features
+// ============================================================================
 
 // Notifications
 export {
-	// Emitter
 	createEmitter,
 	noopEmitter,
-	// Helpers
 	progress,
 	log,
 	createProgressReporter,
@@ -166,15 +127,13 @@ export {
 	promptsListChanged,
 	resourceUpdated,
 	cancelled,
-	// Types
 	type Notification,
 	type ProgressNotification,
 	type LogNotification,
 	type NotificationEmitter,
 	type NotificationSender,
-	type NotificationContext,
 	type Logger,
-} from "./notifications/index.js"
+} from './notifications/index.js'
 
 // Sampling (Server → Client LLM requests)
 export {
@@ -185,44 +144,7 @@ export {
 	type SamplingClient,
 	type SamplingRequestSender,
 	type SamplingContext,
-} from "./sampling/index.js"
-
-// Completions (Auto-complete)
-export {
-	buildCompletionRegistry,
-	handleComplete,
-	staticCompletions,
-	dynamicCompletions,
-	mergeCompletions,
-	type CompletionProvider,
-	type CompletionResult,
-	type CompletionConfig,
-	type PromptCompletionConfig,
-	type ResourceCompletionConfig,
-	type CompletionRegistry,
-} from "./completions/index.js"
-
-// Subscriptions (Resource subscriptions)
-export {
-	createSubscriptionManager,
-	notifySubscribers,
-	type SubscriptionManager,
-	type SubscriptionEvent,
-	type SubscriptionEventHandler,
-} from "./subscriptions/index.js"
-
-// Pagination
-export {
-	paginate,
-	encodeCursor,
-	decodeCursor,
-	createPaginatedHandler,
-	iteratePages,
-	collectAllPages,
-	type PaginationOptions,
-	type PageResult,
-	type CursorData,
-} from "./pagination/index.js"
+} from './sampling/index.js'
 
 // Elicitation (Server → Client user input requests)
 export {
@@ -241,4 +163,14 @@ export {
 	type ElicitationCreateParams,
 	type ElicitationCreateResult,
 	type ElicitationAction,
-} from "./elicitation/index.js"
+} from './elicitation/index.js'
+
+// Pagination
+export {
+	paginate,
+	encodeCursor,
+	decodeCursor,
+	type PaginationOptions,
+	type PageResult,
+	type CursorData,
+} from './pagination/index.js'
