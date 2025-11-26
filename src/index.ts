@@ -175,3 +175,51 @@ export {
 	type NotificationContext,
 	type Logger,
 } from "./notifications/index.js"
+
+// Sampling (Server → Client LLM requests)
+export {
+	createSamplingClient,
+	samplingText,
+	samplingImage,
+	modelPreferences,
+	type SamplingClient,
+	type SamplingRequestSender,
+	type SamplingContext,
+} from "./sampling/index.js"
+
+// Completions (Auto-complete)
+export {
+	buildCompletionRegistry,
+	handleComplete,
+	staticCompletions,
+	dynamicCompletions,
+	mergeCompletions,
+	type CompletionProvider,
+	type CompletionResult,
+	type CompletionConfig,
+	type PromptCompletionConfig,
+	type ResourceCompletionConfig,
+	type CompletionRegistry,
+} from "./completions/index.js"
+
+// Subscriptions (Resource subscriptions)
+export {
+	createSubscriptionManager,
+	notifySubscribers,
+	type SubscriptionManager,
+	type SubscriptionEvent,
+	type SubscriptionEventHandler,
+} from "./subscriptions/index.js"
+
+// Pagination
+export {
+	paginate,
+	encodeCursor,
+	decodeCursor,
+	createPaginatedHandler,
+	iteratePages,
+	collectAllPages,
+	type PaginationOptions,
+	type PageResult,
+	type CursorData,
+} from "./pagination/index.js"

@@ -238,9 +238,12 @@ export const Method = {
 	// Completions
 	CompletionComplete: "completion/complete",
 
-	// Progress
+	// Sampling (Server → Client)
+	SamplingCreateMessage: "sampling/createMessage",
+
+	// Progress & Cancellation
 	ProgressNotification: "notifications/progress",
-	ProgressCancelled: "notifications/cancelled",
+	CancelledNotification: "notifications/cancelled",
 
 	// Roots
 	RootsList: "roots/list",
@@ -324,4 +327,91 @@ export interface LoggingSetLevelParams {
 
 export interface RootsListResult {
 	readonly roots: readonly Root[]
+}
+
+// ============================================================================
+// Sampling (Server → Client LLM Request)
+// ============================================================================
+
+export interface SamplingMessage {
+	readonly role: "user" | "assistant"
+	readonly content: TextContent | ImageContent | AudioContent
+}
+
+export interface ModelPreferences {
+	readonly hints?: readonly ModelHint[]
+	readonly costPriority?: number
+	readonly speedPriority?: number
+	readonly intelligencePriority?: number
+}
+
+export interface ModelHint {
+	readonly name?: string
+}
+
+export interface SamplingCreateParams {
+	readonly messages: readonly SamplingMessage[]
+	readonly modelPreferences?: ModelPreferences
+	readonly systemPrompt?: string
+	readonly includeContext?: "none" | "thisServer" | "allServers"
+	readonly temperature?: number
+	readonly maxTokens: number
+	readonly stopSequences?: readonly string[]
+	readonly metadata?: Record<string, unknown>
+}
+
+export interface SamplingCreateResult {
+	readonly role: "user" | "assistant"
+	readonly content: TextContent | ImageContent | AudioContent
+	readonly model: string
+	readonly stopReason?: "endTurn" | "stopSequence" | "maxTokens" | string
+}
+
+// ============================================================================
+// Completions (Auto-Complete)
+// ============================================================================
+
+export interface CompletionReference {
+	readonly type: "ref/prompt" | "ref/resource"
+	readonly name?: string // for prompts
+	readonly uri?: string // for resources
+}
+
+export interface CompletionArgument {
+	readonly name: string
+	readonly value: string
+}
+
+export interface CompletionCompleteParams {
+	readonly ref: CompletionReference
+	readonly argument: CompletionArgument
+}
+
+export interface CompletionCompleteResult {
+	readonly completion: {
+		readonly values: readonly string[]
+		readonly total?: number
+		readonly hasMore?: boolean
+	}
+}
+
+// ============================================================================
+// Resource Subscriptions
+// ============================================================================
+
+export interface ResourcesSubscribeParams {
+	readonly uri: string
+}
+
+export interface ResourcesUnsubscribeParams {
+	readonly uri: string
+}
+
+// ============================================================================
+// Cancellation
+// ============================================================================
+
+export interface CancelledNotificationParams {
+	readonly requestId: string | number
+	readonly reason?: string
 }

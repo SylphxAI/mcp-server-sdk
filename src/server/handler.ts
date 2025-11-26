@@ -16,10 +16,13 @@ import type {
 import { matchesTemplate, toProtocolResource, toProtocolTemplate } from "../builders/resource.js"
 import type { ToolContext, ToolDefinition } from "../builders/tool.js"
 import { toProtocolTool } from "../builders/tool.js"
+import type { CompletionRegistry } from "../completions/index.js"
+import { handleComplete } from "../completions/index.js"
 import type { Middleware, RequestInfo } from "../middleware/types.js"
-import { compose } from "../middleware/compose.js"
+import { paginate, type PaginationOptions } from "../pagination/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import * as Mcp from "../protocol/mcp.js"
+import type { SubscriptionManager } from "../subscriptions/index.js"
 
 // ============================================================================
 // Server State (Immutable)
@@ -39,6 +42,10 @@ export interface ServerState<
 	readonly prompts: ReadonlyMap<string, PromptDefinition<TPromptCtx>>
 	readonly capabilities: Mcp.ServerCapabilities
 	readonly middleware?: Middleware<HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>, unknown>
+	readonly completions?: CompletionRegistry
+	readonly subscriptions?: SubscriptionManager
+	readonly pagination?: PaginationOptions
+	readonly logLevel?: Mcp.LogLevel
 }
 
 // ============================================================================
@@ -82,9 +89,14 @@ export const handleInitialize = (
 
 export const handlePing = (): Record<string, never> => ({})
 
-export const handleToolsList = (state: ServerState): Mcp.ToolsListResult => ({
-	items: Array.from(state.tools.values()).map(toProtocolTool),
-})
+export const handleToolsList = (
+	state: ServerState,
+	params?: Mcp.ListParams,
+): Mcp.ToolsListResult => {
+	const allItems = Array.from(state.tools.values()).map(toProtocolTool)
+	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
+	return { items, nextCursor }
+}
 
 export const handleToolsCall = async <
 	TToolCtx extends ToolContext,
@@ -132,15 +144,23 @@ export const handleToolsCall = async <
 	return executeHandler()
 }
 
-export const handleResourcesList = (state: ServerState): Mcp.ResourcesListResult => ({
-	items: Array.from(state.resources.values()).map(toProtocolResource),
-})
+export const handleResourcesList = (
+	state: ServerState,
+	params?: Mcp.ListParams,
+): Mcp.ResourcesListResult => {
+	const allItems = Array.from(state.resources.values()).map(toProtocolResource)
+	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
+	return { items, nextCursor }
+}
 
 export const handleResourceTemplatesList = (
 	state: ServerState,
-): Mcp.ResourceTemplatesListResult => ({
-	items: state.resourceTemplates.map(toProtocolTemplate),
-})
+	params?: Mcp.ListParams,
+): Mcp.ResourceTemplatesListResult => {
+	const allItems = state.resourceTemplates.map(toProtocolTemplate)
+	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
+	return { items, nextCursor }
+}
 
 export const handleResourcesRead = async <
 	TToolCtx extends ToolContext,
@@ -183,9 +203,14 @@ export const handleResourcesRead = async <
 	return executeHandler()
 }
 
-export const handlePromptsList = (state: ServerState): Mcp.PromptsListResult => ({
-	items: Array.from(state.prompts.values()).map(toProtocolPrompt),
-})
+export const handlePromptsList = (
+	state: ServerState,
+	params?: Mcp.ListParams,
+): Mcp.PromptsListResult => {
+	const allItems = Array.from(state.prompts.values()).map(toProtocolPrompt)
+	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
+	return { items, nextCursor }
+}
 
 export const handlePromptsGet = async <
 	TToolCtx extends ToolContext,
@@ -221,6 +246,67 @@ export const handlePromptsGet = async <
 }
 
 // ============================================================================
+// Additional Handlers
+// ============================================================================
+
+export const handleResourcesSubscribe = (
+	state: ServerState,
+	params: Mcp.ResourcesSubscribeParams,
+	subscriberId: string,
+): Record<string, never> => {
+	state.subscriptions?.subscribe(params.uri, subscriberId)
+	return {}
+}
+
+export const handleResourcesUnsubscribe = (
+	state: ServerState,
+	params: Mcp.ResourcesUnsubscribeParams,
+	subscriberId: string,
+): Record<string, never> => {
+	state.subscriptions?.unsubscribe(params.uri, subscriberId)
+	return {}
+}
+
+export const handleLoggingSetLevel = (
+	params: Mcp.LoggingSetLevelParams,
+): Record<string, never> => {
+	// Note: The caller should update the state.logLevel
+	// This handler just validates and returns success
+	return {}
+}
+
+// ============================================================================
+// Notification Handlers
+// ============================================================================
+
+export interface NotificationContext {
+	readonly subscriberId?: string
+	readonly onCancelled?: (requestId: string | number, reason?: string) => void
+}
+
+export const handleNotification = (
+	state: ServerState,
+	notification: Rpc.JsonRpcNotification,
+	ctx: NotificationContext,
+): void => {
+	switch (notification.method) {
+		case Mcp.Method.Initialized:
+			// Client is ready - nothing to do
+			break
+
+		case Mcp.Method.CancelledNotification: {
+			const params = notification.params as Mcp.CancelledNotificationParams
+			ctx.onCancelled?.(params.requestId, params.reason)
+			break
+		}
+
+		default:
+			// Unknown notification - ignore
+			break
+	}
+}
+
+// ============================================================================
 // Main Dispatcher (Pure Function)
 // ============================================================================
 
@@ -232,19 +318,18 @@ export const dispatch = async <
 	state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>,
 	message: Rpc.JsonRpcMessage,
 	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
+	notificationCtx?: NotificationContext,
 ): Promise<HandlerResult> => {
 	// Handle notifications (no response)
 	if (Rpc.isNotification(message)) {
-		// notifications/initialized - client is ready
-		// notifications/cancelled - cancel in-flight request
-		// We don't need to respond to notifications
+		handleNotification(state, message, notificationCtx ?? {})
 		return { type: "none" }
 	}
 
 	// Handle requests
 	if (Rpc.isRequest(message)) {
 		try {
-			const result = await handleRequest(state, message, ctx)
+			const result = await handleRequest(state, message, ctx, notificationCtx)
 			return {
 				type: "response",
 				response: Rpc.success(message.id, result),
@@ -273,6 +358,7 @@ const handleRequest = async <
 	state: ServerState<TToolCtx, TResourceCtx, TPromptCtx>,
 	req: Rpc.JsonRpcRequest,
 	ctx: HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>,
+	notificationCtx?: NotificationContext,
 ): Promise<unknown> => {
 	switch (req.method) {
 		case Mcp.Method.Initialize:
@@ -281,26 +367,54 @@ const handleRequest = async <
 		case Mcp.Method.Ping:
 			return handlePing()
 
+		// Tools
 		case Mcp.Method.ToolsList:
-			return handleToolsList(state)
+			return handleToolsList(state, req.params as Mcp.ListParams | undefined)
 
 		case Mcp.Method.ToolsCall:
 			return handleToolsCall(state, req.params as Mcp.ToolsCallParams, ctx)
 
+		// Resources
 		case Mcp.Method.ResourcesList:
-			return handleResourcesList(state)
+			return handleResourcesList(state, req.params as Mcp.ListParams | undefined)
 
 		case "resources/templates/list":
-			return handleResourceTemplatesList(state)
+			return handleResourceTemplatesList(state, req.params as Mcp.ListParams | undefined)
 
 		case Mcp.Method.ResourcesRead:
 			return handleResourcesRead(state, req.params as Mcp.ResourcesReadParams, ctx)
 
+		case Mcp.Method.ResourcesSubscribe:
+			return handleResourcesSubscribe(
+				state,
+				req.params as Mcp.ResourcesSubscribeParams,
+				notificationCtx?.subscriberId ?? "default",
+			)
+
+		case Mcp.Method.ResourcesUnsubscribe:
+			return handleResourcesUnsubscribe(
+				state,
+				req.params as Mcp.ResourcesUnsubscribeParams,
+				notificationCtx?.subscriberId ?? "default",
+			)
+
+		// Prompts
 		case Mcp.Method.PromptsList:
-			return handlePromptsList(state)
+			return handlePromptsList(state, req.params as Mcp.ListParams | undefined)
 
 		case Mcp.Method.PromptsGet:
 			return handlePromptsGet(state, req.params as Mcp.PromptsGetParams, ctx)
+
+		// Completions
+		case Mcp.Method.CompletionComplete:
+			if (!state.completions) {
+				return { completion: { values: [] } }
+			}
+			return handleComplete(state.completions, req.params as Mcp.CompletionCompleteParams)
+
+		// Logging
+		case Mcp.Method.LoggingSetLevel:
+			return handleLoggingSetLevel(req.params as Mcp.LoggingSetLevelParams)
 
 		default:
 			throw new Error(`Unknown method: ${req.method}`)

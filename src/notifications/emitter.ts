@@ -78,7 +78,7 @@ const toJsonRpc = (notification: Notification): [method: string, params?: unknow
 
 		case "cancelled":
 			return [
-				Mcp.Method.ProgressCancelled,
+				Mcp.Method.CancelledNotification,
 				{
 					requestId: notification.requestId,
 					reason: notification.reason,
