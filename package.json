@@ -3,20 +3,17 @@
 	"version": "0.1.0",
 	"type": "module",
 	"main": "./dist/index.js",
+	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
-			"import": "./dist/index.js",
-			"types": "./dist/index.d.ts"
-		},
-		"./transports": {
-			"import": "./dist/transports/index.js",
-			"types": "./dist/transports/index.d.ts"
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
 		}
 	},
 	"files": ["dist"],
 	"scripts": {
-		"build": "bun build ./src/index.ts --outdir ./dist --target bun",
+		"build": "bunup",
 		"check": "biome check .",
 		"check:fix": "biome check --write .",
 		"test": "bun test",
@@ -29,6 +26,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@types/bun": "^1.2.14",
+		"bunup": "^0.16.10",
 		"mitata": "^1.0.34",
 		"typescript": "^5.8.3"
 	},

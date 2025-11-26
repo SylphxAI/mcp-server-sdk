@@ -8,7 +8,10 @@
 // ============================================================================
 
 export const LATEST_PROTOCOL_VERSION = "2025-03-26" as const
-export const SUPPORTED_PROTOCOL_VERSIONS = [LATEST_PROTOCOL_VERSION, "2024-11-05"] as const
+export const SUPPORTED_PROTOCOL_VERSIONS: readonly ["2025-03-26", "2024-11-05"] = [
+	LATEST_PROTOCOL_VERSION,
+	"2024-11-05",
+] as const
 
 // ============================================================================
 // Content Types
