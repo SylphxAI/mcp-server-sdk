@@ -18,6 +18,7 @@
 import type { z } from "zod"
 import type {
 	Content,
+	ImageContent,
 	JsonSchema,
 	TextContent,
 	Tool,
@@ -198,8 +199,18 @@ export const textContent = (text: string): TextContent => ({
 	text,
 })
 
+export const imageContent = (data: string, mimeType: string): ImageContent => ({
+	type: "image",
+	data,
+	mimeType,
+})
+
 export const text = (content: string): ToolsCallResult => ({
 	content: [textContent(content)],
+})
+
+export const image = (data: string, mimeType: string): ToolsCallResult => ({
+	content: [imageContent(data, mimeType)],
 })
 
 export const contents = (...items: Content[]): ToolsCallResult => ({

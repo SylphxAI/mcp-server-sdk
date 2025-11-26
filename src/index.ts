@@ -42,6 +42,8 @@ export {
 	tool,
 	text,
 	textContent,
+	image,
+	imageContent,
 	contents,
 	toolError,
 	json,
