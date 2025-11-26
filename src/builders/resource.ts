@@ -22,9 +22,9 @@
 import type {
 	EmbeddedResource,
 	Resource,
-	ResourcesReadResult,
 	ResourceTemplate,
-} from '../protocol/mcp.js'
+	ResourcesReadResult,
+} from "../protocol/mcp.js"
 
 // ============================================================================
 // Context Type
@@ -109,7 +109,7 @@ const createResourceBuilder = (state: ResourceState): ResourceBuilder => ({
 		return createResourceBuilder({ ...state, mimeType: mime })
 	},
 	handler(fn: ResourceHandler): ResourceDefinition {
-		if (!state.uri) throw new Error('Resource URI is required')
+		if (!state.uri) throw new Error("Resource URI is required")
 		return {
 			uri: state.uri,
 			description: state.description,
@@ -130,7 +130,9 @@ interface TemplateBuilderStart {
 interface TemplateBuilder {
 	description(desc: string): TemplateBuilder
 	mimeType(mime: string): TemplateBuilder
-	handler<TParams = Record<string, string>>(fn: TemplateHandler<TParams>): ResourceTemplateDefinition
+	handler<TParams = Record<string, string>>(
+		fn: TemplateHandler<TParams>
+	): ResourceTemplateDefinition
 }
 
 interface TemplateState {
@@ -152,8 +154,10 @@ const createTemplateBuilder = (state: TemplateState): TemplateBuilder => ({
 	mimeType(mime: string) {
 		return createTemplateBuilder({ ...state, mimeType: mime })
 	},
-	handler<TParams = Record<string, string>>(fn: TemplateHandler<TParams>): ResourceTemplateDefinition {
-		if (!state.uriTemplate) throw new Error('URI template is required')
+	handler<TParams = Record<string, string>>(
+		fn: TemplateHandler<TParams>
+	): ResourceTemplateDefinition {
+		if (!state.uriTemplate) throw new Error("URI template is required")
 		const template = state.uriTemplate
 		return {
 			uriTemplate: template,
@@ -209,7 +213,10 @@ export const toProtocolResource = (name: string, def: ResourceDefinition): Resou
 	mimeType: def.mimeType,
 })
 
-export const toProtocolTemplate = (name: string, def: ResourceTemplateDefinition): ResourceTemplate => ({
+export const toProtocolTemplate = (
+	name: string,
+	def: ResourceTemplateDefinition
+): ResourceTemplate => ({
 	uriTemplate: def.uriTemplate,
 	name,
 	description: def.description,
@@ -224,7 +231,7 @@ export const toProtocolTemplate = (name: string, def: ResourceTemplateDefinition
  * Check if a URI matches a template pattern.
  */
 export const matchesTemplate = (template: string, uri: string): boolean => {
-	const pattern = template.replace(/\{[^}]+\}/g, '[^/]+')
+	const pattern = template.replace(/\{[^}]+\}/g, "[^/]+")
 	const regex = new RegExp(`^${pattern}$`)
 	return regex.test(uri)
 }
@@ -236,7 +243,7 @@ export const extractParams = (template: string, uri: string): Record<string, str
 	const paramNames: string[] = []
 	const pattern = template.replace(/\{([^}]+)\}/g, (_, name) => {
 		paramNames.push(name)
-		return '([^/]+)'
+		return "([^/]+)"
 	})
 
 	const regex = new RegExp(`^${pattern}$`)
@@ -256,12 +263,16 @@ export const extractParams = (template: string, uri: string): Record<string, str
 // Content Helpers
 // ============================================================================
 
-export const resourceText = (uri: string, text: string, mimeType?: string): ResourcesReadResult => ({
-	contents: [{ type: 'resource', uri, text, mimeType }],
+export const resourceText = (
+	uri: string,
+	text: string,
+	mimeType?: string
+): ResourcesReadResult => ({
+	contents: [{ type: "resource", uri, text, mimeType }],
 })
 
 export const resourceBlob = (uri: string, blob: string, mimeType: string): ResourcesReadResult => ({
-	contents: [{ type: 'resource', uri, blob, mimeType }],
+	contents: [{ type: "resource", uri, blob, mimeType }],
 })
 
 export const resourceContents = (...items: EmbeddedResource[]): ResourcesReadResult => ({

@@ -4,15 +4,15 @@
  * Core request/notification handler logic.
  */
 
-import type { PromptDefinition } from '../builders/prompt.js'
-import { toProtocolPrompt } from '../builders/prompt.js'
-import type { ResourceDefinition, ResourceTemplateDefinition } from '../builders/resource.js'
-import { matchesTemplate, toProtocolResource, toProtocolTemplate } from '../builders/resource.js'
-import type { ToolContext, ToolDefinition } from '../builders/tool.js'
-import { toProtocolTool } from '../builders/tool.js'
-import { type PaginationOptions, paginate } from '../pagination/index.js'
-import * as Rpc from '../protocol/jsonrpc.js'
-import * as Mcp from '../protocol/mcp.js'
+import type { PromptDefinition } from "../builders/prompt.js"
+import { toProtocolPrompt } from "../builders/prompt.js"
+import type { ResourceDefinition, ResourceTemplateDefinition } from "../builders/resource.js"
+import { matchesTemplate, toProtocolResource, toProtocolTemplate } from "../builders/resource.js"
+import type { ToolDefinition } from "../builders/tool.js"
+import { toProtocolTool } from "../builders/tool.js"
+import { type PaginationOptions, paginate } from "../pagination/index.js"
+import * as Rpc from "../protocol/jsonrpc.js"
+import * as Mcp from "../protocol/mcp.js"
 
 // ============================================================================
 // Server State
@@ -68,7 +68,7 @@ const handleToolsCall = async (
 	const tool = state.tools.get(params.name)
 	if (!tool) {
 		return {
-			content: [{ type: 'text', text: `Unknown tool: ${params.name}` }],
+			content: [{ type: "text", text: `Unknown tool: ${params.name}` }],
 			isError: true,
 		}
 	}
@@ -77,7 +77,7 @@ const handleToolsCall = async (
 		return await tool.handler({ input: params.arguments ?? {}, ctx })
 	} catch (error) {
 		return {
-			content: [{ type: 'text', text: `Tool error: ${error}` }],
+			content: [{ type: "text", text: `Tool error: ${error}` }],
 			isError: true,
 		}
 	}
@@ -168,8 +168,8 @@ const handleNotification = (notification: Rpc.JsonRpcNotification): void => {
 // ============================================================================
 
 export type HandlerResult =
-	| { readonly type: 'response'; readonly response: Rpc.JsonRpcResponse }
-	| { readonly type: 'none' }
+	| { readonly type: "response"; readonly response: Rpc.JsonRpcResponse }
+	| { readonly type: "none" }
 
 export const dispatch = async (
 	state: ServerState,
@@ -179,7 +179,7 @@ export const dispatch = async (
 	// Handle notifications
 	if (Rpc.isNotification(message)) {
 		handleNotification(message)
-		return { type: 'none' }
+		return { type: "none" }
 	}
 
 	// Handle requests
@@ -187,12 +187,12 @@ export const dispatch = async (
 		try {
 			const result = await handleRequest(state, message, ctx)
 			return {
-				type: 'response',
+				type: "response",
 				response: Rpc.success(message.id, result),
 			}
 		} catch (error) {
 			return {
-				type: 'response',
+				type: "response",
 				response: Rpc.error(
 					message.id,
 					Rpc.ErrorCode.InternalError,
@@ -202,7 +202,7 @@ export const dispatch = async (
 		}
 	}
 
-	return { type: 'none' }
+	return { type: "none" }
 }
 
 const handleRequest = async (

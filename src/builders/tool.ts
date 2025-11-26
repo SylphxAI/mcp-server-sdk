@@ -15,7 +15,7 @@
  * ```
  */
 
-import type { z } from 'zod'
+import type { z } from "zod"
 import type {
 	Content,
 	JsonSchema,
@@ -23,8 +23,8 @@ import type {
 	Tool,
 	ToolAnnotations,
 	ToolsCallResult,
-} from '../protocol/mcp.js'
-import { type Infer, toJsonSchema, validate } from '../schema/zod.js'
+} from "../protocol/mcp.js"
+import { toJsonSchema, validate } from "../schema/zod.js"
 
 // ============================================================================
 // Context Type
@@ -54,7 +54,7 @@ export type ToolHandler<TInput = void> = TInput extends void
 // Tool Definition
 // ============================================================================
 
-export interface ToolDefinition<TInput = void> {
+export interface ToolDefinition<_TInput = void> {
 	readonly name?: string
 	readonly description?: string
 	readonly inputSchema: JsonSchema
@@ -70,13 +70,17 @@ interface ToolBuilderWithoutInput {
 	description(desc: string): ToolBuilderWithoutInput
 	annotations(annotations: ToolAnnotations): ToolBuilderWithoutInput
 	input<T>(schema: z.ZodType<T>): ToolBuilderWithInput<T>
-	handler(fn: (args: { ctx: ToolContext }) => ToolsCallResult | Promise<ToolsCallResult>): ToolDefinition<void>
+	handler(
+		fn: (args: { ctx: ToolContext }) => ToolsCallResult | Promise<ToolsCallResult>
+	): ToolDefinition<void>
 }
 
 interface ToolBuilderWithInput<TInput> {
 	description(desc: string): ToolBuilderWithInput<TInput>
 	annotations(annotations: ToolAnnotations): ToolBuilderWithInput<TInput>
-	handler(fn: (args: ToolHandlerArgs<TInput>) => ToolsCallResult | Promise<ToolsCallResult>): ToolDefinition<TInput>
+	handler(
+		fn: (args: ToolHandlerArgs<TInput>) => ToolsCallResult | Promise<ToolsCallResult>
+	): ToolDefinition<TInput>
 }
 
 // ============================================================================
@@ -102,7 +106,10 @@ const createBuilder = <TInput = void>(state: BuilderState = {}): ToolBuilderWith
 		const newState = { ...state, inputSchema: schema }
 		return {
 			description(desc: string) {
-				return createBuilder({ ...newState, description: desc }) as unknown as ToolBuilderWithInput<T>
+				return createBuilder({
+					...newState,
+					description: desc,
+				}) as unknown as ToolBuilderWithInput<T>
 			},
 			annotations(annotations: ToolAnnotations) {
 				return createBuilder({ ...newState, annotations }) as unknown as ToolBuilderWithInput<T>
@@ -123,7 +130,7 @@ const createDefinitionNoInput = (
 	fn: (args: { ctx: ToolContext }) => ToolsCallResult | Promise<ToolsCallResult>
 ): ToolDefinition<void> => ({
 	description: state.description,
-	inputSchema: { type: 'object', properties: {} },
+	inputSchema: { type: "object", properties: {} },
 	annotations: state.annotations,
 	handler: async ({ ctx }) => fn({ ctx }),
 })
@@ -187,7 +194,7 @@ export const toProtocolTool = (name: string, def: ToolDefinition): Tool => ({
 // ============================================================================
 
 export const textContent = (text: string): TextContent => ({
-	type: 'text',
+	type: "text",
 	text,
 })
 

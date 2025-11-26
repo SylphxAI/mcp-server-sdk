@@ -67,10 +67,12 @@ export const withProgress = async <T, R>(
 	const total = items.length
 	const results: R[] = []
 
-	for (let i = 0; i < items.length; i++) {
-		const item = items[i]!
+	let current = 0
+	for (const item of items) {
+		current++
+		const idx = current
 		const report = (message?: string) => {
-			emitter.emit(progress(token, i + 1, { total, message }))
+			emitter.emit(progress(token, idx, { total, message }))
 		}
 		results.push(await processor(item, report))
 	}

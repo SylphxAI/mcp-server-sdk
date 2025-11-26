@@ -1,12 +1,4 @@
-/**
- * Stdio Transport
- *
- * Line-delimited JSON-RPC over stdin/stdout.
- */
-
-import { createEmitter } from '../notifications/index.js'
-import * as Rpc from '../protocol/jsonrpc.js'
-import type { Transport, TransportFactory } from './types.js'
+import type { Transport, TransportFactory } from "./types.js"
 
 // ============================================================================
 // Options
@@ -37,7 +29,7 @@ export interface StdioOptions {
  * ```
  */
 export const stdio = (options: StdioOptions = {}): TransportFactory => {
-	return (server, notify): Transport => {
+	return (server, _notify): Transport => {
 		let running = false
 		let writer: { write: (data: Uint8Array) => void; flush: () => void } | null = null
 		const encoder = new TextEncoder()
@@ -51,7 +43,7 @@ export const stdio = (options: StdioOptions = {}): TransportFactory => {
 			writer = stdout
 
 			const decoder = new TextDecoder()
-			let buffer = ''
+			let buffer = ""
 
 			const reader = stdin.getReader()
 
@@ -65,9 +57,9 @@ export const stdio = (options: StdioOptions = {}): TransportFactory => {
 
 					// Process complete lines
 					for (
-						let newlineIndex = buffer.indexOf('\n');
+						let newlineIndex = buffer.indexOf("\n");
 						newlineIndex !== -1;
-						newlineIndex = buffer.indexOf('\n')
+						newlineIndex = buffer.indexOf("\n")
 					) {
 						const line = buffer.slice(0, newlineIndex).trim()
 						buffer = buffer.slice(newlineIndex + 1)

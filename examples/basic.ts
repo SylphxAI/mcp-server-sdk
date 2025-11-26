@@ -6,8 +6,8 @@
 
 import { z } from "zod"
 import {
-	createServer,
 	http,
+	createServer,
 	messages,
 	prompt,
 	resource,
@@ -45,7 +45,11 @@ const config = resource()
 	.description("Current application configuration")
 	.mimeType("application/json")
 	.handler(({ uri }) =>
-		resourceText(uri, JSON.stringify({ version: "1.0.0", debug: false }, null, 2), "application/json")
+		resourceText(
+			uri,
+			JSON.stringify({ version: "1.0.0", debug: false }, null, 2),
+			"application/json"
+		)
 	)
 
 // ============================================================================

@@ -25,15 +25,15 @@
  * ```
  */
 
-import type { PromptDefinition } from '../builders/prompt.js'
-import type { ResourceDefinition, ResourceTemplateDefinition } from '../builders/resource.js'
-import type { ToolDefinition } from '../builders/tool.js'
-import { noopEmitter } from '../notifications/index.js'
-import type { PaginationOptions } from '../pagination/index.js'
-import * as Rpc from '../protocol/jsonrpc.js'
-import type * as Mcp from '../protocol/mcp.js'
-import type { Transport, TransportFactory } from '../transports/types.js'
-import { type HandlerContext, type ServerState, dispatch } from './handler.js'
+import type { PromptDefinition } from "../builders/prompt.js"
+import type { ResourceDefinition, ResourceTemplateDefinition } from "../builders/resource.js"
+import type { ToolDefinition } from "../builders/tool.js"
+import { noopEmitter } from "../notifications/index.js"
+import type { PaginationOptions } from "../pagination/index.js"
+import * as Rpc from "../protocol/jsonrpc.js"
+import type * as Mcp from "../protocol/mcp.js"
+import type { Transport, TransportFactory } from "../transports/types.js"
+import { type HandlerContext, type ServerState, dispatch } from "./handler.js"
 
 // ============================================================================
 // Server Config
@@ -89,8 +89,8 @@ export interface Server {
  * ```
  */
 export const createServer = (config: ServerConfig): Server => {
-	const name = config.name ?? 'mcp-server'
-	const version = config.version ?? '1.0.0'
+	const name = config.name ?? "mcp-server"
+	const version = config.version ?? "1.0.0"
 
 	// Build state
 	const state = buildState(config, name, version)
@@ -110,7 +110,7 @@ export const createServer = (config: ServerConfig): Server => {
 		}
 
 		const result = await dispatch(state, parsed.value, ctx)
-		return result.type === 'response' ? Rpc.stringify(result.response) : null
+		return result.type === "response" ? Rpc.stringify(result.response) : null
 	}
 
 	// Create transport

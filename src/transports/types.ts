@@ -4,7 +4,7 @@
  * Transports handle the communication layer (stdio, http, etc.)
  */
 
-import type { NotificationEmitter } from '../notifications/index.js'
+import type { NotificationEmitter } from "../notifications/index.js"
 
 // ============================================================================
 // Context for Handlers

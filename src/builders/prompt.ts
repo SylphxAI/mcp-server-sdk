@@ -19,9 +19,15 @@
  * ```
  */
 
-import type { z } from 'zod'
-import type { Content, Prompt, PromptArgument, PromptMessage, PromptsGetResult } from '../protocol/mcp.js'
-import { type Infer, extractObjectFields, validate } from '../schema/zod.js'
+import type { z } from "zod"
+import type {
+	Content,
+	Prompt,
+	PromptArgument,
+	PromptMessage,
+	PromptsGetResult,
+} from "../protocol/mcp.js"
+import { type Infer, extractObjectFields, validate } from "../schema/zod.js"
 
 // ============================================================================
 // Context Type
@@ -48,7 +54,7 @@ export type PromptHandler<TArgs = void> = TArgs extends void
 // Prompt Definition
 // ============================================================================
 
-export interface PromptDefinition<TArgs = void> {
+export interface PromptDefinition<_TArgs = void> {
 	readonly description?: string
 	readonly arguments: readonly PromptArgument[]
 	readonly handler: (args: { args: unknown; ctx: PromptContext }) => Promise<PromptsGetResult>
@@ -61,12 +67,16 @@ export interface PromptDefinition<TArgs = void> {
 interface PromptBuilderWithoutArgs {
 	description(desc: string): PromptBuilderWithoutArgs
 	args<T extends z.ZodObject<z.ZodRawShape>>(schema: T): PromptBuilderWithArgs<Infer<T>>
-	handler(fn: (args: { ctx: PromptContext }) => PromptsGetResult | Promise<PromptsGetResult>): PromptDefinition<void>
+	handler(
+		fn: (args: { ctx: PromptContext }) => PromptsGetResult | Promise<PromptsGetResult>
+	): PromptDefinition<void>
 }
 
 interface PromptBuilderWithArgs<TArgs> {
 	description(desc: string): PromptBuilderWithArgs<TArgs>
-	handler(fn: (args: PromptHandlerArgs<TArgs>) => PromptsGetResult | Promise<PromptsGetResult>): PromptDefinition<TArgs>
+	handler(
+		fn: (args: PromptHandlerArgs<TArgs>) => PromptsGetResult | Promise<PromptsGetResult>
+	): PromptDefinition<TArgs>
 }
 
 // ============================================================================
@@ -87,7 +97,10 @@ const createBuilder = <TArgs = void>(state: BuilderState = {}): PromptBuilderWit
 		const newState = { ...state, argsSchema: schema }
 		return {
 			description(desc: string) {
-				return createBuilder({ ...newState, description: desc }) as unknown as PromptBuilderWithArgs<Infer<T>>
+				return createBuilder({
+					...newState,
+					description: desc,
+				}) as unknown as PromptBuilderWithArgs<Infer<T>>
 			},
 			handler(fn) {
 				return createDefinitionWithArgs(newState, schema, fn)
@@ -172,16 +185,16 @@ export const toProtocolPrompt = (name: string, def: PromptDefinition): Prompt =>
 // ============================================================================
 
 export const user = (text: string): PromptMessage => ({
-	role: 'user',
-	content: { type: 'text', text },
+	role: "user",
+	content: { type: "text", text },
 })
 
 export const assistant = (text: string): PromptMessage => ({
-	role: 'assistant',
-	content: { type: 'text', text },
+	role: "assistant",
+	content: { type: "text", text },
 })
 
-export const message = (role: 'user' | 'assistant', content: Content): PromptMessage => ({
+export const message = (role: "user" | "assistant", content: Content): PromptMessage => ({
 	role,
 	content,
 })
