@@ -8,6 +8,8 @@
 import type { PromptContext } from "../builders/prompt.js"
 import type { ResourceContext } from "../builders/resource.js"
 import type { ToolContext } from "../builders/tool.js"
+import { createEmitter, type NotificationEmitter } from "../notifications/index.js"
+import * as Rpc from "../protocol/jsonrpc.js"
 import type { HandlerContext } from "../server/handler.js"
 import type { Server } from "../server/server.js"
 
@@ -20,6 +22,8 @@ export interface StdioTransport {
 	readonly start: () => Promise<void>
 	/** Stop the transport */
 	readonly stop: () => void
+	/** Notification emitter for server-to-client messages */
+	readonly notify: NotificationEmitter
 }
 
 export interface StdioOptions<
@@ -27,8 +31,8 @@ export interface StdioOptions<
 	TResourceCtx extends ResourceContext,
 	TPromptCtx extends PromptContext,
 > {
-	/** Custom context factory (called for each message) */
-	readonly createContext?: () => HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
+	/** Custom context factory (called for each message, receives notification emitter) */
+	readonly createContext?: (notify: NotificationEmitter) => HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
 	/** Custom stdin (for testing) */
 	readonly stdin?: ReadableStream<Uint8Array>
 	/** Custom stdout (for testing) */
@@ -61,11 +65,23 @@ export const stdio = <
 ): StdioTransport => {
 	let running = false
 	let abortController: AbortController | null = null
+	let writer: { write: (data: Uint8Array) => void; flush: () => void } | null = null
+	const encoder = new TextEncoder()
 
-	const defaultContext = (): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
-		toolContext: { signal: abortController?.signal } as TToolCtx,
-		resourceContext: { signal: abortController?.signal } as TResourceCtx,
-		promptContext: { signal: abortController?.signal } as TPromptCtx,
+	// Create notification sender
+	const sendNotification = (method: string, params?: unknown): void => {
+		if (!writer) return
+		const message = Rpc.notification(method, params)
+		writer.write(encoder.encode(`${Rpc.stringify(message)}\n`))
+		writer.flush()
+	}
+
+	const notify = createEmitter(sendNotification)
+
+	const defaultContext = (emitter: NotificationEmitter): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
+		toolContext: { signal: abortController?.signal, notify: emitter } as TToolCtx,
+		resourceContext: { signal: abortController?.signal, notify: emitter } as TResourceCtx,
+		promptContext: { signal: abortController?.signal, notify: emitter } as TPromptCtx,
 	})
 
 	const createContext = options.createContext ?? defaultContext
@@ -77,9 +93,9 @@ export const stdio = <
 
 		const stdin = options.stdin ?? Bun.stdin.stream()
 		const stdout = options.stdout ?? Bun.stdout.writer()
+		writer = stdout as { write: (data: Uint8Array) => void; flush: () => void }
 
 		const decoder = new TextDecoder()
-		const encoder = new TextEncoder()
 		let buffer = ""
 
 		const reader = stdin.getReader()
@@ -104,13 +120,12 @@ export const stdio = <
 					if (line.length === 0) continue
 
 					try {
-						const ctx = createContext()
+						const ctx = createContext(notify)
 						const response = await server.handle(line, ctx)
 
 						if (response) {
-							const output = stdout as { write: (data: Uint8Array) => void; flush: () => void }
-							output.write(encoder.encode(`${response}\n`))
-							output.flush()
+							writer.write(encoder.encode(`${response}\n`))
+							writer.flush()
 						}
 					} catch (error) {
 						options.onError?.(error instanceof Error ? error : new Error(String(error)))
@@ -120,6 +135,7 @@ export const stdio = <
 		} finally {
 			reader.releaseLock()
 			running = false
+			writer = null
 		}
 	}
 
@@ -129,5 +145,5 @@ export const stdio = <
 		abortController = null
 	}
 
-	return { start, stop }
+	return { start, stop, notify }
 }

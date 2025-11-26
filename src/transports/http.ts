@@ -8,6 +8,7 @@
 import type { PromptContext } from "../builders/prompt.js"
 import type { ResourceContext } from "../builders/resource.js"
 import type { ToolContext } from "../builders/tool.js"
+import { createEmitter, type NotificationEmitter } from "../notifications/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import type { HandlerContext } from "../server/handler.js"
 import type { Server as McpServer } from "../server/server.js"
@@ -23,6 +24,10 @@ export interface HttpTransport {
 	readonly stop: () => Promise<void>
 	/** Get the server URL */
 	readonly url: string
+	/** Broadcast notification to all SSE sessions */
+	readonly broadcast: NotificationEmitter
+	/** Get notification emitter for specific session */
+	readonly getSessionNotifier: (sessionId: string) => NotificationEmitter | undefined
 }
 
 export interface HttpOptions<
@@ -36,8 +41,8 @@ export interface HttpOptions<
 	readonly hostname?: string
 	/** Path prefix for MCP endpoints */
 	readonly basePath?: string
-	/** Custom context factory */
-	readonly createContext?: (req: Request) => HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
+	/** Custom context factory (receives request and session-specific notification emitter) */
+	readonly createContext?: (req: Request, notify: NotificationEmitter) => HandlerContext<TToolCtx, TResourceCtx, TPromptCtx>
 	/** CORS origin (set to "*" for all, or specific origin) */
 	readonly cors?: string
 	/** Error handler */
@@ -52,6 +57,7 @@ interface Session {
 	readonly id: string
 	readonly createdAt: number
 	controller: ReadableStreamDefaultController<Uint8Array> | null
+	readonly notify: NotificationEmitter
 }
 
 // ============================================================================
@@ -86,15 +92,43 @@ export const http = <
 	const hostname = options.hostname ?? "localhost"
 	const basePath = options.basePath ?? "/mcp"
 	const cors = options.cors
+	const encoder = new TextEncoder()
 
 	// Session storage
 	const sessions = new Map<string, Session>()
 
+	// Create session notification sender
+	const createSessionNotifier = (sessionId: string): NotificationEmitter => {
+		return createEmitter((method, params) => {
+			const session = sessions.get(sessionId)
+			if (!session?.controller) return
+			const message = Rpc.notification(method, params)
+			const data = `event: message\ndata: ${Rpc.stringify(message)}\n\n`
+			session.controller.enqueue(encoder.encode(data))
+		})
+	}
+
+	// Broadcast notification sender (to all sessions)
+	const broadcast = createEmitter((method, params) => {
+		const message = Rpc.notification(method, params)
+		const data = `event: message\ndata: ${Rpc.stringify(message)}\n\n`
+		const encoded = encoder.encode(data)
+		for (const session of sessions.values()) {
+			session.controller?.enqueue(encoded)
+		}
+	})
+
+	// Get session-specific notifier
+	const getSessionNotifier = (sessionId: string): NotificationEmitter | undefined => {
+		const session = sessions.get(sessionId)
+		return session?.notify
+	}
+
 	// Default context factory
-	const defaultContext = (_req: Request): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
-		toolContext: {} as TToolCtx,
-		resourceContext: {} as TResourceCtx,
-		promptContext: {} as TPromptCtx,
+	const defaultContext = (_req: Request, notify: NotificationEmitter): HandlerContext<TToolCtx, TResourceCtx, TPromptCtx> => ({
+		toolContext: { notify } as TToolCtx,
+		resourceContext: { notify } as TResourceCtx,
+		promptContext: { notify } as TPromptCtx,
 	})
 
 	const createContext = options.createContext ?? defaultContext
@@ -126,6 +160,7 @@ export const http = <
 		// SSE endpoint - establish stream
 		if (path === `${basePath}/sse` && req.method === "GET") {
 			const sessionId = crypto.randomUUID()
+			const sessionNotifier = createSessionNotifier(sessionId)
 
 			const stream = new ReadableStream<Uint8Array>({
 				start(controller) {
@@ -133,10 +168,10 @@ export const http = <
 						id: sessionId,
 						createdAt: Date.now(),
 						controller,
+						notify: sessionNotifier,
 					})
 
 					// Send session ID as first event
-					const encoder = new TextEncoder()
 					controller.enqueue(
 						encoder.encode(`event: session\ndata: ${JSON.stringify({ sessionId })}\n\n`),
 					)
@@ -176,11 +211,10 @@ export const http = <
 
 			try {
 				const body = await req.text()
-				const ctx = createContext(req)
+				const ctx = createContext(req, session.notify)
 				const response = await server.handle(body, ctx)
 
 				if (response && session.controller) {
-					const encoder = new TextEncoder()
 					session.controller.enqueue(encoder.encode(`event: message\ndata: ${response}\n\n`))
 				}
 
@@ -196,11 +230,12 @@ export const http = <
 			}
 		}
 
-		// Standard JSON-RPC endpoint
+		// Standard JSON-RPC endpoint (no notification support - use SSE for notifications)
 		if (path === basePath && req.method === "POST") {
 			try {
 				const body = await req.text()
-				const ctx = createContext(req)
+				// Use broadcast emitter for non-session requests
+				const ctx = createContext(req, broadcast)
 				const response = await server.handle(body, ctx)
 
 				return new Response(response ?? "", {
@@ -258,6 +293,8 @@ export const http = <
 	return {
 		start,
 		stop,
+		broadcast,
+		getSessionNotifier,
 		get url() {
 			return `http://${hostname}:${port}${basePath}`
 		},

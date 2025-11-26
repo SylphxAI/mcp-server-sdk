@@ -149,3 +149,29 @@ export {
 	type RetryOptions,
 	type CacheOptions,
 } from "./middleware/index.js"
+
+// Notifications
+export {
+	// Emitter
+	createEmitter,
+	noopEmitter,
+	// Helpers
+	progress,
+	log,
+	createProgressReporter,
+	createLogger,
+	withProgress,
+	resourcesListChanged,
+	toolsListChanged,
+	promptsListChanged,
+	resourceUpdated,
+	cancelled,
+	// Types
+	type Notification,
+	type ProgressNotification,
+	type LogNotification,
+	type NotificationEmitter,
+	type NotificationSender,
+	type NotificationContext,
+	type Logger,
+} from "./notifications/index.js"
