@@ -30,8 +30,8 @@
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@sylphx/biome-config": "^0.1.0",
-		"@sylphx/bump": "^0.6.1",
-		"@sylphx/doctor": "^1.18.0",
+		"@sylphx/bump": "^0.6.2",
+		"@sylphx/doctor": "^1.19.1",
 		"@sylphx/tsconfig": "^0.1.0",
 		"@types/bun": "^1.2.14",
 		"bunup": "^0.16.10",
