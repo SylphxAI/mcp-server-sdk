@@ -11,14 +11,14 @@
       "devDependencies": {
         "@biomejs/biome": "^2.3.8",
         "@sylphx/biome-config": "^0.4.0",
-        "@sylphx/bump": "^0.10.2",
-        "@sylphx/doctor": "^1.23.3",
+        "@sylphx/bump": "^0.13.1",
+        "@sylphx/doctor": "^1.24.0",
         "@sylphx/tsconfig": "^0.3.0",
-        "@types/bun": "^1.2.14",
+        "@types/bun": "^1.3.3",
         "bunup": "^0.16.10",
         "lefthook": "^2.0.4",
         "mitata": "^1.0.34",
-        "typescript": "^5.8.3",
+        "typescript": "^5.9.3",
         "zod": "^4.1.13",
       },
       "peerDependencies": {
@@ -171,9 +171,9 @@
 
     "@sylphx/biome-config": ["@sylphx/biome-config@0.4.0", "", { "peerDependencies": { "@biomejs/biome": "^2.0.0" } }, "sha512-fvIZ5H61VfbQzp2X2E5FoRtzUBS03rGvuaxby6MoP4fmgXaYS35CWgU+zswKoo2DAriBbIKfWkYsT/Bn2ih0HA=="],
 
-    "@sylphx/bump": ["@sylphx/bump@0.10.2", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.2", "defu": "^6.1.4", "picocolors": "^1.1.1", "semver": "^7.6.3" }, "bin": { "bump": "dist/cli.js" } }, "sha512-NWaiPPk7ssQ56aYjXS6wL+0spG5xXsrFW4rJXeeOpqtPAqqTVHojkbvfY79tqgIW0T6t8Sjwu9nNDmexmJ1J4w=="],
+    "@sylphx/bump": ["@sylphx/bump@0.13.1", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.2", "defu": "^6.1.4", "picocolors": "^1.1.1", "semver": "^7.6.3" }, "bin": { "bump": "dist/cli.js" } }, "sha512-aNoFGQAQzvd2u9DYV5K6CfsTM3VtTh/I28ZIxy6iV1h5arazRqMAKOqe8jit2vaTvCxP5YZL4OeGM8KTxHj4MQ=="],
 
-    "@sylphx/doctor": ["@sylphx/doctor@1.23.3", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.2", "defu": "^6.1.4", "jiti": "^2.4.2", "picocolors": "^1.1.1" }, "bin": { "doctor": "dist/cli.js" } }, "sha512-bz9zzT9bS23nO82hCiQlQPxm9Fi5lqyTSFKci89/nyRSPUkG9JMwf85mJmhQsVbglj6RSeYSCFmTvKyiXSxdKw=="],
+    "@sylphx/doctor": ["@sylphx/doctor@1.24.0", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.2", "defu": "^6.1.4", "jiti": "^2.4.2", "picocolors": "^1.1.1" }, "bin": { "doctor": "dist/cli.js" } }, "sha512-lmbmwAe4rIhDp6nIDQMeLs7hJbpBUTC79Xdv90eHqL/QUDbQu0x0oSi4acEoJ/K84BDvQ2tiAeKco1Zd8DIzLQ=="],
 
     "@sylphx/tsconfig": ["@sylphx/tsconfig@0.3.0", "", {}, "sha512-3O085PgS9CkWlW1xQND7XJkXYaq3SjoUvwOosK5sAA5eev1gVYEdYJhfAHgLcZefP541FQnHSCzs1re4gj6TjA=="],
 
