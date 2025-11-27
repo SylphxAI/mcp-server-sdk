@@ -1,3 +1,4 @@
+import { Readable } from "node:stream"
 import type { Transport, TransportFactory } from "./types.js"
 
 // ============================================================================
@@ -38,8 +39,11 @@ export const stdio = (options: StdioOptions = {}): TransportFactory => {
 			if (running) return
 			running = true
 
-			const stdin = options.stdin ?? Bun.stdin.stream()
-			const stdout = options.stdout ?? Bun.stdout.writer()
+			const stdin = options.stdin ?? (Readable.toWeb(process.stdin) as ReadableStream<Uint8Array>)
+			const stdout = options.stdout ?? {
+				write: (data: Uint8Array) => process.stdout.write(data),
+				flush: () => {},
+			}
 			writer = stdout
 
 			const decoder = new TextDecoder()

@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0 (2025-11-27)
+
+### 🐛 Bug Fixes
+
+- replace Bun.stdin/stdout with Node.js streams for full Node.js compatibility
+
+### 📚 Documentation
+
+- update package description to reflect Node.js support
+
 ## 1.1.0 (2025-11-27)
 
 ### ✨ Features

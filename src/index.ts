@@ -1,7 +1,7 @@
 /**
  * @sylphx/mcp-server-sdk
  *
- * Pure functional MCP server SDK for Bun.
+ * Pure functional MCP server SDK for Node.js and Bun.
  *
  * @example
  * ```ts
