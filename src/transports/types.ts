@@ -18,10 +18,15 @@ export interface HandlerContext {
 // Server Interface (what transport receives)
 // ============================================================================
 
+export interface HandleOptions {
+	/** Send a notification to the client during request processing */
+	readonly notify?: (method: string, params?: unknown) => void
+}
+
 export interface ServerHandler {
 	readonly name: string
 	readonly version: string
-	readonly handle: (message: string) => Promise<string | null>
+	readonly handle: (message: string, options?: HandleOptions) => Promise<string | null>
 }
 
 // ============================================================================

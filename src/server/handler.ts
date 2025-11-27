@@ -28,6 +28,9 @@ export interface ServerState {
 	readonly prompts: ReadonlyMap<string, PromptDefinition>
 	readonly capabilities: Mcp.ServerCapabilities
 	readonly pagination?: PaginationOptions
+	// Mutable state for subscriptions and logging
+	readonly subscriptions?: Set<string>
+	logLevel?: Mcp.LogLevel
 }
 
 // ============================================================================
@@ -36,6 +39,8 @@ export interface ServerState {
 
 export interface HandlerContext {
 	readonly signal?: AbortSignal
+	/** Notification sender for server→client notifications */
+	readonly notify?: (method: string, params?: unknown) => void
 }
 
 // ============================================================================
@@ -73,8 +78,31 @@ const handleToolsCall = async (
 		}
 	}
 
+	// Extract progressToken from request _meta
+	const requestProgressToken = params._meta?.progressToken
+
+	// Create tool context with notification helpers
+	const toolCtx = {
+		signal: ctx.signal,
+		progressToken: requestProgressToken,
+		log: (level: Mcp.LogLevel, data: unknown, logger?: string) => {
+			ctx.notify?.(Mcp.Method.LogMessage, { level, logger, data })
+		},
+		progress: (current: number, options?: { total?: number; message?: string }) => {
+			// Use the progressToken from the request
+			if (requestProgressToken) {
+				ctx.notify?.(Mcp.Method.ProgressNotification, {
+					progressToken: requestProgressToken,
+					progress: current,
+					total: options?.total,
+					message: options?.message,
+				})
+			}
+		},
+	}
+
 	try {
-		return await tool.handler({ input: params.arguments ?? {}, ctx })
+		return await tool.handler({ input: params.arguments ?? {}, ctx: toolCtx })
 	} catch (error) {
 		return {
 			content: [{ type: "text", text: `Tool error: ${error}` }],
@@ -146,6 +174,76 @@ const handlePromptsGet = async (
 	}
 
 	return await prompt.handler({ args: params.arguments ?? {}, ctx })
+}
+
+// ============================================================================
+// Logging Handler
+// ============================================================================
+
+const handleLoggingSetLevel = (
+	state: ServerState,
+	params: Mcp.LoggingSetLevelParams
+): Record<string, never> => {
+	state.logLevel = params.level
+	return {}
+}
+
+// ============================================================================
+// Completion Handler
+// ============================================================================
+
+const handleCompletionComplete = (
+	state: ServerState,
+	params: Mcp.CompletionCompleteParams
+): Mcp.CompletionCompleteResult => {
+	const values: string[] = []
+
+	if (params.ref.type === "ref/prompt") {
+		// Complete prompt argument values
+		const prompt = params.ref.name ? state.prompts.get(params.ref.name) : undefined
+		if (prompt?.arguments) {
+			// Return empty completions - actual completion values depend on the argument
+			// This is a basic implementation
+		}
+	} else if (params.ref.type === "ref/resource") {
+		// Complete resource URIs
+		for (const [, resource] of state.resources) {
+			if (resource.uri.includes(params.argument.value)) {
+				values.push(resource.uri)
+			}
+		}
+	}
+
+	return {
+		completion: {
+			values,
+			hasMore: false,
+		},
+	}
+}
+
+// ============================================================================
+// Resource Subscription Handlers
+// ============================================================================
+
+const handleResourcesSubscribe = (
+	state: ServerState,
+	params: Mcp.ResourcesSubscribeParams
+): Record<string, never> => {
+	if (state.subscriptions) {
+		state.subscriptions.add(params.uri)
+	}
+	return {}
+}
+
+const handleResourcesUnsubscribe = (
+	state: ServerState,
+	params: Mcp.ResourcesUnsubscribeParams
+): Record<string, never> => {
+	if (state.subscriptions) {
+		state.subscriptions.delete(params.uri)
+	}
+	return {}
 }
 
 // ============================================================================
@@ -237,6 +335,18 @@ const handleRequest = async (
 
 		case Mcp.Method.PromptsGet:
 			return handlePromptsGet(state, req.params as Mcp.PromptsGetParams, ctx)
+
+		case Mcp.Method.LoggingSetLevel:
+			return handleLoggingSetLevel(state, req.params as Mcp.LoggingSetLevelParams)
+
+		case Mcp.Method.CompletionComplete:
+			return handleCompletionComplete(state, req.params as Mcp.CompletionCompleteParams)
+
+		case Mcp.Method.ResourcesSubscribe:
+			return handleResourcesSubscribe(state, req.params as Mcp.ResourcesSubscribeParams)
+
+		case Mcp.Method.ResourcesUnsubscribe:
+			return handleResourcesUnsubscribe(state, req.params as Mcp.ResourcesUnsubscribeParams)
 
 		default:
 			throw new Error(`Unknown method: ${req.method}`)

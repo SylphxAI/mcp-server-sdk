@@ -20,6 +20,7 @@
  */
 
 import type { z } from "zod"
+import type { NotificationEmitter } from "../notifications/types.js"
 import type {
 	AudioContent,
 	Content,
@@ -27,6 +28,8 @@ import type {
 	EmbeddedResource,
 	ImageContent,
 	JsonSchema,
+	LogLevel,
+	ProgressToken,
 	ResourceContent,
 	TextContent,
 	Tool,
@@ -44,6 +47,17 @@ import { validate, zodToJsonSchema } from "../schema/zod.js"
  */
 export interface ToolContext {
 	readonly signal?: AbortSignal
+	/** Progress token from the request (if client requested progress updates) */
+	readonly progressToken?: ProgressToken
+	/** Send a log message to the client */
+	readonly log: (level: LogLevel, data: unknown, logger?: string) => void
+	/**
+	 * Send progress notification to the client.
+	 * Only sends if client provided a progressToken in the request.
+	 */
+	readonly progress: (current: number, options?: { total?: number; message?: string }) => void
+	/** Raw notification emitter for advanced use */
+	readonly notify?: NotificationEmitter
 }
 
 // ============================================================================

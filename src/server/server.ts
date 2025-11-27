@@ -95,18 +95,22 @@ export const createServer = (config: ServerConfig): Server => {
 	// Build state
 	const state = buildState(config, name, version)
 
-	// Create handler context
-	const ctx: HandlerContext = {
-		signal: undefined,
-	}
-
 	// Message handler
-	const handle = async (input: string): Promise<string | null> => {
+	const handle = async (
+		input: string,
+		options?: { notify?: (method: string, params?: unknown) => void }
+	): Promise<string | null> => {
 		const parsed = Rpc.parseMessage(input)
 
 		if (!parsed.ok) {
 			const errorResponse = Rpc.error(null, Rpc.ErrorCode.ParseError, parsed.error)
 			return Rpc.stringify(errorResponse)
+		}
+
+		// Create handler context with notify function
+		const ctx: HandlerContext = {
+			signal: undefined,
+			notify: options?.notify,
 		}
 
 		const result = await dispatch(state, parsed.value, ctx)
@@ -138,9 +142,11 @@ const buildState = (config: ServerConfig, name: string, version: string): Server
 	const capabilities: Mcp.ServerCapabilities = {
 		...(tools.size > 0 && { tools: { listChanged: true } }),
 		...((resources.size > 0 || resourceTemplates.size > 0) && {
-			resources: { subscribe: false, listChanged: true },
+			resources: { subscribe: true, listChanged: true },
 		}),
 		...(prompts.size > 0 && { prompts: { listChanged: true } }),
+		logging: {},
+		completions: {},
 	}
 
 	return {
@@ -153,5 +159,6 @@ const buildState = (config: ServerConfig, name: string, version: string): Server
 		prompts,
 		capabilities,
 		pagination: config.pagination,
+		subscriptions: new Set<string>(),
 	}
 }

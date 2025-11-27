@@ -321,6 +321,9 @@ export interface ToolsListResult {
 export interface ToolsCallParams {
 	readonly name: string
 	readonly arguments?: Record<string, unknown>
+	readonly _meta?: {
+		readonly progressToken?: ProgressToken
+	}
 }
 
 export interface ToolsCallResult {

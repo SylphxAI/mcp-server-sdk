@@ -1,6 +1,26 @@
-import { type ServerType, serve } from "@hono/node-server"
-import { Hono } from "hono"
-import { streamSSE } from "hono/streaming"
+/**
+ * HTTP Transport
+ *
+ * MCP Streamable HTTP Transport using @sylphx/gust
+ *
+ * Implements the MCP 2025-03-26 Streamable HTTP specification:
+ * - Single POST endpoint for JSON-RPC messages
+ * - Supports both JSON and SSE response formats
+ * - SSE enables server-to-client notifications during request processing
+ */
+
+import {
+	type Context,
+	compose,
+	get,
+	cors as gustCors,
+	json,
+	post,
+	response,
+	router,
+	type Server,
+	serve,
+} from "@sylphx/gust"
 import * as Rpc from "../protocol/jsonrpc.js"
 import type { Transport, TransportFactory } from "./types.js"
 
@@ -22,17 +42,32 @@ export interface HttpOptions {
 }
 
 // ============================================================================
+// SSE Helpers
+// ============================================================================
+
+/** Format an SSE event */
+const sseEvent = (data: string, event?: string, id?: string): string => {
+	let result = ""
+	if (id) result += `id: ${id}\n`
+	if (event) result += `event: ${event}\n`
+	result += `data: ${data}\n\n`
+	return result
+}
+
+// ============================================================================
 // HTTP Transport Factory
 // ============================================================================
 
 /**
- * Create an HTTP transport using Hono.
+ * Create a Streamable HTTP transport using @sylphx/gust.
  * Works in both Node.js and Bun environments.
  *
- * Endpoints:
- * - POST /mcp - JSON-RPC request/response
- * - GET /mcp/sse - Server-Sent Events stream
+ * Implements MCP Streamable HTTP (2025-03-26):
+ * - POST /mcp - JSON-RPC with optional SSE streaming
  * - GET /mcp/health - Health check
+ *
+ * When client includes `Accept: text/event-stream`, server may respond
+ * with SSE to stream notifications during request processing.
  *
  * @example
  * ```ts
@@ -47,117 +82,112 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 		const port = options.port ?? 3000
 		const hostname = options.hostname ?? "localhost"
 		const basePath = options.basePath ?? "/mcp"
-		const cors = options.cors
 
-		const app = new Hono()
+		// Session storage for Mcp-Session-Id
+		const sessions = new Map<string, { createdAt: number }>()
 
-		// Session storage for SSE
-		const sessions = new Map<
-			string,
-			{
-				send: (event: string, data: string) => Promise<void>
-			}
-		>()
-
-		// CORS middleware
-		if (cors) {
-			app.use("*", async (c, next) => {
-				c.header("Access-Control-Allow-Origin", cors)
-				c.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-				c.header("Access-Control-Allow-Headers", "Content-Type, X-Session-ID")
-
-				if (c.req.method === "OPTIONS") {
-					return c.body(null, 204)
-				}
-
-				await next()
-			})
-		}
-
-		// SSE endpoint - establish stream
-		app.get(`${basePath}/sse`, (c) => {
-			const sessionId = crypto.randomUUID()
-
-			return streamSSE(c, async (stream) => {
-				// Store send function for this session
-				sessions.set(sessionId, {
-					send: async (event: string, data: string) => {
-						await stream.writeSSE({ event, data })
-					},
-				})
-
-				// Send session ID
-				await stream.writeSSE({
-					event: "session",
-					data: JSON.stringify({ sessionId }),
-				})
-
-				// Keep connection open
-				while (true) {
-					await stream.sleep(30000)
-				}
-			})
-		})
-
-		// SSE message endpoint
-		app.post(`${basePath}/sse`, async (c) => {
-			const sessionId = c.req.header("X-Session-ID")
-			if (!sessionId) {
-				return c.json({ error: "Missing X-Session-ID header" }, 400)
-			}
-
-			const session = sessions.get(sessionId)
-			if (!session) {
-				return c.json({ error: "Session not found" }, 404)
-			}
-
+		// Routes
+		const jsonRpcRoute = post(basePath, async (ctx: Context) => {
 			try {
-				const body = await c.req.text()
-				const response = await server.handle(body)
+				const body = ctx.body.toString()
+				const accept = ctx.headers.accept ?? ""
+				const acceptsSSE = accept.includes("text/event-stream")
 
-				if (response) {
-					await session.send("message", response)
+				// Check for session ID (optional in Streamable HTTP)
+				const sessionId = ctx.headers["mcp-session-id"]
+				if (sessionId && !sessions.has(sessionId)) {
+					return json({ error: "Session not found" }, { status: 404 })
 				}
 
-				return c.json({ ok: true })
-			} catch (error) {
-				options.onError?.(error instanceof Error ? error : new Error(String(error)))
-				return c.json({ error: "Internal error" }, 500)
-			}
-		})
+				if (acceptsSSE) {
+					// Streamable HTTP: Use SSE for response
+					// This allows sending notifications during processing
+					const notifications: string[] = []
 
-		// Standard JSON-RPC endpoint
-		app.post(basePath, async (c) => {
-			try {
-				const body = await c.req.text()
-				const response = await server.handle(body)
+					// Collect notifications during handler execution
+					const notify = (method: string, params?: unknown) => {
+						const notification = Rpc.notification(method, params)
+						notifications.push(Rpc.stringify(notification))
+					}
 
-				if (!response) {
-					return c.body(null, 204)
+					// Execute handler and collect response
+					const responseStr = await server.handle(body, { notify })
+
+					// Build SSE body
+					let sseBody = ""
+					for (const notification of notifications) {
+						sseBody += sseEvent(notification, "message")
+					}
+					if (responseStr) {
+						sseBody += sseEvent(responseStr, "message")
+					}
+
+					// Generate session ID on initialize response
+					const parsed = Rpc.parseMessage(body)
+					const headers: Record<string, string> = {
+						"Content-Type": "text/event-stream",
+						"Cache-Control": "no-cache",
+					}
+
+					// Create session on initialize
+					if (parsed.ok && Rpc.isRequest(parsed.value) && parsed.value.method === "initialize") {
+						const newSessionId = crypto.randomUUID()
+						sessions.set(newSessionId, { createdAt: Date.now() })
+						headers["Mcp-Session-Id"] = newSessionId
+					}
+
+					return response(sseBody, { status: 200, headers })
 				}
 
-				return c.json(JSON.parse(response))
+				// Regular JSON response (no streaming)
+				const responseStr = await server.handle(body)
+
+				if (!responseStr) {
+					return response("", { status: 204 })
+				}
+
+				// Generate session ID on initialize
+				const parsed = Rpc.parseMessage(body)
+				const headers: Record<string, string> = {}
+
+				if (parsed.ok && Rpc.isRequest(parsed.value) && parsed.value.method === "initialize") {
+					const newSessionId = crypto.randomUUID()
+					sessions.set(newSessionId, { createdAt: Date.now() })
+					headers["Mcp-Session-Id"] = newSessionId
+				}
+
+				return json(JSON.parse(responseStr), { headers })
 			} catch (error) {
+				console.error("HTTP Transport Error:", error)
 				options.onError?.(error instanceof Error ? error : new Error(String(error)))
 				const errorResponse = Rpc.error(null, Rpc.ErrorCode.InternalError, "Internal server error")
-				return c.json(JSON.parse(Rpc.stringify(errorResponse)), 500)
+				return json(JSON.parse(Rpc.stringify(errorResponse)), { status: 500 })
 			}
 		})
 
-		// Health check
-		app.get(`${basePath}/health`, (c) => {
-			return c.json({
+		const healthRoute = get(`${basePath}/health`, () => {
+			return json({
 				status: "ok",
 				server: server.name,
 				version: server.version,
 			})
 		})
 
-		let nodeServer: ServerType | null = null
+		// Build app with optional CORS
+		const routes = router({
+			jsonRpc: jsonRpcRoute,
+			health: healthRoute,
+		})
+
+		const app = options.cors
+			? compose(gustCors({ origin: options.cors }))(routes.handler)
+			: routes.handler
+
+		let gustServer: Server | null = null
 
 		const start = async (): Promise<void> => {
-			nodeServer = serve({
-				fetch: app.fetch,
+			gustServer = await serve({
+				fetch: app,
 				port,
 				hostname,
 			})
@@ -165,9 +195,9 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 
 		const stop = async (): Promise<void> => {
 			sessions.clear()
-			if (nodeServer) {
-				nodeServer.close()
-				nodeServer = null
+			if (gustServer) {
+				await gustServer.stop()
+				gustServer = null
 			}
 		}
 
