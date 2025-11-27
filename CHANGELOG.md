@@ -4,6 +4,17 @@
 
 ### 🐛 Bug Fixes
 
+- 💥 use correct MCP protocol field names for list responses ([6841f30](https://github.com/SylphxAI/mcp-server-sdk/commit/6841f30a0939edcf4f6579861d20e43368ff9e20))
+
+### 💥 Breaking Changes
+
+- use correct MCP protocol field names for list responses ([6841f30](https://github.com/SylphxAI/mcp-server-sdk/commit/6841f30a0939edcf4f6579861d20e43368ff9e20))
+  List response field names now match MCP spec:
+
+## 2.0.0 (2025-11-27)
+
+### 🐛 Bug Fixes
+
 - 💥 use correct MCP protocol field names for list responses
 
 ### 💥 Breaking Changes
