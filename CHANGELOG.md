@@ -1,20 +1,23 @@
 # Changelog
 
+## 2.0.0 (2025-11-27)
+
+### 🐛 Bug Fixes
+
+- 💥 use correct MCP protocol field names for list responses
+
+### 💥 Breaking Changes
+
+- `tools/list` now returns `{ tools: [...] }` instead of `{ items: [...] }`
+- `resources/list` now returns `{ resources: [...] }` instead of `{ items: [...] }`
+- `resourceTemplates/list` now returns `{ resourceTemplates: [...] }` instead of `{ items: [...] }`
+- `prompts/list` now returns `{ prompts: [...] }` instead of `{ items: [...] }`
+
 ## 1.1.1 (2025-11-27)
 
 ### 🐛 Bug Fixes
 
-- replace Bun.stdin/stdout with Node.js streams ([17425f6](https://github.com/SylphxAI/mcp-server-sdk/commit/17425f6ec63a538f45e76b05a5d0bf551f16b396))
-
-## 1.2.0 (2025-11-27)
-
-### 🐛 Bug Fixes
-
 - replace Bun.stdin/stdout with Node.js streams for full Node.js compatibility
-
-### 📚 Documentation
-
-- update package description to reflect Node.js support
 
 ## 1.1.0 (2025-11-27)
 
