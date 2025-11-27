@@ -2,12 +2,16 @@
 
 Pure functional MCP (Model Context Protocol) server SDK for Bun.
 
+[![npm](https://img.shields.io/npm/v/@sylphx/mcp-server-sdk)](https://www.npmjs.com/package/@sylphx/mcp-server-sdk)
+[![MCP Conformance](https://img.shields.io/badge/MCP%20Conformance-88%25-brightgreen)](https://github.com/modelcontextprotocol/conformance)
+
 ## Features
 
 - **Pure Functional**: Immutable data, composable handlers
 - **Type-Safe**: First-class TypeScript with Zod schema integration
 - **Builder Pattern**: Fluent API for defining tools, resources, and prompts
 - **Fast**: Built for Bun with minimal dependencies
+- **Streamable HTTP**: MCP 2025-03-26 spec with SSE notifications
 - **Complete**: Tools, resources, prompts, notifications, sampling, elicitation
 
 ## Installation
@@ -219,33 +223,44 @@ await server.start()
 
 ### HTTP Transport
 
-For web services with Server-Sent Events support.
+Implements MCP Streamable HTTP (2025-03-26 spec) with SSE support for real-time notifications.
 
 ```typescript
 import { http } from "@sylphx/mcp-server-sdk"
 
 const server = createServer({
   tools: { ping },
-  transport: http({ port: 3000 })
+  transport: http({
+    port: 3000,
+    cors: "*"  // Enable CORS for web clients
+  })
 })
 
 await server.start()
-// Server running at http://localhost:3000
+// Server running at http://localhost:3000/mcp
 ```
 
 **Endpoints:**
-- `POST /mcp` - JSON-RPC request/response
-- `GET /mcp/sse` - SSE stream for notifications
-- `POST /mcp/sse` - Send message via SSE (requires session ID)
+- `POST /mcp` - JSON-RPC messages (returns JSON or SSE based on Accept header)
 - `GET /mcp/health` - Health check
+
+**SSE Streaming:**
+
+When client sends `Accept: text/event-stream`, the server responds with SSE format, enabling real-time notifications during request processing:
+
+```
+event: message
+data: {"jsonrpc":"2.0","method":"notifications/progress","params":{...}}
+
+event: message
+data: {"jsonrpc":"2.0","id":1,"result":{...}}
+```
 
 ## Notifications
 
-Send server-to-client notifications for progress and logging.
+Send server-to-client notifications for progress and logging using the simplified context API.
 
 ```typescript
-import { progress, log } from "@sylphx/mcp-server-sdk"
-
 const processFiles = tool()
   .description("Process multiple files")
   .input(z.object({ files: z.array(z.string()) }))
@@ -253,26 +268,40 @@ const processFiles = tool()
     const total = input.files.length
 
     for (let i = 0; i < total; i++) {
-      // Report progress
-      ctx.notify.emit(progress("process", i + 1, { total, message: `Processing ${input.files[i]}` }))
+      // Report progress (automatically uses progressToken from request)
+      ctx.progress(i + 1, { total, message: `Processing ${input.files[i]}` })
       await processFile(input.files[i])
     }
 
     // Log completion
-    ctx.notify.emit(log("info", { message: "Processing complete" }, "file-processor"))
+    ctx.log("info", { message: "Processing complete" })
 
     return text(`Processed ${total} files`)
   })
 ```
 
-### Notification Factories
+### Context Methods
 
 ```typescript
-// Progress notification
+// Progress notification (uses progressToken from request automatically)
+ctx.progress(current: number, options?: { total?: number; message?: string })
+
+// Log notification
+ctx.log(level: "debug" | "info" | "notice" | "warning" | "error" | "critical" | "alert" | "emergency", data: unknown, logger?: string)
+```
+
+### Low-level Notification Factories
+
+For advanced use cases, you can use the raw notification factories:
+
+```typescript
+import { progress, log, resourcesListChanged, toolsListChanged, promptsListChanged, resourceUpdated, cancelled } from "@sylphx/mcp-server-sdk"
+
+// Progress notification (requires manual token)
 progress(token: string | number, current: number, options?: { total?: number; message?: string })
 
 // Log notification
-log(level: "debug" | "info" | "notice" | "warning" | "error" | "critical" | "alert" | "emergency", data: unknown, logger?: string)
+log(level: LogLevel, data: unknown, logger?: string)
 
 // List change notifications (for dynamic capability updates)
 resourcesListChanged()
@@ -561,6 +590,7 @@ interface PageResult<T> {
 
 ## Powered by Sylphx
 
+- [@sylphx/gust](https://github.com/SylphxAI/gust) - Lightweight HTTP framework for Bun
 - [@sylphx/biome-config](https://github.com/SylphxAI/biome-config) - Shared Biome configuration
 - [@sylphx/tsconfig](https://github.com/SylphxAI/tsconfig) - Shared TypeScript configuration
 - [@sylphx/doctor](https://github.com/SylphxAI/doctor) - Project health checker
