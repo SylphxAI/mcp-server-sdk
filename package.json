@@ -1,6 +1,6 @@
 {
   "name": "@sylphx/mcp-server-sdk",
-  "version": "0.2.1",
+  "version": "1.0.0",
   "description": "Pure functional MCP server library for Bun - zero dependencies, type-safe, high performance",
   "type": "module",
   "main": "./dist/index.js",
