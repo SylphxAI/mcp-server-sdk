@@ -33,7 +33,7 @@ import type {
 	ToolAnnotations,
 	ToolsCallResult,
 } from "../protocol/mcp.js"
-import { toJsonSchema, validate } from "../schema/zod.js"
+import { validate, zodToJsonSchema } from "../schema/zod.js"
 
 // ============================================================================
 // Context Type
@@ -171,7 +171,7 @@ const createDefinitionWithInput = <T>(
 	fn: (args: ToolHandlerArgs<T>) => ToolResult | Promise<ToolResult>
 ): ToolDefinition<T> => ({
 	description: state.description,
-	inputSchema: toJsonSchema(schema),
+	inputSchema: zodToJsonSchema(schema),
 	annotations: state.annotations,
 	handler: async ({ input, ctx }) => {
 		const result = validate(schema, input)

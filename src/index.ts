@@ -100,12 +100,9 @@ export {
 
 export {
 	zodToJsonSchema,
-	toJsonSchema,
-	isZodSchema,
 	validate,
 	extractObjectFields,
 	type Infer,
-	type SchemaInput,
 	type ValidationResult,
 } from "./schema/index.js"
 

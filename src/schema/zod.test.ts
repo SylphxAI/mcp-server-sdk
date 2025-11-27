@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 import { z } from "zod"
-import { extractObjectFields, isZodSchema, toJsonSchema, validate, zodToJsonSchema } from "./zod.js"
+import { extractObjectFields, validate, zodToJsonSchema } from "./zod.js"
 
 describe("Zod Schema Integration", () => {
 	describe("zodToJsonSchema", () => {
@@ -77,37 +77,7 @@ describe("Zod Schema Integration", () => {
 		test("converts union schema", () => {
 			const schema = z.union([z.string(), z.number()])
 			const json = zodToJsonSchema(schema)
-			// Zod 4 may use anyOf or oneOf
 			expect(json.anyOf || json.oneOf).toBeDefined()
-		})
-	})
-
-	describe("isZodSchema", () => {
-		test("returns true for Zod schemas", () => {
-			expect(isZodSchema(z.string())).toBe(true)
-			expect(isZodSchema(z.object({}))).toBe(true)
-			expect(isZodSchema(z.array(z.string()))).toBe(true)
-		})
-
-		test("returns false for non-Zod values", () => {
-			expect(isZodSchema(null)).toBe(false)
-			expect(isZodSchema(undefined)).toBe(false)
-			expect(isZodSchema({})).toBe(false)
-			expect(isZodSchema({ type: "string" })).toBe(false)
-			expect(isZodSchema("string")).toBe(false)
-		})
-	})
-
-	describe("toJsonSchema", () => {
-		test("converts Zod schema", () => {
-			const schema = z.string()
-			const json = toJsonSchema(schema)
-			expect(json.type).toBe("string")
-		})
-
-		test("passes through JSON Schema", () => {
-			const jsonSchema = { type: "string", minLength: 1 }
-			expect(toJsonSchema(jsonSchema)).toEqual(jsonSchema)
 		})
 	})
 

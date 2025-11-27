@@ -14,53 +14,20 @@ import type { JsonSchema } from "../protocol/mcp.js"
 /** Extract the inferred type from a Zod schema */
 export type Infer<T extends z.ZodType> = z.infer<T>
 
-/** Schema that can be either Zod or raw JSON Schema */
-export type SchemaInput<T = unknown> = z.ZodType<T> | JsonSchema
-
 // ============================================================================
 // Zod to JSON Schema Conversion
 // ============================================================================
 
 /**
- * Convert a Zod schema to JSON Schema using Zod 4's native conversion.
+ * Convert a Zod schema to JSON Schema.
  */
 export const zodToJsonSchema = (schema: z.ZodType): JsonSchema => {
 	const jsonSchema = z.toJSONSchema(schema, {
 		unrepresentable: "any",
 		target: "draft-7",
 	})
-	// Remove $schema as it's not needed for MCP
 	const { $schema, ...rest } = jsonSchema as { $schema?: string } & JsonSchema
 	return rest
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * Check if a value is a Zod schema.
- * Zod 4 uses ~standard with vendor: "zod"
- */
-export const isZodSchema = (value: unknown): value is z.ZodType => {
-	if (value === null || typeof value !== "object") return false
-	const v = value as Record<string, unknown>
-	// Zod 4 standard schema interface
-	if ("~standard" in v) {
-		const std = v["~standard"] as Record<string, unknown> | undefined
-		return std?.vendor === "zod"
-	}
-	return false
-}
-
-/**
- * Convert SchemaInput to JSON Schema.
- */
-export const toJsonSchema = (schema: SchemaInput): JsonSchema => {
-	if (isZodSchema(schema)) {
-		return zodToJsonSchema(schema)
-	}
-	return schema
 }
 
 // ============================================================================
@@ -79,13 +46,9 @@ export const validate = <T>(schema: z.ZodType<T>, input: unknown): ValidationRes
 	if (result.success) {
 		return { success: true, data: result.data }
 	}
-	// Zod 4 uses result.error.issues
 	const issues = result.error.issues
 	const errorMsg = issues.map((e) => `${e.path.map(String).join(".")}: ${e.message}`).join("; ")
-	return {
-		success: false,
-		error: errorMsg || "Validation failed",
-	}
+	return { success: false, error: errorMsg || "Validation failed" }
 }
 
 // ============================================================================
@@ -94,12 +57,10 @@ export const validate = <T>(schema: z.ZodType<T>, input: unknown): ValidationRes
 
 /**
  * Extract field info from a Zod object schema.
- * Works with Zod 4's internal structure.
  */
 export const extractObjectFields = (
 	schema: z.ZodType
 ): Array<{ name: string; description?: string; required: boolean }> => {
-	// Check if it's an object schema by trying to get shape
 	if (!("shape" in schema) || typeof schema.shape !== "object") {
 		return []
 	}
