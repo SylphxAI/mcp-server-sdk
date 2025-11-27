@@ -1,7 +1,7 @@
 /**
  * Pagination Utilities
  *
- * Cursor-based pagination helpers.
+ * Cursor-based pagination for MCP list operations.
  */
 
 // ============================================================================
@@ -20,26 +20,20 @@ export interface PageResult<T> {
 	readonly nextCursor?: string
 }
 
-export interface CursorData {
+interface CursorData {
 	readonly offset: number
 	readonly pageSize: number
 }
 
 // ============================================================================
-// Cursor Encoding
+// Internal
 // ============================================================================
 
-/**
- * Encode pagination cursor.
- */
-export const encodeCursor = (data: CursorData): string => {
+const encodeCursor = (data: CursorData): string => {
 	return Buffer.from(JSON.stringify(data)).toString("base64url")
 }
 
-/**
- * Decode pagination cursor.
- */
-export const decodeCursor = (cursor: string): CursorData | null => {
+const decodeCursor = (cursor: string): CursorData | null => {
 	try {
 		const json = Buffer.from(cursor, "base64url").toString("utf-8")
 		const data = JSON.parse(json) as CursorData
@@ -53,7 +47,7 @@ export const decodeCursor = (cursor: string): CursorData | null => {
 }
 
 // ============================================================================
-// Pagination Helpers
+// Pagination
 // ============================================================================
 
 /**
@@ -91,61 +85,4 @@ export const paginate = <T>(
 		items: page,
 		nextCursor: hasMore ? encodeCursor({ offset: offset + pageSize, pageSize }) : undefined,
 	}
-}
-
-/**
- * Create a paginated list handler.
- *
- * @example
- * ```ts
- * const handler = createPaginatedHandler(
- *   () => getAllResources(),
- *   { defaultPageSize: 20 },
- * )
- * const result = await handler(cursor)
- * ```
- */
-export const createPaginatedHandler = <T>(
-	getItems: () => readonly T[] | Promise<readonly T[]>,
-	options?: PaginationOptions
-) => {
-	return async (cursor?: string): Promise<PageResult<T>> => {
-		const items = await getItems()
-		return paginate(items, cursor, options)
-	}
-}
-
-/**
- * Iterate through all pages.
- *
- * @example
- * ```ts
- * for await (const items of iteratePages(fetchPage)) {
- *   console.log(items)
- * }
- * ```
- */
-export async function* iteratePages<T>(
-	fetchPage: (cursor?: string) => Promise<PageResult<T>>
-): AsyncGenerator<readonly T[], void, unknown> {
-	let cursor: string | undefined
-
-	do {
-		const result = await fetchPage(cursor)
-		yield result.items
-		cursor = result.nextCursor
-	} while (cursor)
-}
-
-/**
- * Collect all pages into a single array.
- */
-export const collectAllPages = async <T>(
-	fetchPage: (cursor?: string) => Promise<PageResult<T>>
-): Promise<T[]> => {
-	const all: T[] = []
-	for await (const items of iteratePages(fetchPage)) {
-		all.push(...items)
-	}
-	return all
 }

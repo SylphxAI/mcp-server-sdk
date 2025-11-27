@@ -7,10 +7,6 @@
 import * as Mcp from "../protocol/mcp.js"
 import type { SamplingClient, SamplingRequestSender } from "./types.js"
 
-// ============================================================================
-// Sampling Client Factory
-// ============================================================================
-
 /**
  * Create a sampling client from a request sender.
  *
@@ -31,43 +27,4 @@ export const createSamplingClient = (send: SamplingRequestSender): SamplingClien
 		const result = await send(Mcp.Method.SamplingCreateMessage, params)
 		return result as Mcp.SamplingCreateResult
 	},
-})
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * Create a sampling message with text content.
- */
-export const samplingText = (role: "user" | "assistant", text: string): Mcp.SamplingMessage => ({
-	role,
-	content: { type: "text", text },
-})
-
-/**
- * Create a sampling message with image content.
- */
-export const samplingImage = (
-	role: "user" | "assistant",
-	data: string,
-	mimeType: string
-): Mcp.SamplingMessage => ({
-	role,
-	content: { type: "image", data, mimeType },
-})
-
-/**
- * Create model preferences.
- */
-export const modelPreferences = (options: {
-	hints?: readonly string[]
-	costPriority?: number
-	speedPriority?: number
-	intelligencePriority?: number
-}): Mcp.ModelPreferences => ({
-	hints: options.hints?.map((name) => ({ name })),
-	costPriority: options.costPriority,
-	speedPriority: options.speedPriority,
-	intelligencePriority: options.intelligencePriority,
 })

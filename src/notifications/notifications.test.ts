@@ -2,8 +2,6 @@ import { describe, expect, test } from "bun:test"
 import {
 	cancelled,
 	createEmitter,
-	createLogger,
-	createProgressReporter,
 	log,
 	noopEmitter,
 	progress,
@@ -11,7 +9,6 @@ import {
 	resourceUpdated,
 	resourcesListChanged,
 	toolsListChanged,
-	withProgress,
 } from "./index.js"
 
 describe("Notifications", () => {
@@ -107,13 +104,12 @@ describe("Notifications", () => {
 
 	describe("noopEmitter", () => {
 		test("does nothing", () => {
-			// Should not throw
 			noopEmitter.emit({ type: "progress", progressToken: "t", progress: 0 })
 			noopEmitter.emit({ type: "log", level: "info" })
 		})
 	})
 
-	describe("progress helpers", () => {
+	describe("notification factories", () => {
 		test("progress creates notification", () => {
 			const notification = progress("token", 50, { total: 100, message: "Working..." })
 
@@ -126,40 +122,6 @@ describe("Notifications", () => {
 			})
 		})
 
-		test("createProgressReporter emits progress", () => {
-			const calls: unknown[] = []
-			const emitter = createEmitter((_, params) => calls.push(params))
-
-			const report = createProgressReporter(emitter, "token", 100)
-			report(25, "25% done")
-			report(75, "75% done")
-
-			expect(calls).toEqual([
-				{ progressToken: "token", progress: 25, total: 100, message: "25% done" },
-				{ progressToken: "token", progress: 75, total: 100, message: "75% done" },
-			])
-		})
-
-		test("withProgress tracks async processing", async () => {
-			const calls: unknown[] = []
-			const emitter = createEmitter((_, params) => calls.push(params))
-
-			const items = ["a", "b", "c"]
-			const results = await withProgress(emitter, "token", items, async (item, report) => {
-				report(`Processing ${item}`)
-				return item.toUpperCase()
-			})
-
-			expect(results).toEqual(["A", "B", "C"])
-			expect(calls).toEqual([
-				{ progressToken: "token", progress: 1, total: 3, message: "Processing a" },
-				{ progressToken: "token", progress: 2, total: 3, message: "Processing b" },
-				{ progressToken: "token", progress: 3, total: 3, message: "Processing c" },
-			])
-		})
-	})
-
-	describe("logging helpers", () => {
 		test("log creates notification", () => {
 			const notification = log("error", { message: "Failed" }, "my-tool")
 
@@ -171,34 +133,6 @@ describe("Notifications", () => {
 			})
 		})
 
-		test("createLogger emits at all levels", () => {
-			const calls: unknown[] = []
-			const emitter = createEmitter((_, params) => calls.push(params))
-
-			const logger = createLogger(emitter, "test")
-			logger.debug("d")
-			logger.info("i")
-			logger.notice("n")
-			logger.warning("w")
-			logger.error("e")
-			logger.critical("c")
-			logger.alert("a")
-			logger.emergency("em")
-
-			expect(calls).toEqual([
-				{ level: "debug", logger: "test", data: "d" },
-				{ level: "info", logger: "test", data: "i" },
-				{ level: "notice", logger: "test", data: "n" },
-				{ level: "warning", logger: "test", data: "w" },
-				{ level: "error", logger: "test", data: "e" },
-				{ level: "critical", logger: "test", data: "c" },
-				{ level: "alert", logger: "test", data: "a" },
-				{ level: "emergency", logger: "test", data: "em" },
-			])
-		})
-	})
-
-	describe("list change helpers", () => {
 		test("resourcesListChanged creates notification", () => {
 			expect(resourcesListChanged()).toEqual({ type: "resources/list_changed" })
 		})
@@ -217,9 +151,7 @@ describe("Notifications", () => {
 				uri: "file:///test",
 			})
 		})
-	})
 
-	describe("cancellation helper", () => {
 		test("cancelled creates notification", () => {
 			expect(cancelled(123, "Timeout")).toEqual({
 				type: "cancelled",

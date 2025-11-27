@@ -40,17 +40,12 @@ export type { Transport, TransportFactory } from "./transports/types.js"
 // Tool Builder
 export {
 	tool,
-	// Content helpers
 	text,
 	image,
 	audio,
 	embedded,
 	json,
-	// Error helper
 	toolError,
-	// Protocol conversion
-	toProtocolTool,
-	// Types
 	type ToolResult,
 	type ToolContext,
 	type ToolDefinition,
@@ -65,10 +60,6 @@ export {
 	resourceText,
 	resourceBlob,
 	resourceContents,
-	matchesTemplate,
-	extractParams,
-	toProtocolResource,
-	toProtocolTemplate,
 	type ResourceContext,
 	type ResourceDefinition,
 	type ResourceTemplateDefinition,
@@ -87,7 +78,6 @@ export {
 	messages,
 	promptResult,
 	interpolate,
-	toProtocolPrompt,
 	type PromptContext,
 	type PromptDefinition,
 	type PromptHandler,
@@ -98,13 +88,7 @@ export {
 // Schema
 // ============================================================================
 
-export {
-	zodToJsonSchema,
-	validate,
-	extractObjectFields,
-	type Infer,
-	type ValidationResult,
-} from "./schema/index.js"
+export type { Infer } from "./schema/index.js"
 
 // ============================================================================
 // Protocol Types
@@ -118,13 +102,8 @@ export * from "./protocol/index.js"
 
 // Notifications
 export {
-	createEmitter,
-	noopEmitter,
 	progress,
 	log,
-	createProgressReporter,
-	createLogger,
-	withProgress,
 	resourcesListChanged,
 	toolsListChanged,
 	promptsListChanged,
@@ -135,15 +114,11 @@ export {
 	type LogNotification,
 	type NotificationEmitter,
 	type NotificationSender,
-	type Logger,
 } from "./notifications/index.js"
 
 // Sampling (Server → Client LLM requests)
 export {
 	createSamplingClient,
-	samplingText,
-	samplingImage,
-	modelPreferences,
 	type SamplingClient,
 	type SamplingRequestSender,
 	type SamplingContext,
@@ -152,12 +127,6 @@ export {
 // Elicitation (Server → Client user input requests)
 export {
 	createElicitationClient,
-	elicitString,
-	elicitNumber,
-	elicitInteger,
-	elicitBoolean,
-	elicitEnum,
-	elicitSchema,
 	type ElicitationClient,
 	type ElicitationRequestSender,
 	type ElicitationContext,
@@ -171,9 +140,6 @@ export {
 // Pagination
 export {
 	paginate,
-	encodeCursor,
-	decodeCursor,
 	type PaginationOptions,
 	type PageResult,
-	type CursorData,
 } from "./pagination/index.js"
