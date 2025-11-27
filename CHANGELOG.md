@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0 (2025-11-27)
+
+### ✨ Features
+
+- replace Bun.serve with Hono for Node.js compatibility ([8307e17](https://github.com/SylphxAI/mcp-server-sdk/commit/8307e170702a3d2e0b2f73b4cc9a0ff5a86fe32b))
+
+### 🔧 Chores
+
+- upgrade biome to v2 and update dependencies ([2beb11e](https://github.com/SylphxAI/mcp-server-sdk/commit/2beb11e55fa5d0358951fa3859a28f440fba90b6))
+
 ## 1.0.0 (2025-11-27)
 
 ### 🐛 Bug Fixes
