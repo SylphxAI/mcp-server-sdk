@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.0.0 (2025-11-27)
+
+### 🐛 Bug Fixes
+
+- update isZodSchema to detect Zod 4 via ~standard interface ([8d986f3](https://github.com/SylphxAI/mcp-server-sdk/commit/8d986f31f7a17fa30eb26957b9bd7f72bd5ed213))
+- add prepack script to build before publish ([dd70335](https://github.com/SylphxAI/mcp-server-sdk/commit/dd7033527d479e7ece6be3996b0607eb54b366d1))
+- resolve type error in resource.ts param indexing ([e86b73e](https://github.com/SylphxAI/mcp-server-sdk/commit/e86b73ebd02c8b300e73ca360be4efa63dee5260))
+
+### ♻️ Refactoring
+
+- 💥 simplify SDK by removing non-essential helpers ([98b1b3d](https://github.com/SylphxAI/mcp-server-sdk/commit/98b1b3da8b89d3009687b42e992dec8675ca337c))
+- 💥 simplify schema - remove isZodSchema, toJsonSchema, SchemaInput ([bad36a0](https://github.com/SylphxAI/mcp-server-sdk/commit/bad36a07aa459bc7d7f5629264c4c4120ba85782))
+
+### 📚 Documentation
+
+- update README to reflect simplified API ([ff55526](https://github.com/SylphxAI/mcp-server-sdk/commit/ff55526347cadc3c9c24762c8ece0925a535714a))
+
+### 💥 Breaking Changes
+
+- simplify SDK by removing non-essential helpers ([98b1b3d](https://github.com/SylphxAI/mcp-server-sdk/commit/98b1b3da8b89d3009687b42e992dec8675ca337c))
+  Removed helper wrappers that users can write directly
+- simplify schema - remove isZodSchema, toJsonSchema, SchemaInput ([bad36a0](https://github.com/SylphxAI/mcp-server-sdk/commit/bad36a07aa459bc7d7f5629264c4c4120ba85782))
+  removed isZodSchema, toJsonSchema, SchemaInput exports
+
 ## 0.2.1 (2025-11-27)
 
 ### 🐛 Bug Fixes
