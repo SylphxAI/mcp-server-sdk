@@ -5,7 +5,7 @@ import { resource, resourceTemplate, resourceText } from "../builders/resource.j
 import { text, tool } from "../builders/tool.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import * as Mcp from "../protocol/mcp.js"
-import { type ServerState, dispatch } from "./handler.js"
+import { dispatch, type ServerState } from "./handler.js"
 
 // Helper to create minimal state for testing
 const createTestState = (overrides: Partial<ServerState> = {}): ServerState => ({

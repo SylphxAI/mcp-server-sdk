@@ -22,8 +22,8 @@
 import type {
 	EmbeddedResource,
 	Resource,
-	ResourceTemplate,
 	ResourcesReadResult,
+	ResourceTemplate,
 } from "../protocol/mcp.js"
 
 // ============================================================================

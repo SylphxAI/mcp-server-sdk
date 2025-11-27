@@ -29,60 +29,56 @@
 // Core API
 // ============================================================================
 
-// Server
-export { createServer, type Server, type ServerConfig } from "./server/server.js"
-
-// Transports
-export { stdio, type StdioOptions } from "./transports/stdio.js"
-export { http, type HttpOptions } from "./transports/http.js"
-export type { Transport, TransportFactory } from "./transports/types.js"
-
-// Tool Builder
-export {
-	tool,
-	text,
-	image,
-	audio,
-	embedded,
-	json,
-	toolError,
-	type ToolResult,
-	type ToolContext,
-	type ToolDefinition,
-	type ToolHandler,
-	type ToolHandlerArgs,
-} from "./builders/tool.js"
-
-// Resource Builder
-export {
-	resource,
-	resourceTemplate,
-	resourceText,
-	resourceBlob,
-	resourceContents,
-	type ResourceContext,
-	type ResourceDefinition,
-	type ResourceTemplateDefinition,
-	type ResourceHandler,
-	type TemplateHandler,
-	type ResourceHandlerArgs,
-	type TemplateHandlerArgs,
-} from "./builders/resource.js"
-
 // Prompt Builder
 export {
-	prompt,
-	user,
 	assistant,
+	interpolate,
 	message,
 	messages,
-	promptResult,
-	interpolate,
 	type PromptContext,
 	type PromptDefinition,
 	type PromptHandler,
 	type PromptHandlerArgs,
+	prompt,
+	promptResult,
+	user,
 } from "./builders/prompt.js"
+// Resource Builder
+export {
+	type ResourceContext,
+	type ResourceDefinition,
+	type ResourceHandler,
+	type ResourceHandlerArgs,
+	type ResourceTemplateDefinition,
+	resource,
+	resourceBlob,
+	resourceContents,
+	resourceTemplate,
+	resourceText,
+	type TemplateHandler,
+	type TemplateHandlerArgs,
+} from "./builders/resource.js"
+// Tool Builder
+export {
+	audio,
+	embedded,
+	image,
+	json,
+	type ToolContext,
+	type ToolDefinition,
+	type ToolHandler,
+	type ToolHandlerArgs,
+	type ToolResult,
+	text,
+	tool,
+	toolError,
+} from "./builders/tool.js"
+// Server
+export { createServer, type Server, type ServerConfig } from "./server/server.js"
+export { type HttpOptions, http } from "./transports/http.js"
+// Transports
+export { type StdioOptions, stdio } from "./transports/stdio.js"
+export type { Transport, TransportFactory } from "./transports/types.js"
 
 // ============================================================================
 // Schema
@@ -100,46 +96,43 @@ export * from "./protocol/index.js"
 // Advanced Features
 // ============================================================================
 
+// Elicitation (Server → Client user input requests)
+export {
+	createElicitationClient,
+	type ElicitationAction,
+	type ElicitationClient,
+	type ElicitationContext,
+	type ElicitationCreateParams,
+	type ElicitationCreateResult,
+	type ElicitationProperty,
+	type ElicitationRequestSender,
+	type ElicitationSchema,
+} from "./elicitation/index.js"
 // Notifications
 export {
-	progress,
-	log,
-	resourcesListChanged,
-	toolsListChanged,
-	promptsListChanged,
-	resourceUpdated,
 	cancelled,
-	type Notification,
-	type ProgressNotification,
 	type LogNotification,
+	log,
+	type Notification,
 	type NotificationEmitter,
 	type NotificationSender,
+	type ProgressNotification,
+	progress,
+	promptsListChanged,
+	resourcesListChanged,
+	resourceUpdated,
+	toolsListChanged,
 } from "./notifications/index.js"
-
+// Pagination
+export {
+	type PageResult,
+	type PaginationOptions,
+	paginate,
+} from "./pagination/index.js"
 // Sampling (Server → Client LLM requests)
 export {
 	createSamplingClient,
 	type SamplingClient,
-	type SamplingRequestSender,
 	type SamplingContext,
+	type SamplingRequestSender,
 } from "./sampling/index.js"
-
-// Elicitation (Server → Client user input requests)
-export {
-	createElicitationClient,
-	type ElicitationClient,
-	type ElicitationRequestSender,
-	type ElicitationContext,
-	type ElicitationSchema,
-	type ElicitationProperty,
-	type ElicitationCreateParams,
-	type ElicitationCreateResult,
-	type ElicitationAction,
-} from "./elicitation/index.js"
-
-// Pagination
-export {
-	paginate,
-	type PaginationOptions,
-	type PageResult,
-} from "./pagination/index.js"

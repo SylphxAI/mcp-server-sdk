@@ -27,7 +27,7 @@ import type {
 	PromptMessage,
 	PromptsGetResult,
 } from "../protocol/mcp.js"
-import { type Infer, extractObjectFields, validate } from "../schema/zod.js"
+import { extractObjectFields, type Infer, validate } from "../schema/zod.js"
 
 // ============================================================================
 // Context Type

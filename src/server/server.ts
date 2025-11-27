@@ -33,7 +33,7 @@ import type { PaginationOptions } from "../pagination/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
 import type * as Mcp from "../protocol/mcp.js"
 import type { Transport, TransportFactory } from "../transports/types.js"
-import { type HandlerContext, type ServerState, dispatch } from "./handler.js"
+import { dispatch, type HandlerContext, type ServerState } from "./handler.js"
 
 // ============================================================================
 // Server Config

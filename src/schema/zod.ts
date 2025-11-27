@@ -26,7 +26,7 @@ export const zodToJsonSchema = (schema: z.ZodType): JsonSchema => {
 		unrepresentable: "any",
 		target: "draft-7",
 	})
-	const { $schema, ...rest } = jsonSchema as { $schema?: string } & JsonSchema
+	const { $schema: _, ...rest } = jsonSchema as { $schema?: string } & JsonSchema
 	return rest
 }
 

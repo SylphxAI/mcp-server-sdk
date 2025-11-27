@@ -11,7 +11,7 @@ import { resource, resourceText } from "../src/builders/resource.js"
 import { text, tool } from "../src/builders/tool.js"
 import * as Rpc from "../src/protocol/jsonrpc.js"
 import * as Mcp from "../src/protocol/mcp.js"
-import { type ServerState, dispatch } from "../src/server/handler.js"
+import { dispatch, type ServerState } from "../src/server/handler.js"
 
 // =============================================================================
 // Setup

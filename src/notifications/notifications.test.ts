@@ -6,8 +6,8 @@ import {
 	noopEmitter,
 	progress,
 	promptsListChanged,
-	resourceUpdated,
 	resourcesListChanged,
+	resourceUpdated,
 	toolsListChanged,
 } from "./index.js"
 
