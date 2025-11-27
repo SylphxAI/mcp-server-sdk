@@ -83,9 +83,9 @@ describe("Server Handler", () => {
 			expect(result.type).toBe("response")
 			if (result.type === "response" && Rpc.isSuccess(result.response)) {
 				const list = result.response.result as Mcp.ToolsListResult
-				expect(list.items).toHaveLength(1)
-				expect(list.items[0]?.name).toBe("greet")
-				expect(list.items[0]?.description).toBe("Greet someone")
+				expect(list.tools).toHaveLength(1)
+				expect(list.tools[0]?.name).toBe("greet")
+				expect(list.tools[0]?.description).toBe("Greet someone")
 			}
 		})
 	})
@@ -187,9 +187,9 @@ describe("Server Handler", () => {
 			expect(result.type).toBe("response")
 			if (result.type === "response" && Rpc.isSuccess(result.response)) {
 				const list = result.response.result as Mcp.ResourcesListResult
-				expect(list.items).toHaveLength(1)
-				expect(list.items[0]?.name).toBe("config")
-				expect(list.items[0]?.uri).toBe("config://app")
+				expect(list.resources).toHaveLength(1)
+				expect(list.resources[0]?.name).toBe("config")
+				expect(list.resources[0]?.uri).toBe("config://app")
 			}
 		})
 	})
@@ -211,8 +211,8 @@ describe("Server Handler", () => {
 			expect(result.type).toBe("response")
 			if (result.type === "response" && Rpc.isSuccess(result.response)) {
 				const list = result.response.result as Mcp.ResourceTemplatesListResult
-				expect(list.items).toHaveLength(1)
-				expect(list.items[0]?.uriTemplate).toBe("file:///{path}")
+				expect(list.resourceTemplates).toHaveLength(1)
+				expect(list.resourceTemplates[0]?.uriTemplate).toBe("file:///{path}")
 			}
 		})
 	})
@@ -286,8 +286,8 @@ describe("Server Handler", () => {
 			expect(result.type).toBe("response")
 			if (result.type === "response" && Rpc.isSuccess(result.response)) {
 				const list = result.response.result as Mcp.PromptsListResult
-				expect(list.items).toHaveLength(1)
-				expect(list.items[0]?.name).toBe("review")
+				expect(list.prompts).toHaveLength(1)
+				expect(list.prompts[0]?.name).toBe("review")
 			}
 		})
 	})

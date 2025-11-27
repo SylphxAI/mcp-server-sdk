@@ -280,13 +280,15 @@ export interface ListParams {
 	readonly cursor?: string
 }
 
-export interface ListResult<T> {
-	readonly items: readonly T[]
+export interface ResourcesListResult {
+	readonly resources: readonly Resource[]
 	readonly nextCursor?: string
 }
 
-export interface ResourcesListResult extends ListResult<Resource> {}
-export interface ResourceTemplatesListResult extends ListResult<ResourceTemplate> {}
+export interface ResourceTemplatesListResult {
+	readonly resourceTemplates: readonly ResourceTemplate[]
+	readonly nextCursor?: string
+}
 
 export interface ResourcesReadParams {
 	readonly uri: string
@@ -296,7 +298,10 @@ export interface ResourcesReadResult {
 	readonly contents: readonly EmbeddedResource[]
 }
 
-export interface PromptsListResult extends ListResult<Prompt> {}
+export interface PromptsListResult {
+	readonly prompts: readonly Prompt[]
+	readonly nextCursor?: string
+}
 
 export interface PromptsGetParams {
 	readonly name: string
@@ -308,7 +313,10 @@ export interface PromptsGetResult {
 	readonly messages: readonly PromptMessage[]
 }
 
-export interface ToolsListResult extends ListResult<Tool> {}
+export interface ToolsListResult {
+	readonly tools: readonly Tool[]
+	readonly nextCursor?: string
+}
 
 export interface ToolsCallParams {
 	readonly name: string
