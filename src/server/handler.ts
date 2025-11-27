@@ -57,7 +57,7 @@ const handlePing = (): Record<string, never> => ({})
 const handleToolsList = (state: ServerState, params?: Mcp.ListParams): Mcp.ToolsListResult => {
 	const allItems = Array.from(state.tools.entries()).map(([name, def]) => toProtocolTool(name, def))
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
-	return { items, nextCursor }
+	return { tools: items, nextCursor }
 }
 
 const handleToolsCall = async (
@@ -91,7 +91,7 @@ const handleResourcesList = (
 		toProtocolResource(name, def)
 	)
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
-	return { items, nextCursor }
+	return { resources: items, nextCursor }
 }
 
 const handleResourceTemplatesList = (
@@ -102,7 +102,7 @@ const handleResourceTemplatesList = (
 		toProtocolTemplate(name, def)
 	)
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
-	return { items, nextCursor }
+	return { resourceTemplates: items, nextCursor }
 }
 
 const handleResourcesRead = async (
@@ -132,7 +132,7 @@ const handlePromptsList = (state: ServerState, params?: Mcp.ListParams): Mcp.Pro
 		toProtocolPrompt(name, def)
 	)
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
-	return { items, nextCursor }
+	return { prompts: items, nextCursor }
 }
 
 const handlePromptsGet = async (
