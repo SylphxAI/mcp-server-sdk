@@ -21,6 +21,7 @@
     "check:fix": "biome check --write .",
     "test": "bun test",
     "bench": "bun run bench/index.ts",
+    "prepack": "bun run build",
     "prepublishOnly": "bunx @sylphx/doctor prepublish",
     "lint": "biome check .",
     "format": "biome format --write .",
