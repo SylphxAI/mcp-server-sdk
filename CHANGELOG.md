@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 (2025-11-27)
+
+### ✨ Features
+
+- **http:** implement MCP Streamable HTTP transport with SSE notifications ([8d75bbc](https://github.com/SylphxAI/mcp-server-sdk/commit/8d75bbcc728415acbd8b9f3d4ca60aaec9f743e2))
+
 ## 1.1.2 (2025-11-27)
 
 ### 🐛 Bug Fixes
