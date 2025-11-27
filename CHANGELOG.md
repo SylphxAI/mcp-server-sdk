@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.2 (2025-11-27)
+
+### 🐛 Bug Fixes
+
+- use correct MCP protocol field names for list responses ([b4f072d](https://github.com/SylphxAI/mcp-server-sdk/commit/b4f072d340ed09155f9a3db3f3ea934dfb711db5))
+
 ## 1.1.1 (2025-11-27)
 
 ### 🐛 Bug Fixes
