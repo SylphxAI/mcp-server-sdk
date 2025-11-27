@@ -254,7 +254,8 @@ export const extractParams = (template: string, uri: string): Record<string, str
 	const params: Record<string, string> = {}
 	for (let i = 0; i < paramNames.length; i++) {
 		const value = match[i + 1]
-		if (value) params[paramNames[i]] = value
+		const name = paramNames[i]
+		if (value && name) params[name] = value
 	}
 	return params
 }
