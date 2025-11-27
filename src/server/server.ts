@@ -31,7 +31,7 @@ import type { ToolDefinition } from "../builders/tool.js"
 import { noopEmitter } from "../notifications/index.js"
 import type { PaginationOptions } from "../pagination/index.js"
 import * as Rpc from "../protocol/jsonrpc.js"
-import type * as Mcp from "../protocol/mcp.js"
+import * as Mcp from "../protocol/mcp.js"
 import type { Transport, TransportFactory } from "../transports/types.js"
 import { dispatch, type HandlerContext, type ServerState } from "./handler.js"
 
@@ -95,10 +95,16 @@ export const createServer = (config: ServerConfig): Server => {
 	// Build state
 	const state = buildState(config, name, version)
 
+	// Mutable session state for client capabilities
+	let clientCapabilities: Mcp.ClientCapabilities | undefined
+
 	// Message handler
 	const handle = async (
 		input: string,
-		options?: { notify?: (method: string, params?: unknown) => void }
+		options?: {
+			notify?: (method: string, params?: unknown) => void
+			request?: (method: string, params?: unknown) => Promise<unknown>
+		}
 	): Promise<string | null> => {
 		const parsed = Rpc.parseMessage(input)
 
@@ -107,10 +113,22 @@ export const createServer = (config: ServerConfig): Server => {
 			return Rpc.stringify(errorResponse)
 		}
 
-		// Create handler context with notify function
+		// Capture client capabilities from initialize request
+		if (
+			Rpc.isRequest(parsed.value) &&
+			parsed.value.method === Mcp.Method.Initialize &&
+			parsed.value.params
+		) {
+			const initParams = parsed.value.params as Mcp.InitializeParams
+			clientCapabilities = initParams.capabilities
+		}
+
+		// Create handler context with notify and request functions
 		const ctx: HandlerContext = {
 			signal: undefined,
 			notify: options?.notify,
+			request: options?.request,
+			clientCapabilities,
 		}
 
 		const result = await dispatch(state, parsed.value, ctx)

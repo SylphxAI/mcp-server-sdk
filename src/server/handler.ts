@@ -41,6 +41,10 @@ export interface HandlerContext {
 	readonly signal?: AbortSignal
 	/** Notification sender for server→client notifications */
 	readonly notify?: (method: string, params?: unknown) => void
+	/** Request sender for server→client requests (sampling/elicitation) */
+	readonly request?: (method: string, params?: unknown) => Promise<unknown>
+	/** Client capabilities (set after initialize) */
+	readonly clientCapabilities?: Mcp.ClientCapabilities
 }
 
 // ============================================================================
@@ -81,6 +85,35 @@ const handleToolsCall = async (
 	// Extract progressToken from request _meta
 	const requestProgressToken = params._meta?.progressToken
 
+	// Extract request function once for closures
+	const requestFn = ctx.request
+
+	// Create sampling client if client supports it and request function available
+	const sampling =
+		ctx.clientCapabilities?.sampling && requestFn
+			? {
+					createMessage: async (samplingParams: Mcp.SamplingCreateParams) => {
+						const result = await requestFn(Mcp.Method.SamplingCreateMessage, samplingParams)
+						return result as Mcp.SamplingCreateResult
+					},
+				}
+			: undefined
+
+	// Create elicit function if client supports it and request function available
+	const elicit =
+		ctx.clientCapabilities?.elicitation && requestFn
+			? async (message: string, schema: unknown) => {
+					const result = await requestFn(Mcp.Method.ElicitationCreate, {
+						message,
+						requestedSchema: schema,
+					})
+					return result as {
+						action: "accept" | "decline" | "cancel"
+						content?: Record<string, unknown>
+					}
+				}
+			: undefined
+
 	// Create tool context with notification helpers
 	const toolCtx = {
 		signal: ctx.signal,
@@ -99,6 +132,8 @@ const handleToolsCall = async (
 				})
 			}
 		},
+		sampling,
+		elicit,
 	}
 
 	try {

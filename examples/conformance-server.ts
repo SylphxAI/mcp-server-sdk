@@ -101,21 +101,49 @@ const test_tool_with_progress = tool()
 		return text("Tool completed with progress tracking.")
 	})
 
-// Tools that require client capabilities (may not pass initially)
+// Tools that require client capabilities
 const test_sampling = tool()
 	.description("Tests sampling capability")
 	.input(z.object({ prompt: z.string() }))
-	.handler(({ input }) => {
-		// TODO: Request sampling from client when supported
-		return text(`Sampling requested with prompt: ${input.prompt}`)
+	.handler(async ({ input, ctx }) => {
+		// Check if sampling is available
+		if (!ctx.sampling) {
+			return text("Sampling not available - client does not support sampling capability")
+		}
+
+		// Request sampling from client
+		const result = await ctx.sampling.createMessage({
+			messages: [{ role: "user", content: { type: "text", text: input.prompt } }],
+			maxTokens: 100,
+		})
+
+		return text(
+			`Sampling result: ${result.content.type === "text" ? result.content.text : "non-text response"}`
+		)
 	})
 
 const test_elicitation = tool()
 	.description("Tests elicitation capability")
 	.input(z.object({ message: z.string() }))
-	.handler(({ input }) => {
-		// TODO: Request elicitation from client when supported
-		return text(`Elicitation requested with message: ${input.message}`)
+	.handler(async ({ input, ctx }) => {
+		// Check if elicitation is available
+		if (!ctx.elicit) {
+			return text("Elicitation not available - client does not support elicitation capability")
+		}
+
+		// Request elicitation from client
+		const result = await ctx.elicit(input.message, {
+			type: "object",
+			properties: {
+				response: { type: "string", description: "User response" },
+			},
+			required: ["response"],
+		})
+
+		if (result.action === "accept") {
+			return text(`Elicitation accepted: ${JSON.stringify(result.content)}`)
+		}
+		return text(`Elicitation ${result.action}`)
 	})
 
 // ============================================================================

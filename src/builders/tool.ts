@@ -58,6 +58,62 @@ export interface ToolContext {
 	readonly progress: (current: number, options?: { total?: number; message?: string }) => void
 	/** Raw notification emitter for advanced use */
 	readonly notify?: NotificationEmitter
+	/**
+	 * Request LLM completion from the client.
+	 * Only available if client declared sampling capability.
+	 */
+	readonly sampling?: {
+		readonly createMessage: (params: {
+			messages: ReadonlyArray<{
+				role: "user" | "assistant"
+				content:
+					| { type: "text"; text: string }
+					| { type: "image"; data: string; mimeType: string }
+					| { type: "audio"; data: string; mimeType: string }
+			}>
+			maxTokens: number
+			systemPrompt?: string
+			temperature?: number
+			stopSequences?: readonly string[]
+			modelPreferences?: {
+				hints?: ReadonlyArray<{ name?: string }>
+				costPriority?: number
+				speedPriority?: number
+				intelligencePriority?: number
+			}
+		}) => Promise<{
+			role: "user" | "assistant"
+			content:
+				| { type: "text"; text: string }
+				| { type: "image"; data: string; mimeType: string }
+				| { type: "audio"; data: string; mimeType: string }
+			model: string
+			stopReason?: string
+		}>
+	}
+	/**
+	 * Request user input from the client.
+	 * Only available if client declared elicitation capability.
+	 */
+	readonly elicit?: (
+		message: string,
+		schema: {
+			type: "object"
+			properties: Record<
+				string,
+				{
+					type: "string" | "number" | "integer" | "boolean"
+					description?: string
+					default?: string | number | boolean
+					enum?: readonly (string | number)[]
+				}
+			>
+			required?: readonly string[]
+		}
+	) => Promise<{
+		action: "accept" | "decline" | "cancel"
+		content?: Record<string, unknown>
+	}>
 }
 
 // ============================================================================

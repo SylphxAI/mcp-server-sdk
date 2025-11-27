@@ -21,6 +21,8 @@ export interface HandlerContext {
 export interface HandleOptions {
 	/** Send a notification to the client during request processing */
 	readonly notify?: (method: string, params?: unknown) => void
+	/** Send a request to the client and wait for response (for sampling/elicitation) */
+	readonly request?: (method: string, params?: unknown) => Promise<unknown>
 }
 
 export interface ServerHandler {
