@@ -40,14 +40,17 @@ export const zodToJsonSchema = (schema: z.ZodType): JsonSchema => {
 
 /**
  * Check if a value is a Zod schema.
+ * Zod 4 uses ~standard with vendor: "zod"
  */
 export const isZodSchema = (value: unknown): value is z.ZodType => {
-	return (
-		value !== null &&
-		typeof value === "object" &&
-		"_zod" in value &&
-		typeof (value as z.ZodType).parse === "function"
-	)
+	if (value === null || typeof value !== "object") return false
+	const v = value as Record<string, unknown>
+	// Zod 4 standard schema interface
+	if ("~standard" in v) {
+		const std = v["~standard"] as Record<string, unknown> | undefined
+		return std?.vendor === "zod"
+	}
+	return false
 }
 
 /**
