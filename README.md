@@ -1,6 +1,6 @@
 # @sylphx/mcp-server-sdk
 
-Pure functional MCP (Model Context Protocol) server library for Bun.
+Pure functional MCP (Model Context Protocol) server SDK for Bun.
 
 ## Features
 
@@ -35,7 +35,7 @@ const ping = tool()
 const server = createServer({
   name: "my-server",
   version: "1.0.0",
-  tools: { greet, ping },  // Names from object keys
+  tools: { greet, ping },
   transport: stdio()
 })
 
@@ -72,7 +72,7 @@ const calculator = tool()
     return text(`${a} ${op} ${b} = ${result}`)
   })
 
-// Multiple content items - just return an array
+// Multiple content items
 const systemInfo = tool()
   .description("Get system information")
   .handler(() => [
@@ -244,41 +244,46 @@ await server.start()
 Send server-to-client notifications for progress and logging.
 
 ```typescript
-import {
-  createLogger,
-  createProgressReporter,
-  withProgress
-} from "@sylphx/mcp-server-sdk"
+import { progress, log } from "@sylphx/mcp-server-sdk"
 
 const processFiles = tool()
   .description("Process multiple files")
   .input(z.object({ files: z.array(z.string()) }))
   .handler(async ({ input, ctx }) => {
-    // Logging
-    const logger = createLogger(ctx.notify, "process-files")
-    logger.info("Starting processing")
+    const total = input.files.length
 
-    // Manual progress reporting
-    const report = createProgressReporter(ctx.notify, "process", input.files.length)
-    for (let i = 0; i < input.files.length; i++) {
-      report(i + 1, `Processing ${input.files[i]}`)
-      // ... process file
+    for (let i = 0; i < total; i++) {
+      // Report progress
+      ctx.notify.emit(progress("process", i + 1, { total, message: `Processing ${input.files[i]}` }))
+      await processFile(input.files[i])
     }
 
-    // Or automatic progress tracking
-    const results = await withProgress(
-      ctx.notify,
-      "process",
-      input.files,
-      async (file, report) => {
-        report(`Processing ${file}`)
-        return processFile(file)
-      }
-    )
+    // Log completion
+    ctx.notify.emit(log("info", { message: "Processing complete" }, "file-processor"))
 
-    logger.info("Complete")
-    return text(`Processed ${results.length} files`)
+    return text(`Processed ${total} files`)
   })
+```
+
+### Notification Factories
+
+```typescript
+// Progress notification
+progress(token: string | number, current: number, options?: { total?: number; message?: string })
+
+// Log notification
+log(level: "debug" | "info" | "notice" | "warning" | "error" | "critical" | "alert" | "emergency", data: unknown, logger?: string)
+
+// List change notifications (for dynamic capability updates)
+resourcesListChanged()
+toolsListChanged()
+promptsListChanged()
+
+// Resource updated notification
+resourceUpdated(uri: string)
+
+// Cancellation notification
+cancelled(requestId: string | number, reason?: string)
 ```
 
 ## Sampling
@@ -286,7 +291,7 @@ const processFiles = tool()
 Request LLM completions from the client.
 
 ```typescript
-import { createSamplingClient, samplingText } from "@sylphx/mcp-server-sdk"
+import { createSamplingClient } from "@sylphx/mcp-server-sdk"
 
 const summarize = tool()
   .description("Summarize text using AI")
@@ -295,11 +300,26 @@ const summarize = tool()
     const sampling = createSamplingClient(ctx.requestSampling)
 
     const result = await sampling.createMessage({
-      messages: [samplingText("user", `Summarize: ${input.text}`)],
+      messages: [
+        { role: "user", content: { type: "text", text: `Summarize: ${input.text}` } }
+      ],
       maxTokens: 500,
+      // Optional parameters
+      systemPrompt: "You are a helpful summarizer",
+      temperature: 0.7,
+      stopSequences: ["END"],
+      modelPreferences: {
+        hints: [{ name: "claude-3" }],
+        costPriority: 0.5,
+        speedPriority: 0.5,
+        intelligencePriority: 0.8,
+      },
     })
 
-    return text(result.content[0].text)
+    // result.content is the response content
+    // result.model is the model used
+    // result.stopReason is why generation stopped
+    return text(result.content.text)
   })
 ```
 
@@ -308,7 +328,7 @@ const summarize = tool()
 Request user input from the client.
 
 ```typescript
-import { createElicitationClient, elicitString, elicitBoolean } from "@sylphx/mcp-server-sdk"
+import { createElicitationClient } from "@sylphx/mcp-server-sdk"
 
 const confirmAction = tool()
   .description("Confirm before proceeding")
@@ -316,20 +336,78 @@ const confirmAction = tool()
   .handler(async ({ input, ctx }) => {
     const elicit = createElicitationClient(ctx.requestElicitation)
 
-    const result = await elicit.elicit({
-      message: `Are you sure you want to ${input.action}?`,
-      schema: {
-        confirm: elicitBoolean("Confirm action"),
-        reason: elicitString("Optional reason", false),
+    const result = await elicit.elicit(
+      `Are you sure you want to ${input.action}?`,
+      {
+        type: "object",
+        properties: {
+          confirm: {
+            type: "boolean",
+            description: "Confirm action",
+          },
+          reason: {
+            type: "string",
+            description: "Optional reason",
+          },
+        },
+        required: ["confirm"],
       }
-    })
+    )
+
+    // result.action: "accept" | "decline" | "cancel"
+    // result.content: { confirm: boolean, reason?: string } (when action is "accept")
 
     if (result.action === "accept" && result.content?.confirm) {
-      // Proceed with action
       return text(`Proceeding with ${input.action}`)
     }
 
     return text("Action cancelled")
+  })
+```
+
+### Elicitation Schema Properties
+
+```typescript
+interface ElicitationProperty {
+  type: "string" | "number" | "integer" | "boolean"
+  description?: string
+  default?: string | number | boolean
+  enum?: (string | number)[]        // Constrain to specific values
+  enumNames?: string[]              // Display names for enum values
+  // String-specific
+  format?: "email" | "uri" | "date" | "date-time"
+  minLength?: number
+  maxLength?: number
+  // Number-specific
+  minimum?: number
+  maximum?: number
+}
+```
+
+## Pagination
+
+Paginate large result sets.
+
+```typescript
+import { paginate } from "@sylphx/mcp-server-sdk"
+
+const listItems = tool()
+  .description("List items with pagination")
+  .input(z.object({ cursor: z.string().optional() }))
+  .handler(async ({ input }) => {
+    const allItems = await fetchAllItems()
+
+    const result = paginate(allItems, input.cursor, {
+      defaultPageSize: 10,
+      maxPageSize: 100,
+    })
+
+    // result.items: current page items
+    // result.nextCursor: cursor for next page (undefined if last page)
+    return json({
+      items: result.items,
+      nextCursor: result.nextCursor,
+    })
   })
 ```
 
@@ -360,16 +438,13 @@ tool()
   .input(ZodSchema)                       // Optional input schema
   .handler(fn: HandlerFn) -> ToolDefinition
 
+// Handler signature
+({ input, ctx }) => ToolResult | Promise<ToolResult>
+
 // Handler can return:
 // - Single content:  text("hello")
 // - Array:           [text("hi"), image(data, "image/png")]
 // - Full result:     { content: [...], isError: true }
-
-// Handler signature (with input)
-({ input, ctx }) => ToolResult | Promise<ToolResult>
-
-// Handler signature (without input)
-({ ctx }) => ToolResult | Promise<ToolResult>
 ```
 
 ### Resource Builder
@@ -404,13 +479,13 @@ prompt()
 ### Content Helpers
 
 ```typescript
-// Tool content (return single or array)
+// Tool content
 text(content: string, annotations?): TextContent
 image(data: string, mimeType: string, annotations?): ImageContent
 audio(data: string, mimeType: string, annotations?): AudioContent
 embedded(resource: EmbeddedResource, annotations?): ResourceContent
-json(data: unknown): TextContent          // JSON as formatted text
-toolError(message: string): ToolsCallResult  // Error result
+json(data: unknown): TextContent
+toolError(message: string): ToolsCallResult
 
 // Resources
 resourceText(uri: string, text: string, mimeType?: string): ResourcesReadResult
@@ -430,10 +505,6 @@ promptResult(description: string, result: PromptsGetResult): PromptsGetResult
 stdio(options?: StdioOptions): TransportFactory
 http(options?: HttpOptions): TransportFactory
 
-interface StdioOptions {
-  // No options currently
-}
-
 interface HttpOptions {
   port?: number        // Default: 3000
   hostname?: string    // Default: "localhost"
@@ -443,16 +514,49 @@ interface HttpOptions {
 ### Notifications
 
 ```typescript
-createEmitter(sender: NotificationSender): NotificationEmitter
-noopEmitter: NotificationEmitter
 progress(token, current, options?): ProgressNotification
 log(level, data, logger?): LogNotification
-createProgressReporter(emitter, token, total?): (current, message?) => void
-createLogger(emitter, namespace?): Logger
-withProgress(emitter, token, items, processor): Promise<T[]>
 resourcesListChanged(): Notification
 toolsListChanged(): Notification
 promptsListChanged(): Notification
+resourceUpdated(uri): Notification
+cancelled(requestId, reason?): Notification
+```
+
+### Sampling
+
+```typescript
+createSamplingClient(sender: SamplingRequestSender): SamplingClient
+
+interface SamplingClient {
+  createMessage(params: SamplingCreateParams): Promise<SamplingCreateResult>
+}
+```
+
+### Elicitation
+
+```typescript
+createElicitationClient(sender: ElicitationRequestSender): ElicitationClient
+
+interface ElicitationClient {
+  elicit(message: string, schema: ElicitationSchema): Promise<ElicitationCreateResult>
+}
+```
+
+### Pagination
+
+```typescript
+paginate<T>(items: T[], cursor?: string, options?: PaginationOptions): PageResult<T>
+
+interface PaginationOptions {
+  defaultPageSize?: number   // Default: 50
+  maxPageSize?: number       // Default: 100
+}
+
+interface PageResult<T> {
+  items: T[]
+  nextCursor?: string
+}
 ```
 
 ## Powered by Sylphx
