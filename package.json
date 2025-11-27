@@ -1,65 +1,65 @@
 {
-	"name": "@sylphx/mcp-server-sdk",
-	"version": "0.2.0",
-	"description": "Pure functional MCP server library for Bun - zero dependencies, type-safe, high performance",
-	"type": "module",
-	"main": "./dist/index.js",
-	"module": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"import": "./dist/index.js"
-		}
-	},
-	"files": [
-		"dist"
-	],
-	"scripts": {
-		"build": "bunup",
-		"check": "biome check .",
-		"check:fix": "biome check --write .",
-		"test": "bun test",
-		"bench": "bun run bench/index.ts",
-		"prepublishOnly": "bunx @sylphx/doctor prepublish",
-		"lint": "biome check .",
-		"format": "biome format --write .",
-		"typecheck": "tsc --noEmit"
-	},
-	"dependencies": {},
-	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
-		"@sylphx/biome-config": "^0.1.0",
-		"@sylphx/bump": "^0.7.0",
-		"@sylphx/doctor": "^1.20.0",
-		"@sylphx/tsconfig": "^0.1.0",
-		"@types/bun": "^1.2.14",
-		"bunup": "^0.16.10",
-		"lefthook": "^2.0.4",
-		"mitata": "^1.0.34",
-		"typescript": "^5.8.3",
-		"zod": "^4.1.13"
-	},
-	"peerDependencies": {
-		"typescript": "^5.0.0",
-		"zod": "^4.0.0"
-	},
-	"peerDependenciesMeta": {
-		"zod": {
-			"optional": true
-		}
-	},
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/SylphxAI/mcp-server-sdk"
-	},
-	"keywords": [
-		"mcp",
-		"model-context-protocol",
-		"ai",
-		"llm",
-		"bun"
-	],
-	"author": "sylphx",
-	"license": "MIT"
+  "name": "@sylphx/mcp-server-sdk",
+  "version": "0.2.1",
+  "description": "Pure functional MCP server library for Bun - zero dependencies, type-safe, high performance",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bunup",
+    "check": "biome check .",
+    "check:fix": "biome check --write .",
+    "test": "bun test",
+    "bench": "bun run bench/index.ts",
+    "prepublishOnly": "bunx @sylphx/doctor prepublish",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@sylphx/biome-config": "^0.1.0",
+    "@sylphx/bump": "^0.7.0",
+    "@sylphx/doctor": "^1.20.0",
+    "@sylphx/tsconfig": "^0.1.0",
+    "@types/bun": "^1.2.14",
+    "bunup": "^0.16.10",
+    "lefthook": "^2.0.4",
+    "mitata": "^1.0.34",
+    "typescript": "^5.8.3",
+    "zod": "^4.1.13"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0",
+    "zod": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SylphxAI/mcp-server-sdk"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "llm",
+    "bun"
+  ],
+  "author": "sylphx",
+  "license": "MIT"
 }
