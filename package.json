@@ -1,6 +1,6 @@
 {
 	"name": "@sylphx/mcp-server-sdk",
-	"version": "1.2.0",
+	"version": "1.1.1",
 	"description": "Pure functional MCP server SDK for Node.js and Bun - type-safe, high performance",
 	"type": "module",
 	"main": "./dist/index.js",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.1 (2025-11-27)
+
+### 🐛 Bug Fixes
+
+- replace Bun.stdin/stdout with Node.js streams ([17425f6](https://github.com/SylphxAI/mcp-server-sdk/commit/17425f6ec63a538f45e76b05a5d0bf551f16b396))
+
 ## 1.2.0 (2025-11-27)
 
 ### 🐛 Bug Fixes
