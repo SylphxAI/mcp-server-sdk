@@ -455,6 +455,13 @@ toolsListChanged(): Notification
 promptsListChanged(): Notification
 ```
 
+## Powered by Sylphx
+
+- [@sylphx/biome-config](https://github.com/SylphxAI/biome-config) - Shared Biome configuration
+- [@sylphx/tsconfig](https://github.com/SylphxAI/tsconfig) - Shared TypeScript configuration
+- [@sylphx/doctor](https://github.com/SylphxAI/doctor) - Project health checker
+- [@sylphx/bump](https://github.com/SylphxAI/bump) - Version management
+
 ## License
 
 MIT

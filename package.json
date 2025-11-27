@@ -30,9 +30,12 @@
 	"devDependencies": {
 		"@biomejs/biome": "^1.9.4",
 		"@sylphx/biome-config": "^0.1.0",
+		"@sylphx/bump": "^0.6.1",
+		"@sylphx/doctor": "^1.18.0",
 		"@sylphx/tsconfig": "^0.1.0",
 		"@types/bun": "^1.2.14",
 		"bunup": "^0.16.10",
+		"lefthook": "^2.0.4",
 		"mitata": "^1.0.34",
 		"typescript": "^5.8.3",
 		"zod": "^4.1.13"
