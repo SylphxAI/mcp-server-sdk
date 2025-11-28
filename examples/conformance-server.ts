@@ -146,6 +146,36 @@ const test_elicitation = tool()
 		return text(`Elicitation ${result.action}`)
 	})
 
+// SEP-1034: Elicitation with default values for all primitive types
+const test_elicitation_sep1034_defaults = tool()
+	.description("Tests elicitation with default values for all primitive types (SEP-1034)")
+	.handler(async ({ ctx }) => {
+		if (!ctx.elicit) {
+			return text("Elicitation not available - client does not support elicitation capability")
+		}
+
+		const result = await ctx.elicit("Please provide your information", {
+			type: "object",
+			properties: {
+				name: { type: "string", description: "Your name", default: "John Doe" },
+				age: { type: "integer", description: "Your age", default: 30 },
+				score: { type: "number", description: "Your score", default: 95.5 },
+				status: {
+					type: "string",
+					description: "Your status",
+					enum: ["active", "inactive", "pending"],
+					default: "active",
+				},
+				verified: { type: "boolean", description: "Whether verified", default: true },
+			},
+			required: ["name", "age", "score", "status", "verified"],
+		})
+
+		return text(
+			`Elicitation completed: action=${result.action}, content=${JSON.stringify(result.content)}`
+		)
+	})
+
 // ============================================================================
 // Resources
 // ============================================================================
@@ -273,6 +303,7 @@ const server = createServer({
 		test_tool_with_progress,
 		test_sampling,
 		test_elicitation,
+		test_elicitation_sep1034_defaults,
 	},
 	resources: {
 		staticText,

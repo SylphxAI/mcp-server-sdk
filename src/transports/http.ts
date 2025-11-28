@@ -235,7 +235,8 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 						while (!handlerComplete || eventQueue.length > 0) {
 							// Yield any queued events
 							while (eventQueue.length > 0) {
-								yield eventQueue.shift()!
+								const event = eventQueue.shift()
+								if (event) yield event
 							}
 
 							// If handler not complete, wait for more events
