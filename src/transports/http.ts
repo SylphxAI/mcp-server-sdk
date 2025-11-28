@@ -21,6 +21,8 @@ import {
 	router,
 	type Server,
 	serve,
+	sse,
+	textStream,
 } from "@sylphx/gust"
 import * as Rpc from "../protocol/jsonrpc.js"
 import type { Transport, TransportFactory } from "./types.js"
@@ -80,6 +82,11 @@ const sseEvent = (data: string, event?: string, id?: string): string => {
  * When client includes `Accept: text/event-stream`, server may respond
  * with SSE to stream notifications during request processing.
  *
+ * Bidirectional RPC (sampling/elicitation):
+ * - Server sends requests via SSE events
+ * - Client responds via POST to same endpoint with session ID
+ * - Server resolves pending request and continues processing
+ *
  * @example
  * ```ts
  * createServer({
@@ -102,6 +109,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 				pendingRequests: Map<string | number, PendingRequest>
 			}
 		>()
+		let nextRequestId = 1
 
 		// Helper to check if a message is a JSON-RPC response (not a request)
 		const isJsonRpcResponse = (
@@ -153,59 +161,110 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 				}
 
 				if (acceptsSSE) {
-					// Streamable HTTP: Use SSE for response
-					// This allows sending notifications during processing
-					// Note: True bidirectional RPC (sampling/elicitation) requires streaming
-					// which isn't fully supported. Notifications and progress work, but
-					// server→client requests that wait for responses are limited.
-
-					const notifications: string[] = []
-
-					// Collect notifications during handler execution
-					const notify = (method: string, params?: unknown) => {
-						const notification = Rpc.notification(method, params)
-						notifications.push(Rpc.stringify(notification))
-					}
-
 					// Check if this is an initialize request and create session
-					let newSessionId: string | undefined
+					let activeSessionId = sessionId
+					let activeSession = session
 					const parsedReq = Rpc.parseMessage(body)
 					if (
 						parsedReq.ok &&
 						Rpc.isRequest(parsedReq.value) &&
 						parsedReq.value.method === "initialize"
 					) {
-						newSessionId = crypto.randomUUID()
-						sessions.set(newSessionId, {
+						activeSessionId = crypto.randomUUID()
+						activeSession = {
 							createdAt: Date.now(),
 							pendingRequests: new Map(),
+						}
+						sessions.set(activeSessionId, activeSession)
+					}
+
+					// Queue for events to be streamed
+					const eventQueue: string[] = []
+					let eventResolve: (() => void) | null = null
+					let handlerComplete = false
+					let handlerResult: string | null = null
+
+					// Notification function - adds to queue and signals generator
+					const notify = (method: string, params?: unknown) => {
+						const notification = Rpc.notification(method, params)
+						eventQueue.push(sseEvent(Rpc.stringify(notification), "message"))
+						eventResolve?.()
+					}
+
+					// Request function for bidirectional RPC (sampling/elicitation)
+					const request = async (method: string, params?: unknown): Promise<unknown> => {
+						if (!activeSession) throw new Error("No session available")
+
+						const id = `server-${nextRequestId++}`
+						const req = Rpc.request(id, method, params)
+
+						// Create promise that will be resolved when client POSTs response
+						const promise = new Promise<unknown>((resolve, reject) => {
+							const timer = setTimeout(() => {
+								if (activeSession?.pendingRequests.has(id)) {
+									activeSession.pendingRequests.delete(id)
+									reject(new Error("Request timed out"))
+								}
+							}, 30000)
+
+							activeSession.pendingRequests.set(id, { resolve, reject, timer })
 						})
+
+						// Send request via SSE
+						eventQueue.push(sseEvent(Rpc.stringify(req), "message"))
+						eventResolve?.()
+
+						return promise
 					}
 
-					// Execute handler and collect response
-					// Note: The request function is not provided for HTTP SSE because
-					// gust doesn't support true streaming responses needed for bidirectional RPC
-					const responseStr = await server.handle(body, { notify })
+					// Start handler execution in background
+					const handlerPromise = server.handle(body, { notify, request }).then((result) => {
+						handlerResult = result
+						handlerComplete = true
+						eventResolve?.()
+					})
 
-					// Build SSE body
-					let sseBody = ""
-					for (const notification of notifications) {
-						sseBody += sseEvent(notification, "message")
-					}
-					if (responseStr) {
-						sseBody += sseEvent(responseStr, "message")
+					// Create async generator for SSE stream
+					async function* generateSSE(): AsyncGenerator<string> {
+						// Yield session ID header event if new session
+						if (activeSessionId && !sessionId) {
+							// Note: Headers are set separately, this is just for the stream
+						}
+
+						// Yield events until handler completes
+						while (!handlerComplete || eventQueue.length > 0) {
+							// Yield any queued events
+							while (eventQueue.length > 0) {
+								yield eventQueue.shift()!
+							}
+
+							// If handler not complete, wait for more events
+							if (!handlerComplete) {
+								await new Promise<void>((resolve) => {
+									eventResolve = resolve
+									// Also check periodically in case we missed a signal
+									setTimeout(resolve, 100)
+								})
+								eventResolve = null
+							}
+						}
+
+						// Yield final response
+						if (handlerResult) {
+							yield sseEvent(handlerResult, "message")
+						}
+
+						// Ensure handler promise is settled
+						await handlerPromise
 					}
 
 					// Build headers
-					const headers: Record<string, string> = {
-						"Content-Type": "text/event-stream",
-						"Cache-Control": "no-cache",
-					}
-					if (newSessionId) {
-						headers["Mcp-Session-Id"] = newSessionId
+					const headers: Record<string, string> = {}
+					if (activeSessionId && !sessionId) {
+						headers["Mcp-Session-Id"] = activeSessionId
 					}
 
-					return response(sseBody, { status: 200, headers })
+					return sse(textStream(generateSSE()), { headers })
 				}
 
 				// Regular JSON response (no streaming, no bidirectional support)

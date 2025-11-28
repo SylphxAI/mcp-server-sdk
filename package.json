@@ -28,7 +28,8 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@sylphx/gust": "^0.1.1"
+		"@sylphx/gust": "^0.1.4",
+		"@sylphx/gust-core": "^0.1.6"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.8",
