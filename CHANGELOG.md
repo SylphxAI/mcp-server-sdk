@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.3.0 (2025-11-29)
+
+### ✨ Features
+
+- **conformance:** add SEP-1034 elicitation defaults test tool ([58da35f](https://github.com/SylphxAI/mcp-server-sdk/commit/58da35f3017b3456bbad26774db4cda2b7d3c5c6))
+- **http:** implement true streaming SSE with bidirectional RPC ([9b99d2d](https://github.com/SylphxAI/mcp-server-sdk/commit/9b99d2d06b8d00401c58047b760a8dc8221f5071))
+- **http:** add bidirectional RPC infrastructure ([f4d7922](https://github.com/SylphxAI/mcp-server-sdk/commit/f4d79221ba0269aa48ca7ea8d953a8da8aaf2a76))
+- add sampling and elicitation capabilities ([107c750](https://github.com/SylphxAI/mcp-server-sdk/commit/107c750f6787ddecaa828639d7f2160dd726c1b4))
+
+### ♻️ Refactoring
+
+- **http:** migrate to gust 0.1.7 middleware API ([5137e95](https://github.com/SylphxAI/mcp-server-sdk/commit/5137e95ceb6a226accebd46f35f29ff812b1e9e7))
+- **http:** simplify SSE and document streaming limitation ([24050dc](https://github.com/SylphxAI/mcp-server-sdk/commit/24050dc0045d12b78a6f8928818f8a3b62759324))
+
+### 📚 Documentation
+
+- **readme:** update for v1.2.0 features ([6d31fd6](https://github.com/SylphxAI/mcp-server-sdk/commit/6d31fd6390b44f33ceeaaed67dbe0ff7cb527e6c))
+
 ## 1.2.0 (2025-11-27)
 
 ### ✨ Features
