@@ -12,17 +12,15 @@
 
 import {
 	type Context,
-	compose,
+	cors,
 	get,
-	cors as gustCors,
 	json,
 	post,
 	response,
-	router,
 	type Server,
+	type SSEEvent,
 	serve,
 	sse,
-	textStream,
 } from "@sylphx/gust"
 import * as Rpc from "../protocol/jsonrpc.js"
 import type { Transport, TransportFactory } from "./types.js"
@@ -52,19 +50,6 @@ export interface HttpOptions {
 	readonly cors?: string
 	/** Error handler */
 	readonly onError?: (error: Error) => void
-}
-
-// ============================================================================
-// SSE Helpers
-// ============================================================================
-
-/** Format an SSE event */
-const sseEvent = (data: string, event?: string, id?: string): string => {
-	let result = ""
-	if (id) result += `id: ${id}\n`
-	if (event) result += `event: ${event}\n`
-	result += `data: ${data}\n\n`
-	return result
 }
 
 // ============================================================================
@@ -121,7 +106,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 		}
 
 		// Routes
-		const jsonRpcRoute = post(basePath, async (ctx: Context) => {
+		const jsonRpcRoute = post(basePath, async ({ ctx }: { ctx: Context }) => {
 			try {
 				const body = ctx.body.toString()
 				const accept = ctx.headers.accept ?? ""
@@ -179,7 +164,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 					}
 
 					// Queue for events to be streamed
-					const eventQueue: string[] = []
+					const eventQueue: SSEEvent[] = []
 					let eventResolve: (() => void) | null = null
 					let handlerComplete = false
 					let handlerResult: string | null = null
@@ -187,7 +172,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 					// Notification function - adds to queue and signals generator
 					const notify = (method: string, params?: unknown) => {
 						const notification = Rpc.notification(method, params)
-						eventQueue.push(sseEvent(Rpc.stringify(notification), "message"))
+						eventQueue.push({ data: Rpc.stringify(notification), event: "message" })
 						eventResolve?.()
 					}
 
@@ -211,7 +196,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 						})
 
 						// Send request via SSE
-						eventQueue.push(sseEvent(Rpc.stringify(req), "message"))
+						eventQueue.push({ data: Rpc.stringify(req), event: "message" })
 						eventResolve?.()
 
 						return promise
@@ -225,12 +210,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 					})
 
 					// Create async generator for SSE stream
-					async function* generateSSE(): AsyncGenerator<string> {
-						// Yield session ID header event if new session
-						if (activeSessionId && !sessionId) {
-							// Note: Headers are set separately, this is just for the stream
-						}
-
+					const generateSSE = async function* (): AsyncGenerator<SSEEvent> {
 						// Yield events until handler completes
 						while (!handlerComplete || eventQueue.length > 0) {
 							// Yield any queued events
@@ -252,7 +232,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 
 						// Yield final response
 						if (handlerResult) {
-							yield sseEvent(handlerResult, "message")
+							yield { data: handlerResult, event: "message" }
 						}
 
 						// Ensure handler promise is settled
@@ -265,7 +245,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 						headers["Mcp-Session-Id"] = activeSessionId
 					}
 
-					return sse(textStream(generateSSE()), { headers })
+					return sse(generateSSE, { headers })
 				}
 
 				// Regular JSON response (no streaming, no bidirectional support)
@@ -297,29 +277,32 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 			}
 		})
 
-		const healthRoute = get(`${basePath}/health`, () => {
-			return json({
+		const healthRoute = get(`${basePath}/health`, () =>
+			json({
 				status: "ok",
 				server: server.name,
 				version: server.version,
 			})
-		})
+		)
 
-		// Build app with optional CORS
-		const routes = router({
-			jsonRpc: jsonRpcRoute,
-			health: healthRoute,
-		})
+		// Build routes array
+		const routes = [jsonRpcRoute, healthRoute]
 
-		const app = options.cors
-			? compose(gustCors({ origin: options.cors }))(routes.handler)
-			: routes.handler
+		// CORS middleware (if enabled)
+		const middleware = options.cors
+			? cors({
+					origin: options.cors,
+					allowedHeaders: ["Content-Type", "Accept", "Mcp-Session-Id"],
+					exposedHeaders: ["Mcp-Session-Id"],
+				})
+			: undefined
 
 		let gustServer: Server | null = null
 
 		const start = async (): Promise<void> => {
 			gustServer = await serve({
-				fetch: app,
+				routes,
+				middleware,
 				port,
 				hostname,
 			})

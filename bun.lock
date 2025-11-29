@@ -5,8 +5,8 @@
     "": {
       "name": "@sylphx/mcp-server-sdk",
       "dependencies": {
-        "@sylphx/gust": "^0.1.4",
-        "@sylphx/gust-core": "^0.1.6",
+        "@sylphx/gust": "^0.1.7",
+        "@sylphx/gust-core": "^0.1.7",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.3.8",
@@ -178,9 +178,9 @@
 
     "@sylphx/doctor": ["@sylphx/doctor@1.24.0", "", { "dependencies": { "citty": "^0.1.6", "consola": "^3.4.2", "defu": "^6.1.4", "jiti": "^2.4.2", "picocolors": "^1.1.1" }, "bin": { "doctor": "dist/cli.js" } }, "sha512-lmbmwAe4rIhDp6nIDQMeLs7hJbpBUTC79Xdv90eHqL/QUDbQu0x0oSi4acEoJ/K84BDvQ2tiAeKco1Zd8DIzLQ=="],
 
-    "@sylphx/gust": ["@sylphx/gust@0.1.4", "", { "dependencies": { "@sylphx/gust-core": "^0.1.6" } }, "sha512-TGrp5JKaUc01j8SsmHmsIeMJybdj2kaNRrbqfRncWLZvat8k9LnpifSG5AM7D3yPRBQlihK50ZTLb92Zo2eS3Q=="],
+    "@sylphx/gust": ["@sylphx/gust@0.1.7", "", { "dependencies": { "@sylphx/gust-core": "^0.1.7" } }, "sha512-Fb4rUi/S2+1OK4Jjs3VzvOumfLnQOmkr5RxCd+9E45SP8vHDxO7h/TPiVJWXByEFO5aaesHlMVq23lfJcDf4kg=="],
 
-    "@sylphx/gust-core": ["@sylphx/gust-core@0.1.6", "", {}, "sha512-u1O05EGdu2yzpXAfVe09xULpaLtxWW3PijSfX6TkC+noY6Ly9gDFwW35jLrlykaoCRO6zABgpmojpXlQ5Sx4Zg=="],
+    "@sylphx/gust-core": ["@sylphx/gust-core@0.1.7", "", {}, "sha512-tdwlu1991FQht84RSA8LsMy2tfw0PjfzdXuyl+fjzkL/DnfdipcpzK+mr8ibYpzX0dAT7ezgZNHji7L50UiyAQ=="],
 
     "@sylphx/tsconfig": ["@sylphx/tsconfig@0.3.0", "", {}, "sha512-3O085PgS9CkWlW1xQND7XJkXYaq3SjoUvwOosK5sAA5eev1gVYEdYJhfAHgLcZefP541FQnHSCzs1re4gj6TjA=="],
 
