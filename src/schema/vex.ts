@@ -4,7 +4,8 @@
  * Uses @sylphx/vex for ultra-fast schema validation.
  */
 
-import { getMeta, type InferOutput, type Parser, safeParse, toJsonSchema } from "@sylphx/vex"
+import { getMeta, type InferOutput, type Schema, safeParse } from "@sylphx/vex"
+import { toJsonSchema } from "@sylphx/vex-json-schema"
 import type { JsonSchema } from "../protocol/mcp.js"
 
 // ============================================================================
@@ -12,7 +13,7 @@ import type { JsonSchema } from "../protocol/mcp.js"
 // ============================================================================
 
 /** Extract the inferred type from a Vex schema */
-export type Infer<T extends Parser<unknown>> = InferOutput<T>
+export type Infer<T extends Schema<unknown>> = InferOutput<T>
 
 // ============================================================================
 // Vex to JSON Schema Conversion
@@ -21,7 +22,7 @@ export type Infer<T extends Parser<unknown>> = InferOutput<T>
 /**
  * Convert a Vex schema to JSON Schema.
  */
-export const vexToJsonSchema = (schema: Parser<unknown>): JsonSchema => {
+export const vexToJsonSchema = (schema: Schema<unknown>): JsonSchema => {
 	const jsonSchema = toJsonSchema(schema, { $schema: false })
 	return jsonSchema as JsonSchema
 }
@@ -37,7 +38,7 @@ export type ValidationResult<T> =
 /**
  * Validate input against a Vex schema.
  */
-export const validate = <T>(schema: Parser<T>, input: unknown): ValidationResult<T> => {
+export const validate = <T>(schema: Schema<T>, input: unknown): ValidationResult<T> => {
 	const result = safeParse(schema)(input)
 	if (result.success) {
 		return { success: true, data: result.data }
@@ -53,14 +54,14 @@ export const validate = <T>(schema: Parser<T>, input: unknown): ValidationResult
  * Extract field info from a Vex object schema.
  */
 export const extractObjectFields = (
-	schema: Parser<unknown>
+	schema: Schema<unknown>
 ): Array<{ name: string; description?: string; required: boolean }> => {
 	const meta = getMeta(schema)
 	if (!meta || meta.type !== "object") {
 		return []
 	}
 
-	const inner = meta.inner as Record<string, Parser<unknown>> | undefined
+	const inner = meta.inner as Record<string, Schema<unknown>> | undefined
 	if (!inner || typeof inner !== "object") {
 		return []
 	}

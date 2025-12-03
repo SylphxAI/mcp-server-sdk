@@ -19,7 +19,7 @@
  * ```
  */
 
-import type { Parser } from "@sylphx/vex"
+import type { Schema } from "@sylphx/vex"
 import type {
 	Content,
 	Prompt,
@@ -66,7 +66,7 @@ export interface PromptDefinition<_TArgs = void> {
 
 interface PromptBuilderWithoutArgs {
 	description(desc: string): PromptBuilderWithoutArgs
-	args<T extends Record<string, unknown>>(schema: Parser<T>): PromptBuilderWithArgs<T>
+	args<T extends Record<string, unknown>>(schema: Schema<T>): PromptBuilderWithArgs<T>
 	handler(
 		fn: (args: { ctx: PromptContext }) => PromptsGetResult | Promise<PromptsGetResult>
 	): PromptDefinition<void>
@@ -85,7 +85,7 @@ interface PromptBuilderWithArgs<TArgs> {
 
 interface BuilderState {
 	description?: string
-	argsSchema?: Parser<Record<string, unknown>>
+	argsSchema?: Schema<Record<string, unknown>>
 }
 
 const createBuilder = <TArgs = void>(state: BuilderState = {}): PromptBuilderWithoutArgs => ({
@@ -93,8 +93,8 @@ const createBuilder = <TArgs = void>(state: BuilderState = {}): PromptBuilderWit
 		return createBuilder<TArgs>({ ...state, description: desc }) as PromptBuilderWithoutArgs
 	},
 
-	args<T extends Record<string, unknown>>(schema: Parser<T>): PromptBuilderWithArgs<T> {
-		const newState = { ...state, argsSchema: schema as Parser<Record<string, unknown>> }
+	args<T extends Record<string, unknown>>(schema: Schema<T>): PromptBuilderWithArgs<T> {
+		const newState = { ...state, argsSchema: schema as Schema<Record<string, unknown>> }
 		return {
 			description(desc: string) {
 				return createBuilder({
@@ -124,7 +124,7 @@ const createDefinitionNoArgs = (
 
 const createDefinitionWithArgs = <T>(
 	state: BuilderState,
-	schema: Parser<T>,
+	schema: Schema<T>,
 	fn: (args: PromptHandlerArgs<T>) => PromptsGetResult | Promise<PromptsGetResult>
 ): PromptDefinition<T> => ({
 	description: state.description,
@@ -138,7 +138,7 @@ const createDefinitionWithArgs = <T>(
 	},
 })
 
-const extractPromptArgs = (schema: Parser<unknown>): PromptArgument[] => {
+const extractPromptArgs = (schema: Schema<unknown>): PromptArgument[] => {
 	const fields = extractObjectFields(schema)
 	return fields.map((field) => ({
 		name: field.name,

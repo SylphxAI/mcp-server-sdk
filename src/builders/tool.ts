@@ -19,7 +19,7 @@
  * ```
  */
 
-import type { Parser } from "@sylphx/vex"
+import type { Schema } from "@sylphx/vex"
 import type { NotificationEmitter } from "../notifications/types.js"
 import type {
 	AudioContent,
@@ -151,7 +151,7 @@ export interface ToolDefinition<_TInput = void> {
 interface ToolBuilderWithoutInput {
 	description(desc: string): ToolBuilderWithoutInput
 	annotations(annotations: ToolAnnotations): ToolBuilderWithoutInput
-	input<T>(schema: Parser<T>): ToolBuilderWithInput<T>
+	input<T>(schema: Schema<T>): ToolBuilderWithInput<T>
 	handler(
 		fn: (args: { ctx: ToolContext }) => ToolResult | Promise<ToolResult>
 	): ToolDefinition<void>
@@ -190,7 +190,7 @@ const normalizeResult = (result: ToolResult): ToolsCallResult => {
 interface BuilderState {
 	description?: string
 	annotations?: ToolAnnotations
-	inputSchema?: Parser<unknown>
+	inputSchema?: Schema<unknown>
 }
 
 const createBuilder = <TInput = void>(state: BuilderState = {}): ToolBuilderWithoutInput => ({
@@ -202,7 +202,7 @@ const createBuilder = <TInput = void>(state: BuilderState = {}): ToolBuilderWith
 		return createBuilder<TInput>({ ...state, annotations }) as ToolBuilderWithoutInput
 	},
 
-	input<T>(schema: Parser<T>): ToolBuilderWithInput<T> {
+	input<T>(schema: Schema<T>): ToolBuilderWithInput<T> {
 		const newState = { ...state, inputSchema: schema }
 		return {
 			description(desc: string) {
@@ -237,7 +237,7 @@ const createDefinitionNoInput = (
 
 const createDefinitionWithInput = <T>(
 	state: BuilderState,
-	schema: Parser<T>,
+	schema: Schema<T>,
 	fn: (args: ToolHandlerArgs<T>) => ToolResult | Promise<ToolResult>
 ): ToolDefinition<T> => ({
 	description: state.description,

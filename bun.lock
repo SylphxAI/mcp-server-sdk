@@ -7,7 +7,8 @@
       "dependencies": {
         "@sylphx/gust": "^0.1.9",
         "@sylphx/gust-core": "^0.1.9",
-        "@sylphx/vex": "^0.1.9",
+        "@sylphx/vex": "^0.1.11",
+        "@sylphx/vex-json-schema": "^0.0.1",
       },
       "devDependencies": {
         "@biomejs/biome": "^2.3.8",
@@ -184,7 +185,9 @@
 
     "@sylphx/tsconfig": ["@sylphx/tsconfig@0.3.0", "", {}, "sha512-3O085PgS9CkWlW1xQND7XJkXYaq3SjoUvwOosK5sAA5eev1gVYEdYJhfAHgLcZefP541FQnHSCzs1re4gj6TjA=="],
 
-    "@sylphx/vex": ["@sylphx/vex@0.1.9", "", { "peerDependencies": { "typescript": ">=5.0.0" } }, "sha512-thubeCb4Ta7cSCo7zx2bY7Y6vS5gqmHER9IXXawZ3H8rsEI+wpiO3if51IRmSypxV5iXfF/BmPgtoAKz6fverA=="],
+    "@sylphx/vex": ["@sylphx/vex@0.1.11", "", { "peerDependencies": { "typescript": ">=5.0.0" } }, "sha512-agm+PhHINL04DdmaSGGZ9BVeTfPyOtlPNnHD0m9+/hY8A8HzabtIZUN7RzqrE/AniY38OE9LNiSxINaD7Epw+g=="],
+
+    "@sylphx/vex-json-schema": ["@sylphx/vex-json-schema@0.0.1", "", { "dependencies": { "@sylphx/vex": "^0.1.11" }, "peerDependencies": { "typescript": ">=5.0.0" } }, "sha512-Ge5xxiLMNP1s1DyGyoRVPxq72+xCe1TC/2mSYZ4fUwoCkwgRL9OnM+GDKsSQv2X2u8zdQUA3wcWzrn8QladNYA=="],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg=="],
 
