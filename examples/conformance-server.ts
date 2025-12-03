@@ -7,7 +7,7 @@
  * Run with: bun run examples/conformance-server.ts
  */
 
-import { z } from "zod"
+import { description, object, str } from "@sylphx/vex"
 import {
 	audio,
 	createServer,
@@ -104,7 +104,7 @@ const test_tool_with_progress = tool()
 // Tools that require client capabilities
 const test_sampling = tool()
 	.description("Tests sampling capability")
-	.input(z.object({ prompt: z.string() }))
+	.input(object({ prompt: str() }))
 	.handler(async ({ input, ctx }) => {
 		// Check if sampling is available
 		if (!ctx.sampling) {
@@ -124,7 +124,7 @@ const test_sampling = tool()
 
 const test_elicitation = tool()
 	.description("Tests elicitation capability")
-	.input(z.object({ message: z.string() }))
+	.input(object({ message: str() }))
 	.handler(async ({ input, ctx }) => {
 		// Check if elicitation is available
 		if (!ctx.elicit) {
@@ -224,9 +224,9 @@ const test_simple_prompt = prompt()
 const test_prompt_with_arguments = prompt()
 	.description("A prompt with arguments for testing")
 	.args(
-		z.object({
-			arg1: z.string().describe("First argument"),
-			arg2: z.string().describe("Second argument"),
+		object({
+			arg1: str(description("First argument")),
+			arg2: str(description("Second argument")),
 		})
 	)
 	.handler(({ args }) =>
@@ -235,7 +235,7 @@ const test_prompt_with_arguments = prompt()
 
 const test_prompt_with_embedded_resource = prompt()
 	.description("A prompt with an embedded resource")
-	.args(z.object({ resourceUri: z.string().describe("URI of resource to embed") }))
+	.args(object({ resourceUri: str(description("URI of resource to embed")) }))
 	.handler(({ args }) => ({
 		messages: [
 			{

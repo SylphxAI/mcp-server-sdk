@@ -1,1 +1,1 @@
-export * from "./zod.js"
+export * from "./vex.js"

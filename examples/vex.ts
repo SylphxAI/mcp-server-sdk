@@ -1,24 +1,37 @@
 /**
- * Zod Schema Example - @sylphx/mcp-server-sdk
+ * Vex Schema Example - @sylphx/mcp-server-sdk
  *
- * Demonstrates type-safe tool and prompt definitions using Zod.
- * Run with: bun run examples/zod.ts
+ * Demonstrates type-safe tool and prompt definitions using Vex.
+ * Run with: bun run examples/vex.ts
  */
 
-import { z } from "zod"
+import {
+	bool,
+	coerceNumber,
+	description,
+	enum_,
+	int,
+	num,
+	object,
+	optional,
+	pipe,
+	positive,
+	str,
+	withDefault,
+} from "@sylphx/vex"
 import { createServer, messages, prompt, stdio, text, tool, toolError, user } from "../src/index.js"
 
 // ============================================================================
-// Define Tools with Zod (Full Type Safety)
+// Define Tools with Vex (Full Type Safety)
 // ============================================================================
 
 const calculator = tool()
 	.description("Perform basic arithmetic")
 	.input(
-		z.object({
-			operation: z.enum(["add", "subtract", "multiply", "divide"]).describe("Math operation"),
-			a: z.number().describe("First number"),
-			b: z.number().describe("Second number"),
+		object({
+			operation: enum_(["add", "subtract", "multiply", "divide"] as const),
+			a: num(description("First number")),
+			b: num(description("Second number")),
 		})
 	)
 	.handler(({ input }) => {
@@ -47,9 +60,9 @@ const calculator = tool()
 const fetchUser = tool()
 	.description("Fetch user information")
 	.input(
-		z.object({
-			id: z.coerce.number().int().positive().describe("User ID"),
-			includeEmail: z.boolean().default(false).describe("Include email in response"),
+		object({
+			id: pipe(coerceNumber, int, positive, description("User ID")),
+			includeEmail: withDefault(bool(description("Include email in response")), false),
 		})
 	)
 	.handler(({ input }) => {
@@ -66,16 +79,16 @@ const fetchUser = tool()
 	})
 
 // ============================================================================
-// Define Prompts with Zod
+// Define Prompts with Vex
 // ============================================================================
 
 const codeReview = prompt()
 	.description("Generate a code review prompt")
 	.args(
-		z.object({
-			language: z.string().describe("Programming language"),
-			focus: z.string().optional().describe("Specific area to focus on"),
-			strict: z.boolean().default(false).describe("Use strict review criteria"),
+		object({
+			language: str(description("Programming language")),
+			focus: optional(str(description("Specific area to focus on"))),
+			strict: withDefault(bool(description("Use strict review criteria")), false),
 		})
 	)
 	.handler(({ args }) => {
@@ -93,9 +106,9 @@ const codeReview = prompt()
 // ============================================================================
 
 const server = createServer({
-	name: "zod-example",
+	name: "vex-example",
 	version: "1.0.0",
-	instructions: "Example server demonstrating Zod schema validation",
+	instructions: "Example server demonstrating Vex schema validation",
 	tools: { calculator, fetchUser },
 	prompts: { codeReview },
 	transport: stdio(),

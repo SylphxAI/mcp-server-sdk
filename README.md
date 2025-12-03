@@ -8,7 +8,7 @@ Pure functional MCP (Model Context Protocol) server SDK for Bun.
 ## Features
 
 - **Pure Functional**: Immutable data, composable handlers
-- **Type-Safe**: First-class TypeScript with Zod schema integration
+- **Type-Safe**: First-class TypeScript with Vex schema integration
 - **Builder Pattern**: Fluent API for defining tools, resources, and prompts
 - **Fast**: Built for Bun with minimal dependencies
 - **Streamable HTTP**: MCP 2025-03-26 spec with SSE notifications
@@ -17,19 +17,19 @@ Pure functional MCP (Model Context Protocol) server SDK for Bun.
 ## Installation
 
 ```bash
-bun add @sylphx/mcp-server-sdk zod
+bun add @sylphx/mcp-server-sdk
 ```
 
 ## Quick Start
 
 ```typescript
 import { createServer, tool, text, stdio } from "@sylphx/mcp-server-sdk"
-import { z } from "zod"
+import { object, str } from "@sylphx/vex"
 
 // Define tools using builder pattern
 const greet = tool()
   .description("Greet someone")
-  .input(z.object({ name: z.string() }))
+  .input(object({ name: str() }))
   .handler(({ input }) => text(`Hello, ${input.name}!`))
 
 const ping = tool()
@@ -52,7 +52,7 @@ Tools are callable functions exposed to the AI.
 
 ```typescript
 import { tool, text, image, audio, json, toolError } from "@sylphx/mcp-server-sdk"
-import { z } from "zod"
+import { description, enum_, num, object, str } from "@sylphx/vex"
 
 // Simple tool (no input)
 const ping = tool()
@@ -62,10 +62,10 @@ const ping = tool()
 // Tool with typed input
 const calculator = tool()
   .description("Perform arithmetic")
-  .input(z.object({
-    a: z.number().describe("First number"),
-    b: z.number().describe("Second number"),
-    op: z.enum(["+", "-", "*", "/"]).describe("Operation"),
+  .input(object({
+    a: num(description("First number")),
+    b: num(description("Second number")),
+    op: enum_(["+", "-", "*", "/"] as const),
   }))
   .handler(({ input }) => {
     const { a, b, op } = input
@@ -95,7 +95,7 @@ const screenshot = tool()
 // Return JSON data
 const getUser = tool()
   .description("Get user data")
-  .input(z.object({ id: z.string() }))
+  .input(object({ id: str() }))
   .handler(({ input }) => json({ id: input.id, name: "Alice" }))
 
 // Return error
@@ -144,7 +144,7 @@ Prompts are reusable conversation templates.
 
 ```typescript
 import { prompt, user, assistant, messages, promptResult } from "@sylphx/mcp-server-sdk"
-import { z } from "zod"
+import { description, object, optional, str, withDefault } from "@sylphx/vex"
 
 // Simple prompt (no arguments)
 const greeting = prompt()
@@ -157,9 +157,9 @@ const greeting = prompt()
 // Prompt with typed arguments
 const codeReview = prompt()
   .description("Review code for issues")
-  .args(z.object({
-    code: z.string().describe("Code to review"),
-    language: z.string().optional().describe("Programming language"),
+  .args(object({
+    code: str(description("Code to review")),
+    language: optional(str(description("Programming language"))),
   }))
   .handler(({ args }) => messages(
     user(`Please review this ${args.language ?? "code"}:\n\`\`\`\n${args.code}\n\`\`\``),
@@ -169,10 +169,10 @@ const codeReview = prompt()
 // Prompt with description in result
 const translate = prompt()
   .description("Translate text between languages")
-  .args(z.object({
-    text: z.string(),
-    from: z.string().default("auto"),
-    to: z.string(),
+  .args(object({
+    text: str(),
+    from: withDefault(str(), "auto"),
+    to: str(),
   }))
   .handler(({ args }) => promptResult(
     `Translation from ${args.from} to ${args.to}`,
@@ -261,9 +261,11 @@ data: {"jsonrpc":"2.0","id":1,"result":{...}}
 Send server-to-client notifications for progress and logging using the simplified context API.
 
 ```typescript
+import { array, object, str } from "@sylphx/vex"
+
 const processFiles = tool()
   .description("Process multiple files")
-  .input(z.object({ files: z.array(z.string()) }))
+  .input(object({ files: array(str()) }))
   .handler(async ({ input, ctx }) => {
     const total = input.files.length
 
@@ -321,10 +323,11 @@ Request LLM completions from the client.
 
 ```typescript
 import { createSamplingClient } from "@sylphx/mcp-server-sdk"
+import { object, str } from "@sylphx/vex"
 
 const summarize = tool()
   .description("Summarize text using AI")
-  .input(z.object({ text: z.string() }))
+  .input(object({ text: str() }))
   .handler(async ({ input, ctx }) => {
     const sampling = createSamplingClient(ctx.requestSampling)
 
@@ -358,10 +361,11 @@ Request user input from the client.
 
 ```typescript
 import { createElicitationClient } from "@sylphx/mcp-server-sdk"
+import { object, str } from "@sylphx/vex"
 
 const confirmAction = tool()
   .description("Confirm before proceeding")
-  .input(z.object({ action: z.string() }))
+  .input(object({ action: str() }))
   .handler(async ({ input, ctx }) => {
     const elicit = createElicitationClient(ctx.requestElicitation)
 
@@ -419,10 +423,11 @@ Paginate large result sets.
 
 ```typescript
 import { paginate } from "@sylphx/mcp-server-sdk"
+import { object, optional, str } from "@sylphx/vex"
 
 const listItems = tool()
   .description("List items with pagination")
-  .input(z.object({ cursor: z.string().optional() }))
+  .input(object({ cursor: optional(str()) }))
   .handler(async ({ input }) => {
     const allItems = await fetchAllItems()
 
@@ -464,7 +469,7 @@ interface ServerConfig {
 ```typescript
 tool()
   .description(string)                    // Optional description
-  .input(ZodSchema)                       // Optional input schema
+  .input(VexSchema)                       // Optional input schema
   .handler(fn: HandlerFn) -> ToolDefinition
 
 // Handler signature
@@ -499,7 +504,7 @@ resourceTemplate()
 ```typescript
 prompt()
   .description(string)                    // Optional description
-  .args(ZodSchema)                        // Optional arguments schema
+  .args(VexSchema)                        // Optional arguments schema
   .handler(fn) -> PromptDefinition
 
 // Handler receives { args, ctx } or { ctx }
@@ -590,6 +595,7 @@ interface PageResult<T> {
 
 ## Powered by Sylphx
 
+- [@sylphx/vex](https://github.com/SylphxAI/vex) - Ultra-fast schema validation
 - [@sylphx/gust](https://github.com/SylphxAI/gust) - Lightweight HTTP framework for Bun
 - [@sylphx/biome-config](https://github.com/SylphxAI/biome-config) - Shared Biome configuration
 - [@sylphx/tsconfig](https://github.com/SylphxAI/tsconfig) - Shared TypeScript configuration

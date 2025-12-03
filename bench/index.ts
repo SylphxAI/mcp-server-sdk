@@ -4,8 +4,8 @@
  * Run with: bun run bench
  */
 
+import { object, str } from "@sylphx/vex"
 import { bench, group, run } from "mitata"
-import { z } from "zod"
 import { messages, prompt, user } from "../src/builders/prompt.js"
 import { resource, resourceText } from "../src/builders/resource.js"
 import { text, tool } from "../src/builders/tool.js"
@@ -19,7 +19,7 @@ import { dispatch, type ServerState } from "../src/server/handler.js"
 
 const greetTool = tool()
 	.description("Greet someone")
-	.input(z.object({ name: z.string() }))
+	.input(object({ name: str() }))
 	.handler(({ input }) => text(`Hello, ${input.name}!`))
 
 const asyncTool = tool()
@@ -34,7 +34,7 @@ const configResource = resource()
 	.handler(({ uri }) => resourceText(uri, '{"version":"1.0"}'))
 
 const greetPrompt = prompt()
-	.args(z.object({ name: z.string() }))
+	.args(object({ name: str() }))
 	.handler(({ args }) => messages(user(`Hello ${args.name}`)))
 
 // Create server state directly for benchmarking

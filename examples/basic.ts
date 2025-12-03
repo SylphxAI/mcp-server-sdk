@@ -4,7 +4,7 @@
  * Run with: bun run examples/basic.ts
  */
 
-import { z } from "zod"
+import { description, num, object, optional, str } from "@sylphx/vex"
 import {
 	createServer,
 	http,
@@ -24,12 +24,12 @@ import {
 
 const greet = tool()
 	.description("Greet someone by name")
-	.input(z.object({ name: z.string().describe("Name to greet") }))
+	.input(object({ name: str(description("Name to greet")) }))
 	.handler(({ input }) => text(`Hello, ${input.name}!`))
 
 const add = tool()
 	.description("Add two numbers")
-	.input(z.object({ a: z.number(), b: z.number() }))
+	.input(object({ a: num(), b: num() }))
 	.handler(({ input }) => text(`${input.a} + ${input.b} = ${input.a + input.b}`))
 
 const ping = tool()
@@ -59,9 +59,9 @@ const config = resource()
 const codeReview = prompt()
 	.description("Generate a code review prompt")
 	.args(
-		z.object({
-			language: z.string().describe("Programming language"),
-			focus: z.string().optional().describe("What to focus on"),
+		object({
+			language: str(description("Programming language")),
+			focus: optional(str(description("What to focus on"))),
 		})
 	)
 	.handler(({ args }) =>

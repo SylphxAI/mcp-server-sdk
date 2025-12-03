@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { z } from "zod"
+import { object, str } from "@sylphx/vex"
 import { messages, prompt, user } from "../builders/prompt.js"
 import { resource, resourceTemplate, resourceText } from "../builders/resource.js"
 import { text, tool } from "../builders/tool.js"
@@ -69,7 +69,7 @@ describe("Server Handler", () => {
 		test("returns tool definitions", async () => {
 			const greet = tool()
 				.description("Greet someone")
-				.input(z.object({ name: z.string() }))
+				.input(object({ name: str() }))
 				.handler(({ input }) => text(`Hello ${input.name}`))
 
 			const state = createTestState({
@@ -93,7 +93,7 @@ describe("Server Handler", () => {
 	describe("tools/call", () => {
 		test("executes tool with input", async () => {
 			const greet = tool()
-				.input(z.object({ name: z.string() }))
+				.input(object({ name: str() }))
 				.handler(({ input }) => text(`Hello ${input.name}`))
 
 			const state = createTestState({
@@ -146,7 +146,7 @@ describe("Server Handler", () => {
 
 		test("returns validation error for invalid input", async () => {
 			const greet = tool()
-				.input(z.object({ name: z.string() }))
+				.input(object({ name: str() }))
 				.handler(({ input }) => text(`Hello ${input.name}`))
 
 			const state = createTestState({
@@ -273,7 +273,7 @@ describe("Server Handler", () => {
 		test("returns prompt definitions", async () => {
 			const review = prompt()
 				.description("Code review")
-				.args(z.object({ code: z.string() }))
+				.args(object({ code: str() }))
 				.handler(({ args }) => messages(user(`Review: ${args.code}`)))
 
 			const state = createTestState({
@@ -295,7 +295,7 @@ describe("Server Handler", () => {
 	describe("prompts/get", () => {
 		test("generates prompt messages", async () => {
 			const review = prompt()
-				.args(z.object({ code: z.string() }))
+				.args(object({ code: str() }))
 				.handler(({ args }) => messages(user(`Review: ${args.code}`)))
 
 			const state = createTestState({

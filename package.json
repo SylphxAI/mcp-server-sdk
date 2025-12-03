@@ -28,8 +28,9 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@sylphx/gust": "^0.1.7",
-		"@sylphx/gust-core": "^0.1.7"
+		"@sylphx/gust": "^0.1.9",
+		"@sylphx/gust-core": "^0.1.9",
+		"@sylphx/vex": "^0.1.9"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.8",
@@ -42,17 +43,10 @@
 		"bunup": "^0.16.10",
 		"lefthook": "^2.0.4",
 		"mitata": "^1.0.34",
-		"typescript": "^5.9.3",
-		"zod": "^4.1.13"
+		"typescript": "^5.9.3"
 	},
 	"peerDependencies": {
-		"typescript": "^5.0.0",
-		"zod": "^4.0.0"
-	},
-	"peerDependenciesMeta": {
-		"zod": {
-			"optional": true
-		}
+		"typescript": "^5.0.0"
 	},
 	"repository": {
 		"type": "git",

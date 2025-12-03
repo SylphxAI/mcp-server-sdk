@@ -7,9 +7,9 @@
  * ```ts
  * const review = prompt()
  *   .description('Code review prompt')
- *   .args(z.object({
- *     language: z.string(),
- *     focus: z.string().optional(),
+ *   .args(object({
+ *     language: str(),
+ *     focus: optional(str()),
  *   }))
  *   .handler(({ args }) => messages(user(`Review ${args.language} code`)))
  *
@@ -19,7 +19,7 @@
  * ```
  */
 
-import type { z } from "zod"
+import type { Parser } from "@sylphx/vex"
 import type {
 	Content,
 	Prompt,
@@ -27,7 +27,7 @@ import type {
 	PromptMessage,
 	PromptsGetResult,
 } from "../protocol/mcp.js"
-import { extractObjectFields, type Infer, validate } from "../schema/zod.js"
+import { extractObjectFields, validate } from "../schema/vex.js"
 
 // ============================================================================
 // Context Type
@@ -66,7 +66,7 @@ export interface PromptDefinition<_TArgs = void> {
 
 interface PromptBuilderWithoutArgs {
 	description(desc: string): PromptBuilderWithoutArgs
-	args<T extends z.ZodObject<z.ZodRawShape>>(schema: T): PromptBuilderWithArgs<Infer<T>>
+	args<T extends Record<string, unknown>>(schema: Parser<T>): PromptBuilderWithArgs<T>
 	handler(
 		fn: (args: { ctx: PromptContext }) => PromptsGetResult | Promise<PromptsGetResult>
 	): PromptDefinition<void>
@@ -85,7 +85,7 @@ interface PromptBuilderWithArgs<TArgs> {
 
 interface BuilderState {
 	description?: string
-	argsSchema?: z.ZodObject<z.ZodRawShape>
+	argsSchema?: Parser<Record<string, unknown>>
 }
 
 const createBuilder = <TArgs = void>(state: BuilderState = {}): PromptBuilderWithoutArgs => ({
@@ -93,19 +93,19 @@ const createBuilder = <TArgs = void>(state: BuilderState = {}): PromptBuilderWit
 		return createBuilder<TArgs>({ ...state, description: desc }) as PromptBuilderWithoutArgs
 	},
 
-	args<T extends z.ZodObject<z.ZodRawShape>>(schema: T): PromptBuilderWithArgs<Infer<T>> {
-		const newState = { ...state, argsSchema: schema }
+	args<T extends Record<string, unknown>>(schema: Parser<T>): PromptBuilderWithArgs<T> {
+		const newState = { ...state, argsSchema: schema as Parser<Record<string, unknown>> }
 		return {
 			description(desc: string) {
 				return createBuilder({
 					...newState,
 					description: desc,
-				}) as unknown as PromptBuilderWithArgs<Infer<T>>
+				}) as unknown as PromptBuilderWithArgs<T>
 			},
 			handler(fn) {
 				return createDefinitionWithArgs(newState, schema, fn)
 			},
-		} as PromptBuilderWithArgs<Infer<T>>
+		} as PromptBuilderWithArgs<T>
 	},
 
 	handler(fn) {
@@ -124,7 +124,7 @@ const createDefinitionNoArgs = (
 
 const createDefinitionWithArgs = <T>(
 	state: BuilderState,
-	schema: z.ZodObject<z.ZodRawShape>,
+	schema: Parser<T>,
 	fn: (args: PromptHandlerArgs<T>) => PromptsGetResult | Promise<PromptsGetResult>
 ): PromptDefinition<T> => ({
 	description: state.description,
@@ -138,7 +138,7 @@ const createDefinitionWithArgs = <T>(
 	},
 })
 
-const extractPromptArgs = (schema: z.ZodObject<z.ZodRawShape>): PromptArgument[] => {
+const extractPromptArgs = (schema: Parser<unknown>): PromptArgument[] => {
 	const fields = extractObjectFields(schema)
 	return fields.map((field) => ({
 		name: field.name,
@@ -159,7 +159,7 @@ const extractPromptArgs = (schema: z.ZodObject<z.ZodRawShape>): PromptArgument[]
  * // With arguments
  * const review = prompt()
  *   .description('Code review')
- *   .args(z.object({ language: z.string() }))
+ *   .args(object({ language: str() }))
  *   .handler(({ args }) => messages(user(`Review ${args.language}`)))
  *
  * // Without arguments
