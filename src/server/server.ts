@@ -6,11 +6,11 @@
  * @example
  * ```ts
  * import { createServer, tool, text, stdio } from '@sylphx/mcp-server-sdk'
- * import { z } from 'zod'
+ * import { object, str } from '@sylphx/vex'
  *
  * const greet = tool()
  *   .description('Greet someone')
- *   .input(z.object({ name: z.string() }))
+ *   .input(object({ name: str() }))
  *   .handler(({ input }) => text(`Hello ${input.name}`))
  *
  * const ping = tool()
