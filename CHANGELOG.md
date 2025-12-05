@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0 (2025-12-05)
+
+### ✨ Features
+
+- **schema:** add Zod compatibility layer ([8ffacea](https://github.com/SylphxAI/mcp-server-sdk/commit/8ffacea4cb076995b6cece44f0329d42fac98840))
+
 ## 2.0.0 (2025-12-05)
 
 ### ✨ Features
