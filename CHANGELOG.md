@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.0.0 (2025-12-05)
+
+### ✨ Features
+
+- **app:** add runStdio adapter for CLI tools ([81d270e](https://github.com/SylphxAI/mcp-server-sdk/commit/81d270e91793a125a201594c8354433cac60b9af))
+- 💥 introduce createMcpApp + serve architecture ([0269d9d](https://github.com/SylphxAI/mcp-server-sdk/commit/0269d9dd4668407172ce69724f1599781a0a90e3))
+- **deps:** upgrade vex to 0.1.11 with vex-json-schema ([3057e9a](https://github.com/SylphxAI/mcp-server-sdk/commit/3057e9a1be15e81df0efc3af94eb4ed510262a38))
+- 💥 replace zod with @sylphx/vex for schema validation ([b06a2cc](https://github.com/SylphxAI/mcp-server-sdk/commit/b06a2cceff687d8ab2fb4d2e9c7a4be654b4a199))
+
+### 🐛 Bug Fixes
+
+- **deps:** upgrade gust to 0.1.13 for server bind fix ([76c831e](https://github.com/SylphxAI/mcp-server-sdk/commit/76c831e1304532d7cefb0909f1c8539c79d10bc1))
+
+### 💥 Breaking Changes
+
+- introduce createMcpApp + serve architecture ([0269d9d](https://github.com/SylphxAI/mcp-server-sdk/commit/0269d9dd4668407172ce69724f1599781a0a90e3))
+  New recommended API separates app logic from server.
+- replace zod with @sylphx/vex for schema validation ([b06a2cc](https://github.com/SylphxAI/mcp-server-sdk/commit/b06a2cceff687d8ab2fb4d2e9c7a4be654b4a199))
+  zod is replaced with @sylphx/vex for schema validation
+
 ## 1.3.0 (2025-11-29)
 
 ### ✨ Features
