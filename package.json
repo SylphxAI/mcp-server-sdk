@@ -28,7 +28,7 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@sylphx/gust": "^0.1.9",
+		"@sylphx/gust": "0.1.13",
 		"@sylphx/gust-core": "^0.1.9",
 		"@sylphx/vex": "^0.1.11",
 		"@sylphx/vex-json-schema": "^0.0.1"
@@ -36,6 +36,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.8",
 		"@modelcontextprotocol/conformance": "^0.1.7",
+		"@modelcontextprotocol/sdk": "^1.24.3",
 		"@sylphx/biome-config": "^0.4.0",
 		"@sylphx/bump": "^0.13.2",
 		"@sylphx/doctor": "^1.24.0",

@@ -104,7 +104,7 @@ export const createServer = (config: ServerConfig): Server => {
 		options?: {
 			notify?: (method: string, params?: unknown) => void
 			request?: (method: string, params?: unknown) => Promise<unknown>
-		}
+		},
 	): Promise<string | null> => {
 		const parsed = Rpc.parseMessage(input)
 

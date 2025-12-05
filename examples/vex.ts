@@ -32,7 +32,7 @@ const calculator = tool()
 			operation: enum_(["add", "subtract", "multiply", "divide"] as const),
 			a: num(description("First number")),
 			b: num(description("Second number")),
-		})
+		}),
 	)
 	.handler(({ input }) => {
 		const { operation, a, b } = input
@@ -63,7 +63,7 @@ const fetchUser = tool()
 		object({
 			id: pipe(coerceNumber, int, positive, description("User ID")),
 			includeEmail: withDefault(bool(description("Include email in response")), false),
-		})
+		}),
 	)
 	.handler(({ input }) => {
 		const { id, includeEmail } = input
@@ -89,15 +89,15 @@ const codeReview = prompt()
 			language: str(description("Programming language")),
 			focus: optional(str(description("Specific area to focus on"))),
 			strict: withDefault(bool(description("Use strict review criteria")), false),
-		})
+		}),
 	)
 	.handler(({ args }) => {
 		const { language, focus, strict } = args
 		return messages(
 			user(
 				`Review this ${language} code${focus ? ` with focus on ${focus}` : ""}. ` +
-					`${strict ? "Apply strict standards and flag all issues." : "Provide constructive feedback."}`
-			)
+					`${strict ? "Apply strict standards and flag all issues." : "Provide constructive feedback."}`,
+			),
 		)
 	})
 

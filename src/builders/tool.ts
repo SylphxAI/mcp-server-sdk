@@ -109,7 +109,7 @@ export interface ToolContext {
 				}
 			>
 			required?: readonly string[]
-		}
+		},
 	) => Promise<{
 		action: "accept" | "decline" | "cancel"
 		content?: Record<string, unknown>
@@ -153,7 +153,7 @@ interface ToolBuilderWithoutInput {
 	annotations(annotations: ToolAnnotations): ToolBuilderWithoutInput
 	input<T>(schema: Schema<T>): ToolBuilderWithInput<T>
 	handler(
-		fn: (args: { ctx: ToolContext }) => ToolResult | Promise<ToolResult>
+		fn: (args: { ctx: ToolContext }) => ToolResult | Promise<ToolResult>,
 	): ToolDefinition<void>
 }
 
@@ -161,7 +161,7 @@ interface ToolBuilderWithInput<TInput> {
 	description(desc: string): ToolBuilderWithInput<TInput>
 	annotations(annotations: ToolAnnotations): ToolBuilderWithInput<TInput>
 	handler(
-		fn: (args: ToolHandlerArgs<TInput>) => ToolResult | Promise<ToolResult>
+		fn: (args: ToolHandlerArgs<TInput>) => ToolResult | Promise<ToolResult>,
 	): ToolDefinition<TInput>
 }
 
@@ -227,7 +227,7 @@ const createBuilder = <TInput = void>(state: BuilderState = {}): ToolBuilderWith
 
 const createDefinitionNoInput = (
 	state: BuilderState,
-	fn: (args: { ctx: ToolContext }) => ToolResult | Promise<ToolResult>
+	fn: (args: { ctx: ToolContext }) => ToolResult | Promise<ToolResult>,
 ): ToolDefinition<void> => ({
 	description: state.description,
 	inputSchema: { type: "object", properties: {} },
@@ -238,7 +238,7 @@ const createDefinitionNoInput = (
 const createDefinitionWithInput = <T>(
 	state: BuilderState,
 	schema: Schema<T>,
-	fn: (args: ToolHandlerArgs<T>) => ToolResult | Promise<ToolResult>
+	fn: (args: ToolHandlerArgs<T>) => ToolResult | Promise<ToolResult>,
 ): ToolDefinition<T> => ({
 	description: state.description,
 	inputSchema: vexToJsonSchema(schema),
@@ -308,7 +308,7 @@ export const text = (content: string, annotations?: ContentAnnotations): TextCon
 export const image = (
 	data: string,
 	mimeType: string,
-	annotations?: ContentAnnotations
+	annotations?: ContentAnnotations,
 ): ImageContent => ({
 	type: "image",
 	data,
@@ -320,7 +320,7 @@ export const image = (
 export const audio = (
 	data: string,
 	mimeType: string,
-	annotations?: ContentAnnotations
+	annotations?: ContentAnnotations,
 ): AudioContent => ({
 	type: "audio",
 	data,
@@ -331,7 +331,7 @@ export const audio = (
 /** Create embedded resource content */
 export const embedded = (
 	resource: EmbeddedResource,
-	annotations?: ContentAnnotations
+	annotations?: ContentAnnotations,
 ): ResourceContent => ({
 	type: "resource",
 	resource,

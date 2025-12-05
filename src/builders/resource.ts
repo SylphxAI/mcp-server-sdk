@@ -50,11 +50,11 @@ export interface TemplateHandlerArgs<TParams = Record<string, string>> {
 }
 
 export type ResourceHandler = (
-	args: ResourceHandlerArgs
+	args: ResourceHandlerArgs,
 ) => ResourcesReadResult | Promise<ResourcesReadResult>
 
 export type TemplateHandler<TParams = Record<string, string>> = (
-	args: TemplateHandlerArgs<TParams>
+	args: TemplateHandlerArgs<TParams>,
 ) => ResourcesReadResult | Promise<ResourcesReadResult>
 
 // ============================================================================
@@ -131,7 +131,7 @@ interface TemplateBuilder {
 	description(desc: string): TemplateBuilder
 	mimeType(mime: string): TemplateBuilder
 	handler<TParams = Record<string, string>>(
-		fn: TemplateHandler<TParams>
+		fn: TemplateHandler<TParams>,
 	): ResourceTemplateDefinition
 }
 
@@ -155,7 +155,7 @@ const createTemplateBuilder = (state: TemplateState): TemplateBuilder => ({
 		return createTemplateBuilder({ ...state, mimeType: mime })
 	},
 	handler<TParams = Record<string, string>>(
-		fn: TemplateHandler<TParams>
+		fn: TemplateHandler<TParams>,
 	): ResourceTemplateDefinition {
 		if (!state.uriTemplate) throw new Error("URI template is required")
 		const template = state.uriTemplate
@@ -215,7 +215,7 @@ export const toProtocolResource = (name: string, def: ResourceDefinition): Resou
 
 export const toProtocolTemplate = (
 	name: string,
-	def: ResourceTemplateDefinition
+	def: ResourceTemplateDefinition,
 ): ResourceTemplate => ({
 	uriTemplate: def.uriTemplate,
 	name,
@@ -267,7 +267,7 @@ export const extractParams = (template: string, uri: string): Record<string, str
 export const resourceText = (
 	uri: string,
 	text: string,
-	mimeType?: string
+	mimeType?: string,
 ): ResourcesReadResult => ({
 	contents: [{ type: "resource", uri, text, mimeType }],
 })

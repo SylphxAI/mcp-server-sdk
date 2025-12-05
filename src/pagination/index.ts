@@ -62,7 +62,7 @@ const decodeCursor = (cursor: string): CursorData | null => {
 export const paginate = <T>(
 	items: readonly T[],
 	cursor?: string,
-	options?: PaginationOptions
+	options?: PaginationOptions,
 ): PageResult<T> => {
 	const defaultPageSize = options?.defaultPageSize ?? 50
 	const maxPageSize = options?.maxPageSize ?? 100

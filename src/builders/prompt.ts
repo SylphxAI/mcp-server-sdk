@@ -68,14 +68,14 @@ interface PromptBuilderWithoutArgs {
 	description(desc: string): PromptBuilderWithoutArgs
 	args<T extends Record<string, unknown>>(schema: Schema<T>): PromptBuilderWithArgs<T>
 	handler(
-		fn: (args: { ctx: PromptContext }) => PromptsGetResult | Promise<PromptsGetResult>
+		fn: (args: { ctx: PromptContext }) => PromptsGetResult | Promise<PromptsGetResult>,
 	): PromptDefinition<void>
 }
 
 interface PromptBuilderWithArgs<TArgs> {
 	description(desc: string): PromptBuilderWithArgs<TArgs>
 	handler(
-		fn: (args: PromptHandlerArgs<TArgs>) => PromptsGetResult | Promise<PromptsGetResult>
+		fn: (args: PromptHandlerArgs<TArgs>) => PromptsGetResult | Promise<PromptsGetResult>,
 	): PromptDefinition<TArgs>
 }
 
@@ -115,7 +115,7 @@ const createBuilder = <TArgs = void>(state: BuilderState = {}): PromptBuilderWit
 
 const createDefinitionNoArgs = (
 	state: BuilderState,
-	fn: (args: { ctx: PromptContext }) => PromptsGetResult | Promise<PromptsGetResult>
+	fn: (args: { ctx: PromptContext }) => PromptsGetResult | Promise<PromptsGetResult>,
 ): PromptDefinition<void> => ({
 	description: state.description,
 	arguments: [],
@@ -125,7 +125,7 @@ const createDefinitionNoArgs = (
 const createDefinitionWithArgs = <T>(
 	state: BuilderState,
 	schema: Schema<T>,
-	fn: (args: PromptHandlerArgs<T>) => PromptsGetResult | Promise<PromptsGetResult>
+	fn: (args: PromptHandlerArgs<T>) => PromptsGetResult | Promise<PromptsGetResult>,
 ): PromptDefinition<T> => ({
 	description: state.description,
 	arguments: extractPromptArgs(schema),

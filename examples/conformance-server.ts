@@ -78,7 +78,7 @@ const test_embedded_resource = tool()
 			uri: "test://embedded-resource",
 			mimeType: "text/plain",
 			text: "This is embedded resource content for testing.",
-		})
+		}),
 	)
 
 // Tools that require notification support
@@ -117,9 +117,7 @@ const test_sampling = tool()
 			maxTokens: 100,
 		})
 
-		return text(
-			`Sampling result: ${result.content.type === "text" ? result.content.text : "non-text response"}`
-		)
+		return text(`Sampling result: ${result.content.type === "text" ? result.content.text : "non-text response"}`)
 	})
 
 const test_elicitation = tool()
@@ -171,9 +169,7 @@ const test_elicitation_sep1034_defaults = tool()
 			required: ["name", "age", "score", "status", "verified"],
 		})
 
-		return text(
-			`Elicitation completed: action=${result.action}, content=${JSON.stringify(result.content)}`
-		)
+		return text(`Elicitation completed: action=${result.action}, content=${JSON.stringify(result.content)}`)
 	})
 
 // ============================================================================
@@ -184,9 +180,7 @@ const staticText = resource()
 	.uri("test://static-text")
 	.description("Static Text Resource - A static text resource for testing")
 	.mimeType("text/plain")
-	.handler(({ uri }) =>
-		resourceText(uri, "This is the content of the static text resource.", "text/plain")
-	)
+	.handler(({ uri }) => resourceText(uri, "This is the content of the static text resource.", "text/plain"))
 
 const staticBinary = resource()
 	.uri("test://static-binary")
@@ -227,11 +221,9 @@ const test_prompt_with_arguments = prompt()
 		object({
 			arg1: str(description("First argument")),
 			arg2: str(description("Second argument")),
-		})
+		}),
 	)
-	.handler(({ args }) =>
-		messages(user(`Prompt with arguments: arg1=${args.arg1}, arg2=${args.arg2}`))
-	)
+	.handler(({ args }) => messages(user(`Prompt with arguments: arg1=${args.arg1}, arg2=${args.arg2}`)))
 
 const test_prompt_with_embedded_resource = prompt()
 	.description("A prompt with an embedded resource")

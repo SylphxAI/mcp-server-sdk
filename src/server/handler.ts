@@ -72,7 +72,7 @@ const handleToolsList = (state: ServerState, params?: Mcp.ListParams): Mcp.Tools
 const handleToolsCall = async (
 	state: ServerState,
 	params: Mcp.ToolsCallParams,
-	ctx: HandlerContext
+	ctx: HandlerContext,
 ): Promise<Mcp.ToolsCallResult> => {
 	const tool = state.tools.get(params.name)
 	if (!tool) {
@@ -148,10 +148,10 @@ const handleToolsCall = async (
 
 const handleResourcesList = (
 	state: ServerState,
-	params?: Mcp.ListParams
+	params?: Mcp.ListParams,
 ): Mcp.ResourcesListResult => {
 	const allItems = Array.from(state.resources.entries()).map(([name, def]) =>
-		toProtocolResource(name, def)
+		toProtocolResource(name, def),
 	)
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
 	return { resources: items, nextCursor }
@@ -159,10 +159,10 @@ const handleResourcesList = (
 
 const handleResourceTemplatesList = (
 	state: ServerState,
-	params?: Mcp.ListParams
+	params?: Mcp.ListParams,
 ): Mcp.ResourceTemplatesListResult => {
 	const allItems = Array.from(state.resourceTemplates.entries()).map(([name, def]) =>
-		toProtocolTemplate(name, def)
+		toProtocolTemplate(name, def),
 	)
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
 	return { resourceTemplates: items, nextCursor }
@@ -171,7 +171,7 @@ const handleResourceTemplatesList = (
 const handleResourcesRead = async (
 	state: ServerState,
 	params: Mcp.ResourcesReadParams,
-	ctx: HandlerContext
+	ctx: HandlerContext,
 ): Promise<Mcp.ResourcesReadResult> => {
 	// Try static resource first
 	for (const [, def] of state.resources) {
@@ -192,7 +192,7 @@ const handleResourcesRead = async (
 
 const handlePromptsList = (state: ServerState, params?: Mcp.ListParams): Mcp.PromptsListResult => {
 	const allItems = Array.from(state.prompts.entries()).map(([name, def]) =>
-		toProtocolPrompt(name, def)
+		toProtocolPrompt(name, def),
 	)
 	const { items, nextCursor } = paginate(allItems, params?.cursor, state.pagination)
 	return { prompts: items, nextCursor }
@@ -201,7 +201,7 @@ const handlePromptsList = (state: ServerState, params?: Mcp.ListParams): Mcp.Pro
 const handlePromptsGet = async (
 	state: ServerState,
 	params: Mcp.PromptsGetParams,
-	ctx: HandlerContext
+	ctx: HandlerContext,
 ): Promise<Mcp.PromptsGetResult> => {
 	const prompt = state.prompts.get(params.name)
 	if (!prompt) {
@@ -217,7 +217,7 @@ const handlePromptsGet = async (
 
 const handleLoggingSetLevel = (
 	state: ServerState,
-	params: Mcp.LoggingSetLevelParams
+	params: Mcp.LoggingSetLevelParams,
 ): Record<string, never> => {
 	state.logLevel = params.level
 	return {}
@@ -229,7 +229,7 @@ const handleLoggingSetLevel = (
 
 const handleCompletionComplete = (
 	state: ServerState,
-	params: Mcp.CompletionCompleteParams
+	params: Mcp.CompletionCompleteParams,
 ): Mcp.CompletionCompleteResult => {
 	const values: string[] = []
 
@@ -263,7 +263,7 @@ const handleCompletionComplete = (
 
 const handleResourcesSubscribe = (
 	state: ServerState,
-	params: Mcp.ResourcesSubscribeParams
+	params: Mcp.ResourcesSubscribeParams,
 ): Record<string, never> => {
 	if (state.subscriptions) {
 		state.subscriptions.add(params.uri)
@@ -273,7 +273,7 @@ const handleResourcesSubscribe = (
 
 const handleResourcesUnsubscribe = (
 	state: ServerState,
-	params: Mcp.ResourcesUnsubscribeParams
+	params: Mcp.ResourcesUnsubscribeParams,
 ): Record<string, never> => {
 	if (state.subscriptions) {
 		state.subscriptions.delete(params.uri)
@@ -307,7 +307,7 @@ export type HandlerResult =
 export const dispatch = async (
 	state: ServerState,
 	message: Rpc.JsonRpcMessage,
-	ctx: HandlerContext
+	ctx: HandlerContext,
 ): Promise<HandlerResult> => {
 	// Handle notifications
 	if (Rpc.isNotification(message)) {
@@ -329,7 +329,7 @@ export const dispatch = async (
 				response: Rpc.error(
 					message.id,
 					Rpc.ErrorCode.InternalError,
-					error instanceof Error ? error.message : String(error)
+					error instanceof Error ? error.message : String(error),
 				),
 			}
 		}
@@ -341,7 +341,7 @@ export const dispatch = async (
 const handleRequest = async (
 	state: ServerState,
 	req: Rpc.JsonRpcRequest,
-	ctx: HandlerContext
+	ctx: HandlerContext,
 ): Promise<unknown> => {
 	switch (req.method) {
 		case Mcp.Method.Initialize:

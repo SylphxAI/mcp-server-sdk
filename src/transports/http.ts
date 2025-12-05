@@ -98,7 +98,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 
 		// Helper to check if a message is a JSON-RPC response (not a request)
 		const isJsonRpcResponse = (
-			msg: unknown
+			msg: unknown,
 		): msg is { jsonrpc: string; id: string | number; result?: unknown; error?: unknown } => {
 			if (typeof msg !== "object" || msg === null) return false
 			const obj = msg as Record<string, unknown>
@@ -109,7 +109,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 		const jsonRpcRoute = post(basePath, async ({ ctx }: { ctx: Context }) => {
 			try {
 				const body = ctx.body.toString()
-				const accept = ctx.headers.accept ?? ""
+				const accept = ctx.headers["accept"] ?? ""
 				const acceptsSSE = accept.includes("text/event-stream")
 
 				// Check for session ID
@@ -282,7 +282,7 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 				status: "ok",
 				server: server.name,
 				version: server.version,
-			})
+			}),
 		)
 
 		// Build routes array

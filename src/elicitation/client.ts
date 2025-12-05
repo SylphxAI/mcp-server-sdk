@@ -36,7 +36,7 @@ import type {
 export const createElicitationClient = (sender: ElicitationRequestSender): ElicitationClient => {
 	const elicit = async (
 		message: string,
-		schema: ElicitationSchema
+		schema: ElicitationSchema,
 	): Promise<ElicitationCreateResult> => {
 		const params: ElicitationCreateParams = {
 			message,

@@ -5,18 +5,7 @@
  */
 
 import { description, num, object, optional, str } from "@sylphx/vex"
-import {
-	createServer,
-	http,
-	messages,
-	prompt,
-	resource,
-	resourceText,
-	stdio,
-	text,
-	tool,
-	user,
-} from "../src/index.js"
+import { createServer, http, messages, prompt, resource, resourceText, stdio, text, tool, user } from "../src/index.js"
 
 // ============================================================================
 // Define Tools (Builder Pattern)
@@ -45,11 +34,7 @@ const config = resource()
 	.description("Current application configuration")
 	.mimeType("application/json")
 	.handler(({ uri }) =>
-		resourceText(
-			uri,
-			JSON.stringify({ version: "1.0.0", debug: false }, null, 2),
-			"application/json"
-		)
+		resourceText(uri, JSON.stringify({ version: "1.0.0", debug: false }, null, 2), "application/json"),
 	)
 
 // ============================================================================
@@ -62,14 +47,14 @@ const codeReview = prompt()
 		object({
 			language: str(description("Programming language")),
 			focus: optional(str(description("What to focus on"))),
-		})
+		}),
 	)
 	.handler(({ args }) =>
 		messages(
 			user(
-				`Please review this ${args.language} code${args.focus ? ` focusing on ${args.focus}` : ""}. Look for bugs, style issues, and potential improvements.`
-			)
-		)
+				`Please review this ${args.language} code${args.focus ? ` focusing on ${args.focus}` : ""}. Look for bugs, style issues, and potential improvements.`,
+			),
+		),
 	)
 
 // ============================================================================

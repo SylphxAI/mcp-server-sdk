@@ -13,7 +13,7 @@ import type { Notification } from "./types.js"
 export const progress = (
 	progressToken: Mcp.ProgressToken,
 	current: number,
-	options?: { total?: number; message?: string }
+	options?: { total?: number; message?: string },
 ): Notification => ({
 	type: "progress",
 	progressToken,

@@ -54,7 +54,7 @@ export interface ElicitationCreateResult {
 
 export type ElicitationRequestSender = (
 	method: string,
-	params: ElicitationCreateParams
+	params: ElicitationCreateParams,
 ) => Promise<ElicitationCreateResult>
 
 export interface ElicitationClient {

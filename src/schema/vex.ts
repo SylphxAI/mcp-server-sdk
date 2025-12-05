@@ -54,7 +54,7 @@ export const validate = <T>(schema: Schema<T>, input: unknown): ValidationResult
  * Extract field info from a Vex object schema.
  */
 export const extractObjectFields = (
-	schema: Schema<unknown>
+	schema: Schema<unknown>,
 ): Array<{ name: string; description?: string; required: boolean }> => {
 	const meta = getMeta(schema)
 	if (!meta || meta.type !== "object") {
