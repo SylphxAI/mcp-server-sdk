@@ -10,9 +10,8 @@
 import { description, object, str } from "@sylphx/vex"
 import {
 	audio,
-	createServer,
+	createMcpApp,
 	embedded,
-	http,
 	image,
 	messages,
 	prompt,
@@ -20,6 +19,7 @@ import {
 	resourceBlob,
 	resourceTemplate,
 	resourceText,
+	serve,
 	text,
 	tool,
 	toolError,
@@ -275,12 +275,12 @@ const test_prompt_with_image = prompt()
 	}))
 
 // ============================================================================
-// Create Server
+// Create App and Serve
 // ============================================================================
 
 const port = Number(process.env.PORT) || 3456
 
-const server = createServer({
+const app = createMcpApp({
 	name: "mcp-conformance-test-server",
 	version: "1.0.0",
 	instructions: "MCP Conformance Test Server implementing all required test scenarios",
@@ -311,8 +311,7 @@ const server = createServer({
 		test_prompt_with_embedded_resource,
 		test_prompt_with_image,
 	},
-	transport: http({ port, cors: "*" }),
 })
 
-await server.start()
+await serve({ app, port, cors: "*" })
 console.log(`MCP Conformance Test Server running at http://localhost:${port}/mcp`)
