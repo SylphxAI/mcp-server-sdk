@@ -19,7 +19,6 @@
  * ```
  */
 
-import type { Schema } from "@sylphx/vex"
 import type { NotificationEmitter } from "../notifications/types.js"
 import type {
 	AudioContent,
@@ -36,7 +35,7 @@ import type {
 	ToolAnnotations,
 	ToolsCallResult,
 } from "../protocol/mcp.js"
-import { validate, vexToJsonSchema } from "../schema/vex.js"
+import { type AnySchema, toJsonSchema, validate } from "../schema/compat.js"
 
 // ============================================================================
 // Context Type
@@ -151,7 +150,7 @@ export interface ToolDefinition<_TInput = void> {
 interface ToolBuilderWithoutInput {
 	description(desc: string): ToolBuilderWithoutInput
 	annotations(annotations: ToolAnnotations): ToolBuilderWithoutInput
-	input<T>(schema: Schema<T>): ToolBuilderWithInput<T>
+	input<T>(schema: AnySchema<T>): ToolBuilderWithInput<T>
 	handler(
 		fn: (args: { ctx: ToolContext }) => ToolResult | Promise<ToolResult>,
 	): ToolDefinition<void>
@@ -190,7 +189,7 @@ const normalizeResult = (result: ToolResult): ToolsCallResult => {
 interface BuilderState {
 	description?: string
 	annotations?: ToolAnnotations
-	inputSchema?: Schema<unknown>
+	inputSchema?: AnySchema<unknown>
 }
 
 const createBuilder = <TInput = void>(state: BuilderState = {}): ToolBuilderWithoutInput => ({
@@ -202,7 +201,7 @@ const createBuilder = <TInput = void>(state: BuilderState = {}): ToolBuilderWith
 		return createBuilder<TInput>({ ...state, annotations }) as ToolBuilderWithoutInput
 	},
 
-	input<T>(schema: Schema<T>): ToolBuilderWithInput<T> {
+	input<T>(schema: AnySchema<T>): ToolBuilderWithInput<T> {
 		const newState = { ...state, inputSchema: schema }
 		return {
 			description(desc: string) {
@@ -237,11 +236,11 @@ const createDefinitionNoInput = (
 
 const createDefinitionWithInput = <T>(
 	state: BuilderState,
-	schema: Schema<T>,
+	schema: AnySchema<T>,
 	fn: (args: ToolHandlerArgs<T>) => ToolResult | Promise<ToolResult>,
 ): ToolDefinition<T> => ({
 	description: state.description,
-	inputSchema: vexToJsonSchema(schema),
+	inputSchema: toJsonSchema(schema),
 	annotations: state.annotations,
 	handler: async ({ input, ctx }) => {
 		const result = validate(schema, input)
