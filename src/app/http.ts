@@ -138,7 +138,7 @@ const handleJsonRequest = async (
 	state: ServerState,
 	message: Rpc.JsonRpcMessage,
 	sessions: Map<string, Session>,
-	sessionId: string | null,
+	_sessionId: string | null,
 ): Promise<Response> => {
 	const result = await dispatch(state, message, {})
 	const headers = new Headers({ "Content-Type": "application/json" })

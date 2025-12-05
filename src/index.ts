@@ -39,7 +39,10 @@ export {
 	type McpApp,
 	type McpAppConfig,
 	type McpServer,
+	runStdio,
 	type ServeOptions,
+	type StdioOptions,
+	type StdioRunner,
 	serve,
 } from "./app/index.js"
 
@@ -182,6 +185,6 @@ export { type HttpOptions, http } from "./transports/http.js"
 /**
  * @deprecated Use stdio transport with createServer for backward compatibility.
  */
-export { type StdioOptions, stdio } from "./transports/stdio.js"
+export { type StdioOptions as LegacyStdioOptions, stdio } from "./transports/stdio.js"
 
 export type { Transport, TransportFactory } from "./transports/types.js"
