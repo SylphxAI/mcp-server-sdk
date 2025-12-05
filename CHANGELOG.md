@@ -1,5 +1,44 @@
 # Changelog
 
+## 3.0.0 (2025-12-05)
+
+### ✨ Features
+
+- **app:** add runStdio adapter for CLI tools ([81d270e](https://github.com/SylphxAI/mcp-server-sdk/commit/81d270e91793a125a201594c8354433cac60b9af))
+- 💥 introduce createMcpApp + serve architecture ([0269d9d](https://github.com/SylphxAI/mcp-server-sdk/commit/0269d9dd4668407172ce69724f1599781a0a90e3))
+- **deps:** upgrade vex to 0.1.11 with vex-json-schema ([3057e9a](https://github.com/SylphxAI/mcp-server-sdk/commit/3057e9a1be15e81df0efc3af94eb4ed510262a38))
+- 💥 replace zod with @sylphx/vex for schema validation ([b06a2cc](https://github.com/SylphxAI/mcp-server-sdk/commit/b06a2cceff687d8ab2fb4d2e9c7a4be654b4a199))
+- **conformance:** add SEP-1034 elicitation defaults test tool ([58da35f](https://github.com/SylphxAI/mcp-server-sdk/commit/58da35f3017b3456bbad26774db4cda2b7d3c5c6))
+- **http:** implement true streaming SSE with bidirectional RPC ([9b99d2d](https://github.com/SylphxAI/mcp-server-sdk/commit/9b99d2d06b8d00401c58047b760a8dc8221f5071))
+- **http:** add bidirectional RPC infrastructure ([f4d7922](https://github.com/SylphxAI/mcp-server-sdk/commit/f4d79221ba0269aa48ca7ea8d953a8da8aaf2a76))
+- add sampling and elicitation capabilities ([107c750](https://github.com/SylphxAI/mcp-server-sdk/commit/107c750f6787ddecaa828639d7f2160dd726c1b4))
+- **http:** implement MCP Streamable HTTP transport with SSE notifications ([8d75bbc](https://github.com/SylphxAI/mcp-server-sdk/commit/8d75bbcc728415acbd8b9f3d4ca60aaec9f743e2))
+
+### 🐛 Bug Fixes
+
+- **deps:** upgrade gust to 0.1.13 for server bind fix ([76c831e](https://github.com/SylphxAI/mcp-server-sdk/commit/76c831e1304532d7cefb0909f1c8539c79d10bc1))
+- use correct MCP protocol field names for list responses ([b4f072d](https://github.com/SylphxAI/mcp-server-sdk/commit/b4f072d340ed09155f9a3db3f3ea934dfb711db5))
+
+### ♻️ Refactoring
+
+- **http:** migrate to gust 0.1.7 middleware API ([5137e95](https://github.com/SylphxAI/mcp-server-sdk/commit/5137e95ceb6a226accebd46f35f29ff812b1e9e7))
+- **http:** simplify SSE and document streaming limitation ([24050dc](https://github.com/SylphxAI/mcp-server-sdk/commit/24050dc0045d12b78a6f8928818f8a3b62759324))
+
+### 📚 Documentation
+
+- **readme:** update for v1.2.0 features ([6d31fd6](https://github.com/SylphxAI/mcp-server-sdk/commit/6d31fd6390b44f33ceeaaed67dbe0ff7cb527e6c))
+
+### 🔧 Chores
+
+- retry release ([ba33acb](https://github.com/SylphxAI/mcp-server-sdk/commit/ba33acb8f47907382b7499a24be8296856e57aa6))
+
+### 💥 Breaking Changes
+
+- introduce createMcpApp + serve architecture ([0269d9d](https://github.com/SylphxAI/mcp-server-sdk/commit/0269d9dd4668407172ce69724f1599781a0a90e3))
+  New recommended API separates app logic from server.
+- replace zod with @sylphx/vex for schema validation ([b06a2cc](https://github.com/SylphxAI/mcp-server-sdk/commit/b06a2cceff687d8ab2fb4d2e9c7a4be654b4a199))
+  zod is replaced with @sylphx/vex for schema validation
+
 ## 2.0.0 (2025-12-05)
 
 ### ✨ Features
