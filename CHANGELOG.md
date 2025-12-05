@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.0.0 (2025-12-05)
+
+### ♻️ Refactoring
+
+- 💥 **schema:** remove Zod compatibility layer ([91e14cd](https://github.com/SylphxAI/mcp-server-sdk/commit/91e14cd3e3aedfbae35d00cd26edc7f93ad4761d))
+
+### 💥 Breaking Changes
+
+- **schema:** remove Zod compatibility layer ([91e14cd](https://github.com/SylphxAI/mcp-server-sdk/commit/91e14cd3e3aedfbae35d00cd26edc7f93ad4761d))
+  Zod schema support has been removed.
+
 ## 2.1.0 (2025-12-05)
 
 ### ✨ Features
