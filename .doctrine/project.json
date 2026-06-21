@@ -1,162 +1,162 @@
 {
-  "schemaVersion": 1,
-  "project": {
-    "repo": "SylphxAI/mcp-server-sdk",
-    "name": "MCP Server SDK",
-    "lifecycle": "active",
-    "layer": "foundation",
-    "summary": "TypeScript SDK for building MCP servers with typed builders, protocol handling, transports, examples, tests, and release automation.",
-    "goals": [
-      "Provide a type-safe, composable SDK for MCP tools, resources, prompts, notifications, sampling, elicitation, pagination, and transports.",
-      "Keep package exports, examples, tests, conformance behavior, and release automation aligned with the supported MCP protocol surface.",
-      "Use central ADR-29 admission and release workflows without embedding enterprise process policy in this repository."
-    ],
-    "nonGoals": [
-      "Own the MCP specification, third-party client behavior, or consumer server product logic.",
-      "Own downstream package-specific tools, prompts, resources, or customer integrations.",
-      "Own enterprise doctrine, manifest schema, org rulesets, or shared workflow implementation."
-    ]
-  },
-  "boundaries": {
-    "owns": [
-      {
-        "name": "mcp-server-sdk-package",
-        "description": "Package exports, source modules, builders, protocol helpers, transports, examples, tests, and benchmark scaffolding for @sylphx/mcp-server-sdk."
-      },
-      {
-        "name": "mcp-protocol-implementation",
-        "description": "Repository-local JSON-RPC, MCP protocol, stdio transport, streamable HTTP transport, notification, sampling, elicitation, and pagination behavior."
-      },
-      {
-        "name": "sdk-delivery",
-        "description": "ADR-29 CI wiring, conformance support, package build, and central reusable release workflow integration."
-      }
-    ],
-    "doesNotOwn": [
-      "The upstream MCP specification, third-party MCP client behavior, or external conformance suite definitions.",
-      "Consumer server business logic, product-specific tools, prompts, resources, or customer integrations.",
-      "Enterprise doctrine, project manifest schema, org rulesets, rollout issue reconciliation, or shared workflow implementation."
-    ],
-    "publicSurfaces": [
-      {
-        "type": "package-export",
-        "name": "@sylphx/mcp-server-sdk package exports",
-        "location": "package.json"
-      },
-      {
-        "type": "documentation",
-        "name": "SDK README",
-        "location": "README.md"
-      },
-      {
-        "type": "sdk",
-        "name": "SDK source entrypoint",
-        "location": "src/index.ts"
-      },
-      {
-        "type": "documentation",
-        "name": "Examples",
-        "location": "examples/"
-      },
-      {
-        "type": "workflow",
-        "name": "ADR-29 CI workflow",
-        "location": ".github/workflows/ci.yml"
-      },
-      {
-        "type": "workflow",
-        "name": "Central release workflow",
-        "location": ".github/workflows/release.yml"
-      },
-      {
-        "type": "manifest",
-        "name": "Project control-plane manifest",
-        "location": ".doctrine/project.json"
-      }
-    ],
-    "allowedDependencies": [
-      {
-        "repo": "SylphxAI/doctrine",
-        "surface": "project manifest schema, standards, and rollout audit",
-        "direction": "downward"
-      },
-      {
-        "repo": "SylphxAI/.github",
-        "surface": "ADR-29 admission action and reusable release workflow",
-        "direction": "downward"
-      },
-      {
-        "repo": "SylphxAI/gust",
-        "surface": "published package exports consumed by the SDK",
-        "direction": "peer-public"
-      },
-      {
-        "repo": "SylphxAI/vex",
-        "surface": "published schema package exports consumed by the SDK",
-        "direction": "peer-public"
-      }
-    ],
-    "forbiddenCouplings": [
-      "Do not require consumers to import internal source files instead of declared package exports.",
-      "Do not encode downstream product-specific tools, prompts, or resources into the SDK core.",
-      "Do not diverge from the documented MCP protocol surface without updating README, tests, and conformance evidence.",
-      "Do not publish enterprise process policy from this repository instead of SylphxAI/doctrine or SylphxAI/.github."
-    ]
-  },
-  "documentation": {
-    "adr": {
-      "path": "docs/adr/",
-      "status": "planned"
-    },
-    "specs": {
-      "path": "README.md",
-      "status": "present"
-    },
-    "catalog": {
-      "path": ".doctrine/project.json",
-      "status": "present"
-    },
-    "runbooks": {
-      "path": "progress.md",
-      "status": "present"
-    },
-    "generatedReferences": {
-      "path": "docs/reference/",
-      "status": "planned"
-    }
-  },
-  "delivery": {
-    "ciModel": "adr29-admission",
-    "requiredContexts": [
-      "risk-classification/pass",
-      "ci",
-      "trunk-admission/pass"
-    ],
-    "deployPath": "Pull requests and merge groups run .github/workflows/ci.yml with ADR-29 admission plus lint, typecheck, test, and build; main uses .github/workflows/release.yml to call the central reusable release workflow.",
-    "productionProof": "Postsubmit ADR-29 proof exists, but npm/package readback, conformance result readback, and consumer smoke evidence are not yet documented as one release gate.",
-    "recoveryClass": "forward-fix-only"
-  },
-  "adoption": {
-    "status": "migrating",
-    "gaps": [
-      {
-        "id": "release-proof-docs",
-        "description": "Document npm package readback, conformance evidence, and consumer smoke proof required after package release.",
-        "owner": "SylphxAI/mcp-server-sdk",
-        "target": "Before full adoption"
-      },
-      {
-        "id": "spec-version-contract",
-        "description": "Record the supported MCP specification version and update policy as a durable project contract.",
-        "owner": "SylphxAI/mcp-server-sdk",
-        "target": "Before full adoption"
-      },
-      {
-        "id": "generated-reference-missing",
-        "description": "Add or generate API reference documentation from package exports so consumers do not rely on internal paths.",
-        "owner": "SylphxAI/mcp-server-sdk",
-        "target": "Before commercial-grade SDK adoption"
-      }
-    ]
-  }
+	"schemaVersion": 1,
+	"project": {
+		"repo": "SylphxAI/mcp-server-sdk",
+		"name": "MCP Server SDK",
+		"lifecycle": "active",
+		"layer": "foundation",
+		"summary": "TypeScript SDK for building MCP servers with typed builders, protocol handling, transports, examples, tests, and release automation.",
+		"goals": [
+			"Provide a type-safe, composable SDK for MCP tools, resources, prompts, notifications, sampling, elicitation, pagination, and transports.",
+			"Keep package exports, examples, tests, conformance behavior, and release automation aligned with the supported MCP protocol surface.",
+			"Use central ADR-29 admission and release workflows without embedding enterprise process policy in this repository."
+		],
+		"nonGoals": [
+			"Own the MCP specification, third-party client behavior, or consumer server product logic.",
+			"Own downstream package-specific tools, prompts, resources, or customer integrations.",
+			"Own enterprise doctrine, manifest schema, org rulesets, or shared workflow implementation."
+		]
+	},
+	"boundaries": {
+		"owns": [
+			{
+				"name": "mcp-server-sdk-package",
+				"description": "Package exports, source modules, builders, protocol helpers, transports, examples, tests, and benchmark scaffolding for @sylphx/mcp-server-sdk."
+			},
+			{
+				"name": "mcp-protocol-implementation",
+				"description": "Repository-local JSON-RPC, MCP protocol, stdio transport, streamable HTTP transport, notification, sampling, elicitation, and pagination behavior."
+			},
+			{
+				"name": "sdk-delivery",
+				"description": "ADR-29 CI wiring, conformance support, package build, and central reusable release workflow integration."
+			}
+		],
+		"doesNotOwn": [
+			"The upstream MCP specification, third-party MCP client behavior, or external conformance suite definitions.",
+			"Consumer server business logic, product-specific tools, prompts, resources, or customer integrations.",
+			"Enterprise doctrine, project manifest schema, org rulesets, rollout issue reconciliation, or shared workflow implementation."
+		],
+		"publicSurfaces": [
+			{
+				"type": "package-export",
+				"name": "@sylphx/mcp-server-sdk package exports",
+				"location": "package.json"
+			},
+			{
+				"type": "documentation",
+				"name": "SDK README",
+				"location": "README.md"
+			},
+			{
+				"type": "sdk",
+				"name": "SDK source entrypoint",
+				"location": "src/index.ts"
+			},
+			{
+				"type": "documentation",
+				"name": "Examples",
+				"location": "examples/"
+			},
+			{
+				"type": "workflow",
+				"name": "ADR-29 CI workflow",
+				"location": ".github/workflows/ci.yml"
+			},
+			{
+				"type": "workflow",
+				"name": "Central release workflow",
+				"location": ".github/workflows/release.yml"
+			},
+			{
+				"type": "manifest",
+				"name": "Project control-plane manifest",
+				"location": ".doctrine/project.json"
+			}
+		],
+		"allowedDependencies": [
+			{
+				"repo": "SylphxAI/doctrine",
+				"surface": "project manifest schema, standards, and rollout audit",
+				"direction": "downward"
+			},
+			{
+				"repo": "SylphxAI/.github",
+				"surface": "ADR-29 admission action and reusable release workflow",
+				"direction": "downward"
+			},
+			{
+				"repo": "SylphxAI/gust",
+				"surface": "published package exports consumed by the SDK",
+				"direction": "peer-public"
+			},
+			{
+				"repo": "SylphxAI/vex",
+				"surface": "published schema package exports consumed by the SDK",
+				"direction": "peer-public"
+			}
+		],
+		"forbiddenCouplings": [
+			"Do not require consumers to import internal source files instead of declared package exports.",
+			"Do not encode downstream product-specific tools, prompts, or resources into the SDK core.",
+			"Do not diverge from the documented MCP protocol surface without updating README, tests, and conformance evidence.",
+			"Do not publish enterprise process policy from this repository instead of SylphxAI/doctrine or SylphxAI/.github."
+		]
+	},
+	"documentation": {
+		"adr": {
+			"path": "docs/adr/",
+			"status": "planned"
+		},
+		"specs": {
+			"path": "README.md",
+			"status": "present"
+		},
+		"catalog": {
+			"path": ".doctrine/project.json",
+			"status": "present"
+		},
+		"runbooks": {
+			"path": "progress.md",
+			"status": "present"
+		},
+		"generatedReferences": {
+			"path": "docs/reference/",
+			"status": "planned"
+		}
+	},
+	"delivery": {
+		"ciModel": "adr29-admission",
+		"requiredContexts": [
+			"risk-classification/pass",
+			"ci",
+			"trunk-admission/pass"
+		],
+		"deployPath": "Pull requests and merge groups run .github/workflows/ci.yml with ADR-29 admission plus lint, typecheck, test, and build; main uses .github/workflows/release.yml to call the central reusable release workflow.",
+		"productionProof": "Postsubmit ADR-29 proof exists, but npm/package readback, conformance result readback, and consumer smoke evidence are not yet documented as one release gate.",
+		"recoveryClass": "forward-fix-only"
+	},
+	"adoption": {
+		"status": "migrating",
+		"gaps": [
+			{
+				"id": "release-proof-docs",
+				"description": "Document npm package readback, conformance evidence, and consumer smoke proof required after package release.",
+				"owner": "SylphxAI/mcp-server-sdk",
+				"target": "Before full adoption"
+			},
+			{
+				"id": "spec-version-contract",
+				"description": "Record the supported MCP specification version and update policy as a durable project contract.",
+				"owner": "SylphxAI/mcp-server-sdk",
+				"target": "Before full adoption"
+			},
+			{
+				"id": "generated-reference-missing",
+				"description": "Add or generate API reference documentation from package exports so consumers do not rely on internal paths.",
+				"owner": "SylphxAI/mcp-server-sdk",
+				"target": "Before commercial-grade SDK adoption"
+			}
+		]
+	}
 }
