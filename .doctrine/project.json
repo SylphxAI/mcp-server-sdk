@@ -135,17 +135,11 @@
 		"recoveryClass": "forward-fix-only",
 		"packageRelease": {
 			"publishesPackages": true,
-			"ecosystems": [
-				"npm"
-			],
+			"ecosystems": ["npm"],
 			"releaseIntent": "The central reusable release workflow owns package publication from main; add visible Changesets release intent or a repo-local equivalent ADR before full package-release adoption.",
 			"versionPr": "Version PRs must be opened by sylphx-release-bot or another certified GitHub App-owned release identity; the current branch only declares the central reusable release workflow entrypoint.",
 			"publisher": "Protected SylphxAI/.github reusable release workflow; npm publication must use trusted/OIDC publishing or a documented bounded token fallback with expiry, provenance, and registry readback.",
-			"requiredContexts": [
-				"risk-classification/pass",
-				"ci",
-				"trunk-admission/pass"
-			],
+			"requiredContexts": ["risk-classification/pass", "ci", "trunk-admission/pass"],
 			"publishProof": "npm registry readback for @sylphx/mcp-server-sdk plus MCP conformance and consumer smoke evidence after publication."
 		}
 	},
