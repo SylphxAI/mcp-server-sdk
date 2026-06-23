@@ -5,6 +5,7 @@
 		"name": "MCP Server SDK",
 		"lifecycle": "active",
 		"layer": "foundation",
+		"policyPool": "library-package",
 		"summary": "TypeScript SDK for building MCP servers with typed builders, protocol handling, transports, examples, tests, and release automation.",
 		"goals": [
 			"Provide a type-safe, composable SDK for MCP tools, resources, prompts, notifications, sampling, elicitation, pagination, and transports.",
@@ -127,10 +128,20 @@
 	},
 	"delivery": {
 		"ciModel": "adr29-admission",
+		"deployable": false,
 		"requiredContexts": ["risk-classification/pass", "ci", "trunk-admission/pass"],
 		"deployPath": "Pull requests and merge groups run .github/workflows/ci.yml with ADR-29 admission plus lint, typecheck, test, and build; main uses .github/workflows/release.yml to call the central reusable release workflow.",
 		"productionProof": "Postsubmit ADR-29 proof exists, but npm/package readback, conformance result readback, and consumer smoke evidence are not yet documented as one release gate.",
-		"recoveryClass": "forward-fix-only"
+		"recoveryClass": "forward-fix-only",
+		"packageRelease": {
+			"publishesPackages": true,
+			"ecosystems": ["npm"],
+			"releaseIntent": "The central reusable release workflow owns package publication from main; add visible Changesets release intent or a repo-local equivalent ADR before full package-release adoption.",
+			"versionPr": "Version PRs must be opened by sylphx-release-bot or another certified GitHub App-owned release identity; the current branch only declares the central reusable release workflow entrypoint.",
+			"publisher": "Protected SylphxAI/.github reusable release workflow; npm publication must use trusted/OIDC publishing or a documented bounded token fallback with expiry, provenance, and registry readback.",
+			"requiredContexts": ["risk-classification/pass", "ci", "trunk-admission/pass"],
+			"publishProof": "npm registry readback for @sylphx/mcp-server-sdk plus MCP conformance and consumer smoke evidence after publication."
+		}
 	},
 	"adoption": {
 		"status": "migrating",
