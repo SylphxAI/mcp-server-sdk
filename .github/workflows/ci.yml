@@ -50,12 +50,23 @@ jobs:
       - name: Build
         run: bun run build
 
+  security-secrets:
+    name: security:secrets
+    runs-on: [self-hosted, sylphx, linux, standard]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history for the new-commit range
+      - name: Secret scan (ADR-6 security:secrets)
+        uses: SylphxAI/.github/.github/actions/secret-scan@main
+
   trunk-admission:
     name: trunk-admission/pass
     runs-on: [self-hosted, sylphx, linux, standard]
     needs:
       - risk-classification
       - ci
+      - security-secrets
     if: ${{ !cancelled() }}
     steps:
       - name: ADR-29 trunk admission
@@ -71,6 +82,7 @@ jobs:
     needs:
       - risk-classification
       - ci
+      - security-secrets
       - trunk-admission
     if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && !cancelled() }}
     steps:
@@ -87,6 +99,7 @@ jobs:
     needs:
       - risk-classification
       - ci
+      - security-secrets
       - trunk-admission
       - postsubmit-proof
     if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.postsubmit-proof.result != 'success' }}
