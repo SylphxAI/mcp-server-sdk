@@ -46,6 +46,9 @@ export {
 	serve,
 } from "./app/index.js"
 
+// HTTP transport authentication (opt-in; see README "HTTP Transport")
+export type { AuthOptions, AuthRequest } from "./transports/auth.js"
+
 // ============================================================================
 // Builders
 // ============================================================================

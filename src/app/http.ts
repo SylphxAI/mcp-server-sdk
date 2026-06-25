@@ -7,6 +7,13 @@
 
 import * as Rpc from "../protocol/jsonrpc.js"
 import { dispatch, type HandlerContext, type ServerState } from "../server/handler.js"
+import {
+	type AuthOptions,
+	isAuthEnabled,
+	isAuthorized,
+	unauthorizedBody,
+	WWW_AUTHENTICATE,
+} from "../transports/auth.js"
 
 // ============================================================================
 // Types
@@ -50,6 +57,7 @@ const isJsonRpcResponse = (
  */
 export const createFetchHandler = (
 	state: ServerState,
+	auth: AuthOptions = {},
 ): ((request: Request) => Promise<Response>) => {
 	// Session storage
 	const sessions = new Map<string, Session>()
@@ -58,7 +66,7 @@ export const createFetchHandler = (
 	return async (request: Request): Promise<Response> => {
 		const url = new URL(request.url)
 
-		// Health check endpoint
+		// Health check endpoint (always open, never gated)
 		if (request.method === "GET" && url.pathname.endsWith("/health")) {
 			return Response.json({
 				status: "ok",
@@ -70,6 +78,14 @@ export const createFetchHandler = (
 		// Only handle POST for JSON-RPC
 		if (request.method !== "POST") {
 			return new Response("Method not allowed", { status: 405 })
+		}
+
+		// Authenticate MCP requests when auth is configured (opt-in).
+		if (isAuthEnabled(auth) && !(await isAuthorized(auth, request))) {
+			return Response.json(unauthorizedBody(), {
+				status: 401,
+				headers: { "WWW-Authenticate": WWW_AUTHENTICATE },
+			})
 		}
 
 		try {
