@@ -18,13 +18,20 @@ import {
 } from "@sylphx/gust"
 import * as Rpc from "../protocol/jsonrpc.js"
 import { dispatch, type HandlerContext } from "../server/handler.js"
+import {
+	type AuthOptions,
+	isAuthEnabled,
+	isAuthorized,
+	unauthorizedBody,
+	WWW_AUTHENTICATE,
+} from "../transports/auth.js"
 import type { McpApp } from "./app.js"
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export interface ServeOptions {
+export interface ServeOptions extends AuthOptions {
 	/** MCP application */
 	readonly app: McpApp
 	/** Port to listen on (default: 3000) */
@@ -102,6 +109,15 @@ export const serve = async (options: ServeOptions): Promise<McpServer> => {
 	// Main JSON-RPC route
 	const jsonRpcRoute = post(basePath, async ({ ctx }: { ctx: Context }) => {
 		try {
+			// Authenticate MCP requests when auth is configured (opt-in).
+			// The health endpoint and CORS preflight are separate and stay open.
+			if (isAuthEnabled(options) && !(await isAuthorized(options, ctx.request ?? ctx))) {
+				return json(unauthorizedBody(), {
+					status: 401,
+					headers: { "WWW-Authenticate": WWW_AUTHENTICATE },
+				})
+			}
+
 			const body = ctx.body.toString()
 			const accept = ctx.headers["accept"] ?? ""
 			const acceptsSSE = accept.includes("text/event-stream")

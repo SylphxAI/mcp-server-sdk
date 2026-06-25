@@ -12,6 +12,7 @@ Pure functional MCP (Model Context Protocol) server SDK for Bun.
 - **Builder Pattern**: Fluent API for defining tools, resources, and prompts
 - **Fast**: Built for Bun with minimal dependencies
 - **Streamable HTTP**: MCP 2025-03-26 spec with SSE notifications
+- **Optional Auth**: Opt-in `apiKey` (constant-time) or custom `authenticate` hook for the HTTP transport
 - **Complete**: Tools, resources, prompts, notifications, sampling, elicitation
 
 ## Installation
@@ -243,6 +244,58 @@ await server.start()
 **Endpoints:**
 - `POST /mcp` - JSON-RPC messages (returns JSON or SSE based on Accept header)
 - `GET /mcp/health` - Health check
+
+**Authentication:**
+
+> ⚠️ **The HTTP transport is UNAUTHENTICATED by default.** Anyone who can reach
+> the port can call your tools. Either enable authentication below, bind to
+> loopback (`hostname: "127.0.0.1"`), or front the server with a gateway that
+> enforces auth.
+
+Authentication is opt-in and additive — supply `apiKey` and/or `authenticate`
+to any HTTP entrypoint (`http()`, `serve()`, or `createMcpApp({ ... }).fetch`).
+Only MCP JSON-RPC requests are gated; the health endpoint and CORS preflight
+stay open.
+
+```typescript
+// Option A: shared API key (sent as the X-API-Key header)
+const server = createServer({
+  tools: { ping },
+  transport: http({ port: 3000, apiKey: process.env.MCP_API_KEY }),
+})
+
+// Same option on the app-based entrypoints
+await serve({ app, port: 3000, apiKey: process.env.MCP_API_KEY })
+const app = createMcpApp({ tools: { ping }, apiKey: process.env.MCP_API_KEY })
+Bun.serve({ fetch: app.fetch, port: 3000 })
+```
+
+```typescript
+// Option B: custom hook for Bearer / OAuth / anything else
+const server = createServer({
+  tools: { ping },
+  transport: http({
+    port: 3000,
+    authenticate: async (req) => {
+      // `req` is a gust request context (http()/serve()) or a Fetch Request
+      // (app.fetch). Both expose headers; return false to reject with 401.
+      const auth = "headers" in req && req.headers instanceof Headers
+        ? req.headers.get("authorization")
+        : (req as { headers: Record<string, string> }).headers["authorization"]
+      return auth === `Bearer ${process.env.MCP_TOKEN}`
+    },
+  }),
+})
+```
+
+- **Precedence:** if `authenticate` is provided it is used; otherwise if
+  `apiKey` is provided the `X-API-Key` header is checked; otherwise requests are
+  unauthenticated (current behavior, unchanged).
+- **`apiKey`** comparison is constant-time (both sides SHA-256 hashed, compared
+  with `timingSafeEqual`); a missing or empty header is rejected.
+- On failure the server replies `401` with
+  `{"jsonrpc":"2.0","id":null,"error":{"code":-32001,"message":"Unauthorized"}}`
+  and a `WWW-Authenticate` header.
 
 **SSE Streaming:**
 
@@ -542,8 +595,19 @@ http(options?: HttpOptions): TransportFactory
 interface HttpOptions {
   port?: number        // Default: 3000
   hostname?: string    // Default: "localhost"
+  basePath?: string    // Default: "/mcp"
+  cors?: string        // CORS origin, e.g. "*" (default: disabled)
+  onError?: (error: Error) => void
+
+  // Authentication (opt-in; unauthenticated by default)
+  apiKey?: string                                          // require matching X-API-Key header (constant-time)
+  authenticate?: (req) => boolean | Promise<boolean>       // custom hook for Bearer/OAuth/etc; takes precedence over apiKey
 }
 ```
+
+The `apiKey` / `authenticate` options are also accepted by `serve(options)` and
+`createMcpApp(config)` (gating `app.fetch`). See the **HTTP Transport** section
+for behavior and examples.
 
 ### Notifications
 

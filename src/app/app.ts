@@ -33,13 +33,14 @@ import {
 	type HandlerResult,
 	type ServerState,
 } from "../server/handler.js"
+import type { AuthOptions } from "../transports/auth.js"
 import { createFetchHandler } from "./http.js"
 
 // ============================================================================
 // Config
 // ============================================================================
 
-export interface McpAppConfig {
+export interface McpAppConfig extends AuthOptions {
 	/** Server name (default: "mcp-server") */
 	readonly name?: string
 	/** Server version (default: "1.0.0") */
@@ -182,7 +183,10 @@ export const createMcpApp = (config: McpAppConfig): McpApp => {
 		return dispatch(state, message, ctx)
 	}
 
-	const fetch = createFetchHandler(state)
+	const fetch = createFetchHandler(state, {
+		...(config.apiKey !== undefined && { apiKey: config.apiKey }),
+		...(config.authenticate !== undefined && { authenticate: config.authenticate }),
+	})
 
 	return {
 		name: state.name,

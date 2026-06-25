@@ -23,6 +23,13 @@ import {
 	sse,
 } from "@sylphx/gust"
 import * as Rpc from "../protocol/jsonrpc.js"
+import {
+	type AuthOptions,
+	isAuthEnabled,
+	isAuthorized,
+	unauthorizedBody,
+	WWW_AUTHENTICATE,
+} from "./auth.js"
 import type { Transport, TransportFactory } from "./types.js"
 
 // ============================================================================
@@ -39,7 +46,7 @@ interface PendingRequest {
 // Options
 // ============================================================================
 
-export interface HttpOptions {
+export interface HttpOptions extends AuthOptions {
 	/** Port to listen on (default: 3000) */
 	readonly port?: number
 	/** Hostname to bind to (default: localhost) */
@@ -108,6 +115,15 @@ export const http = (options: HttpOptions = {}): TransportFactory => {
 		// Routes
 		const jsonRpcRoute = post(basePath, async ({ ctx }: { ctx: Context }) => {
 			try {
+				// Authenticate MCP requests when auth is configured (opt-in).
+				// The health endpoint and CORS preflight are separate and stay open.
+				if (isAuthEnabled(options) && !(await isAuthorized(options, ctx.request ?? ctx))) {
+					return json(unauthorizedBody(), {
+						status: 401,
+						headers: { "WWW-Authenticate": WWW_AUTHENTICATE },
+					})
+				}
+
 				const body = ctx.body.toString()
 				const accept = ctx.headers["accept"] ?? ""
 				const acceptsSSE = accept.includes("text/event-stream")
