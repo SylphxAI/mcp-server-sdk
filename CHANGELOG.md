@@ -120,9 +120,9 @@
 
 ### 🔧 Chores
 
-- update @sylphx/bump to v0.7.0 and @sylphx/doctor to v1.20.0 ([8da449b](https://github.com/SylphxAI/mcp-server-sdk/commit/8da449bb0f58a70e14f6ce7ff6a2d18d50d1ea50))
+- update Changesets to v0.7.0 and @sylphx/doctor to v1.20.0 ([8da449b](https://github.com/SylphxAI/mcp-server-sdk/commit/8da449bb0f58a70e14f6ce7ff6a2d18d50d1ea50))
 - update @sylphx/doctor to v1.19.2 ([4e60959](https://github.com/SylphxAI/mcp-server-sdk/commit/4e609590fce6c099183ebefbd46159b8e3cc61ff))
-- update @sylphx/bump and @sylphx/doctor ([7b68ebc](https://github.com/SylphxAI/mcp-server-sdk/commit/7b68ebcab4bf8e36c6bdb033b72161954b9c0a29))
+- update Changesets and @sylphx/doctor ([7b68ebc](https://github.com/SylphxAI/mcp-server-sdk/commit/7b68ebcab4bf8e36c6bdb033b72161954b9c0a29))
 - add sylphx devDependencies and credits section ([95c4321](https://github.com/SylphxAI/mcp-server-sdk/commit/95c432174820e9361ee724f8a46802dec87d6018))
 - add pre-push hook and update doctor package name ([9db9058](https://github.com/SylphxAI/mcp-server-sdk/commit/9db9058eab57bc759d45faae37a015feca9a4d32))
 - use doctor prepublish and add typecheck script ([acabf44](https://github.com/SylphxAI/mcp-server-sdk/commit/acabf445e1e1635abb836ee104e1962be0fd0f4f))
