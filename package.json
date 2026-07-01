@@ -37,7 +37,6 @@
 		"@modelcontextprotocol/conformance": "^0.1.7",
 		"@modelcontextprotocol/sdk": "^1.24.3",
 		"@sylphx/biome-config": "^0.4.0",
-		"@sylphx/bump": "^0.13.2",
 		"@sylphx/tsconfig": "^0.3.0",
 		"@types/bun": "^1.3.3",
 		"bunup": "^0.16.10",

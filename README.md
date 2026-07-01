@@ -663,7 +663,7 @@ interface PageResult<T> {
 - [@sylphx/gust](https://github.com/SylphxAI/gust) - Lightweight HTTP framework for Bun
 - [@sylphx/biome-config](https://github.com/SylphxAI/biome-config) - Shared Biome configuration
 - [@sylphx/tsconfig](https://github.com/SylphxAI/tsconfig) - Shared TypeScript configuration
-- [@sylphx/bump](https://github.com/SylphxAI/bump) - Version management
+ - Version management
 
 ## License
 
