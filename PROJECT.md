@@ -9,7 +9,8 @@ transports, examples, tests, conformance support, and package release path.
 
 - State: `active`
 - Layer: `foundation`
-- Machine manifest: [`.doctrine/project.json`](./.doctrine/project.json)
+- Vendor-neutral manifest: [`project.manifest.json`](./project.manifest.json)
+- Doctrine adapter manifest: [`.doctrine/project.json`](./.doctrine/project.json)
 
 ## Goals
 
@@ -44,7 +45,8 @@ paths.
 - Test and conformance surface: `src/**/*.test.ts`, `examples/conformance-server.ts`
 - CI and release workflows: `.github/workflows/ci.yml`, `.github/workflows/release.yml`
 - Human project orientation: `PROJECT.md`
-- Machine-readable project manifest: `.doctrine/project.json`
+- Vendor-neutral project manifest: `project.manifest.json`
+- Doctrine adapter manifest: `.doctrine/project.json`
 
 ## Delivery
 
@@ -52,9 +54,12 @@ paths.
 - Required contexts: `risk-classification/pass`, `ci`, `trunk-admission/pass`
 - Deploy/release path: pull requests and merge groups run ADR-29 admission plus
   lint, typecheck, test, and build; `main` uses the central release workflow.
-- Production proof: postsubmit ADR-29 proof exists, but npm/package readback and
-  consumer smoke evidence are not yet documented as a complete release gate.
+- Production proof: postsubmit ADR-29 proof exists, GroundAtlas package dogfood
+  proves the project-control boundary, but npm/package readback and consumer
+  smoke evidence are not yet documented as a complete release gate.
 - Recovery class: `forward-fix-only`
 
 Adoption is migrating. The current gaps are tracked in
-`.doctrine/project.json`.
+`.doctrine/project.json`; the vendor-neutral GroundAtlas gate verifies
+`project.manifest.json` as the public control-plane manifest while keeping
+`.doctrine/project.json` as the Sylphx adapter.

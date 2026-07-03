@@ -71,6 +71,16 @@
 			},
 			{
 				"type": "manifest",
+				"name": "Vendor-neutral project manifest",
+				"location": "project.manifest.json"
+			},
+			{
+				"type": "documentation",
+				"name": "Security policy",
+				"location": "SECURITY.md"
+			},
+			{
+				"type": "manifest",
 				"name": "Project control-plane manifest",
 				"location": ".doctrine/project.json"
 			}
@@ -107,10 +117,10 @@
 	"documentation": {
 		"adr": {
 			"path": "docs/adr/",
-			"status": "planned"
+			"status": "present"
 		},
 		"specs": {
-			"path": "README.md",
+			"path": "docs/specs/ and README.md",
 			"status": "present"
 		},
 		"catalog": {
@@ -131,7 +141,7 @@
 		"deployable": false,
 		"requiredContexts": ["risk-classification/pass", "ci", "trunk-admission/pass"],
 		"deployPath": "Pull requests and merge groups run .github/workflows/ci.yml with ADR-29 admission plus lint, typecheck, test, and build; main uses .github/workflows/release.yml to call the central reusable release workflow.",
-		"productionProof": "Postsubmit ADR-29 proof exists, but npm/package readback, conformance result readback, and consumer smoke evidence are not yet documented as one release gate.",
+		"productionProof": "Postsubmit ADR-29 proof exists, GroundAtlas package dogfood proves the project-control boundary, but npm/package readback, conformance result readback, and consumer smoke evidence are not yet documented as one release gate.",
 		"recoveryClass": "forward-fix-only",
 		"packageRelease": {
 			"publishesPackages": true,

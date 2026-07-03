@@ -1,0 +1,111 @@
+{
+	"$schema": "https://raw.githubusercontent.com/SylphxAI/groundatlas/main/schemas/project.manifest.schema.json",
+	"schemaVersion": 1,
+	"project": {
+		"id": "mcp-server-sdk",
+		"name": "MCP Server SDK",
+		"summary": "TypeScript foundation package for building Model Context Protocol servers on Bun and Node.js with functional builders, protocol handling, transports, examples, tests, and release hooks.",
+		"lifecycle": "active",
+		"visibility": "open-source",
+		"repository": "https://github.com/SylphxAI/mcp-server-sdk",
+		"homepage": "https://github.com/SylphxAI/mcp-server-sdk",
+		"tags": ["mcp", "sdk", "typescript", "bun", "node", "package"]
+	},
+	"truth": {
+		"humanProjectFile": "PROJECT.md",
+		"agentAdapter": "AGENTS.md",
+		"specs": ["docs/specs/", "README.md"],
+		"adrs": ["docs/adr/"],
+		"source": [
+			"src/",
+			"examples/",
+			"package.json",
+			"tsconfig.json",
+			"build.config.ts",
+			"bunup.config.ts"
+		],
+		"tests": ["src/", "examples/conformance-server.ts"],
+		"runbooks": ["README.md", "PROJECT.md", "SECURITY.md", "progress.md"]
+	},
+	"surfaces": [
+		{
+			"type": "package",
+			"name": "@sylphx/mcp-server-sdk package",
+			"path": "package.json",
+			"description": "Public npm package identity, exports, scripts, dependencies, and release metadata."
+		},
+		{
+			"type": "docs",
+			"name": "Public README",
+			"path": "README.md",
+			"description": "Public SDK overview, install instructions, examples, and supported surface."
+		},
+		{
+			"type": "docs",
+			"name": "Project control plane",
+			"path": "PROJECT.md",
+			"description": "Human project identity, lifecycle, boundary, delivery, and adoption entry point."
+		},
+		{
+			"type": "schema",
+			"name": "SDK source exports",
+			"path": "src/index.ts",
+			"description": "Source entrypoint for the package export contract."
+		},
+		{
+			"type": "docs",
+			"name": "Examples",
+			"path": "examples/",
+			"description": "Public examples and conformance server used by consumers and tests."
+		},
+		{
+			"type": "workflow",
+			"name": "CI",
+			"path": ".github/workflows/ci.yml",
+			"description": "ADR-29 admission, GroundAtlas package dogfood, lint, typecheck, test, build, and secret hygiene."
+		},
+		{
+			"type": "workflow",
+			"name": "Release",
+			"path": ".github/workflows/release.yml",
+			"description": "Central release workflow hook for package publication from main."
+		},
+		{
+			"type": "docs",
+			"name": "Doctrine adapter manifest",
+			"path": ".doctrine/project.json",
+			"description": "Sylphx Doctrine adapter and org-local governance catalog; not the vendor-neutral GroundAtlas default."
+		}
+	],
+	"commands": [
+		{
+			"name": "lint",
+			"command": "bun run lint",
+			"purpose": "Run Biome checks."
+		},
+		{
+			"name": "typecheck",
+			"command": "bun run typecheck",
+			"purpose": "Run TypeScript type checks."
+		},
+		{
+			"name": "test",
+			"command": "bun test",
+			"purpose": "Run SDK unit and protocol tests."
+		},
+		{
+			"name": "build",
+			"command": "bun run build",
+			"purpose": "Build package artifacts."
+		},
+		{
+			"name": "groundatlas:fleet",
+			"command": "npm exec --yes --package groundatlas@0.1.2 -- ga fleet . --out .groundatlas-pilot --require-atlas --strict --json",
+			"purpose": "Prove the vendor-neutral manifest is selected and generated GroundAtlas files are navigation-only."
+		}
+	],
+	"adoption": {
+		"status": "adopted",
+		"notes": "Vendor-neutral GroundAtlas manifest for package/action dogfooding. .doctrine/project.json remains the Sylphx Doctrine adapter and local governance catalog; package-release proof gaps remain tracked separately in the Doctrine adapter."
+	}
+}
