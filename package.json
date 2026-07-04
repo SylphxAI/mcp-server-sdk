@@ -60,5 +60,6 @@
 		"nodejs"
 	],
 	"author": "sylphx",
-	"license": "MIT"
+	"license": "MIT",
+	"packageManager": "bun@1.3.12"
 }
