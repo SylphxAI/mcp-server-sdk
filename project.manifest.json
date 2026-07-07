@@ -100,12 +100,12 @@
 		},
 		{
 			"name": "groundatlas:fleet",
-			"command": "npm exec --yes --package groundatlas@0.1.2 -- ga fleet . --out .groundatlas-pilot --require-atlas --strict --json",
-			"purpose": "Prove the vendor-neutral manifest is selected and generated GroundAtlas files are navigation-only."
+			"command": "npm exec --yes --package groundatlas@0.1.3 -- ga fleet . --out .groundatlas-pilot --require-atlas --strict --json",
+			"purpose": "Prove the vendor-neutral manifest is selected and generated GroundAtlas JSON/Markdown files are navigation-only evidence/read models."
 		}
 	],
 	"adoption": {
 		"status": "adopted",
-		"notes": "Vendor-neutral GroundAtlas manifest for package/action dogfooding. .doctrine/project.json remains the Sylphx Doctrine adapter and local governance catalog; package-release proof gaps remain tracked separately in the Doctrine adapter."
+		"notes": "Vendor-neutral GroundAtlas manifest for package/action dogfooding. .doctrine/project.json remains the Sylphx Doctrine adapter and local governance catalog; generated .groundatlas* plus GroundAtlas JSON/Markdown reports are evidence/read models only; package-release proof gaps remain tracked separately in the Doctrine adapter."
 	}
 }

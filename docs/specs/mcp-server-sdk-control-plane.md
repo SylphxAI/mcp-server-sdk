@@ -18,8 +18,15 @@ The CI workflow must run the published GroundAtlas package/action on pull reques
 
 1. `project.manifest.json` is selected as the vendor-neutral manifest.
 2. `.doctrine/project.json` is detected only as an adapter.
-3. Fleet strict mode has zero blocked projects and zero warnings.
-4. Generated GroundAtlas output remains navigation-only and is not committed as SSOT.
+3. Fleet strict mode reports `1 adopted, 0 warning, 0 blocked, 1 total`.
+4. The Markdown fleet scorecard exists and includes the report title and summary.
+5. Generated GroundAtlas JSON and Markdown output remains navigation-only evidence/read models and is not committed as SSOT.
+
+The workflow must upload `groundatlas-package-dogfood` with:
+
+- `groundatlas-manifest.json`
+- `groundatlas-fleet.json`
+- `groundatlas-fleet.md`
 
 ## Release-proof boundary
 
