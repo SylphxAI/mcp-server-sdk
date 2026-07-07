@@ -54,12 +54,15 @@ paths.
 - Required contexts: `risk-classification/pass`, `ci`, `trunk-admission/pass`
 - Deploy/release path: pull requests and merge groups run ADR-29 admission plus
   lint, typecheck, test, and build; `main` uses the central release workflow.
-- Production proof: postsubmit ADR-29 proof exists, GroundAtlas package dogfood
-  proves the project-control boundary, but npm/package readback and consumer
-  smoke evidence are not yet documented as a complete release gate.
+- Production proof: postsubmit ADR-29 proof exists; GroundAtlas package dogfood
+  proves the project-control boundary with JSON and Markdown evidence/read
+  models, but npm/package readback and consumer smoke evidence are not yet
+  documented as a complete release gate.
 - Recovery class: `forward-fix-only`
 
 Adoption is migrating. The current gaps are tracked in
 `.doctrine/project.json`; the vendor-neutral GroundAtlas gate verifies
 `project.manifest.json` as the public control-plane manifest while keeping
-`.doctrine/project.json` as the Sylphx adapter.
+`.doctrine/project.json` as the Sylphx adapter. Generated `.groundatlas*` files
+and GroundAtlas JSON/Markdown reports are evidence/read models only, not
+authoritative project-control inputs.

@@ -13,3 +13,7 @@ This repository owns the `@sylphx/mcp-server-sdk` package only. Keep consumer
 server business logic and product-specific tools/resources/prompts out of SDK
 core. Consumers must rely on package exports and documented examples, not
 internal source paths.
+
+Generated `.groundatlas*` files and GroundAtlas JSON/Markdown reports are
+evidence/read models only. Do not treat them as project-control SSOT; update
+`project.manifest.json` or `.doctrine/project.json` at the owning boundary.
