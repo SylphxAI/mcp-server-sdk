@@ -42,6 +42,7 @@ paths.
 - Package exports and metadata: `package.json`
 - SDK source exports: `src/index.ts`
 - README and examples: `README.md`, `examples/`
+- SOTA family roadmap: `docs/roadmap/sota-family-roadmap.md`
 - Test and conformance surface: `src/**/*.test.ts`, `examples/conformance-server.ts`
 - CI and release workflows: `.github/workflows/ci.yml`, `.github/workflows/release.yml`
 - Human project orientation: `PROJECT.md`

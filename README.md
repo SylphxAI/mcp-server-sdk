@@ -5,6 +5,8 @@ Pure functional MCP (Model Context Protocol) server SDK for Bun.
 [![npm](https://img.shields.io/npm/v/@sylphx/mcp-server-sdk)](https://www.npmjs.com/package/@sylphx/mcp-server-sdk)
 [![MCP Conformance](https://img.shields.io/badge/MCP%20Conformance-88%25-brightgreen)](https://github.com/modelcontextprotocol/conformance)
 
+SOTA family roadmap: [docs/roadmap/sota-family-roadmap.md](docs/roadmap/sota-family-roadmap.md).
+
 ## Features
 
 - **Pure Functional**: Immutable data, composable handlers
