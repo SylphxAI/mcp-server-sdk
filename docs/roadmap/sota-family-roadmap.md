@@ -3,7 +3,7 @@
 Status: archived adoption plan
 Owner: MCP Server SDK
 Scope: repo-local future plan and its role in the SylphxAI MCP family
-Decision record: pending PR-number ADR
+Decision record: `docs/adr/ADR-38-mcp-family-sota-roadmap.md`
 
 ## Family Role
 
