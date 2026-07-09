@@ -1,18 +1,19 @@
 # SOTA Family Roadmap
 
-Status: archived adoption plan
+Status: legacy-maintenance migration plan
 Owner: MCP Server SDK
 Scope: repo-local future plan and its role in the SylphxAI MCP family
 Decision record: `docs/adr/ADR-38-mcp-family-sota-roadmap.md`
 
 ## Family Role
 
-MCP Server SDK is the archived TypeScript SDK/reference for earlier SylphxAI MCP
-servers. It can preserve historical examples and typed API patterns, but it is
-not the target foundation for the future product MCP family.
+MCP Server SDK is the active legacy TypeScript SDK/reference for earlier
+SylphxAI MCP servers. It preserves useful examples and typed API patterns, but
+it is not the target foundation for the future product MCP family.
 
-The repository is currently archived. Until reactivated, active product repos
-must not depend on new unshipped SDK behavior.
+Until a separate deprecation or archive ADR changes its lifecycle, this
+repository remains maintained for existing package truth. New product MCP
+servers should not depend on new unshipped SDK behavior from this package.
 
 ## Family Fit
 
@@ -26,24 +27,24 @@ must not depend on new unshipped SDK behavior.
 
 ## SOTA End State
 
-The SDK should remain archived unless a future ADR explicitly re-scopes it.
 Active product repos should use the official Rust SDK directly:
-`modelcontextprotocol/rust-sdk` / `rmcp`. It must not sit in the middle as an
-unmaintained TypeScript adapter dependency.
+`modelcontextprotocol/rust-sdk` / `rmcp`. This package must not sit in the
+middle as a TypeScript adapter dependency for the Rust-native family.
 
 ## Roadmap
 
-### Phase 0: Archive Decision
+### Phase 0: Runtime Direction
 
-- Keep this repository archived as the historical TypeScript SDK/reference.
+- Keep this repository's current lifecycle truthful until a separate archive or
+  deprecation ADR changes it.
 - Document the supported product path as Rust MCP servers using `rmcp`.
 - Do not let product repos adopt new unshipped behavior from this package.
 
 ### Phase 1: Reference Preservation
 
-- Preserve useful examples only as reference material.
-- Mark public docs clearly as archived where they could be mistaken for the
-  current family SDK.
+- Preserve useful examples as reference material.
+- Mark public docs clearly where they could be mistaken for the current family
+  runtime direction.
 - Link family runtime decisions to Architecture Reader portfolio planning.
 
 ### Phase 2: Rust SDK Migration Notes
@@ -51,18 +52,18 @@ unmaintained TypeScript adapter dependency.
 - Document patterns that product repos should port to Rust: evidence envelopes,
   install diagnostics, `doctor` output, stable JSON examples, and conformance
   fixtures.
-- Keep downstream product logic out of this archived package.
+- Keep downstream product logic out of this package.
 
-### Phase 3: Final Archive Hygiene
+### Phase 3: Decommission Option
 
 - Keep no active roadmap that competes with `rmcp`.
-- Keep repository archive status unless a superseding ADR reactivates it with a
-  new non-adapter purpose.
+- If consumer migration completes, decide through a superseding ADR whether to
+  archive, deprecate, or re-scope this package.
 
 ## Validation Gates
 
-- Archived docs do not claim this is the active family SDK.
-- Product repos consume `rmcp` or their own Rust server crates, not this archived
-  package.
-- Archived status is not lifted without a superseding ADR, CI, release, and
-  consumer migration gates.
+- Docs do not claim this is the active future family runtime.
+- Product repos consume `rmcp` or their own Rust server crates, not this legacy
+  package as a new adapter dependency.
+- Archive/deprecation status is not changed without a superseding ADR, CI,
+  release, and consumer migration gates.

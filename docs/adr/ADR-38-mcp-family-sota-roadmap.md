@@ -6,25 +6,28 @@ Slug: mcp-family-sota-roadmap
 
 ## Context
 
-MCP Server SDK is an archived TypeScript package for earlier SylphxAI MCP
-servers. Active products need clarity that future MCP serving should use Rust
-and the official `modelcontextprotocol/rust-sdk` / `rmcp` crate rather than this
-package as a canonical adapter layer.
+MCP Server SDK is an active TypeScript package for earlier SylphxAI MCP
+servers, examples, and protocol patterns. The family needs a clear forward
+runtime decision: future MCP serving should use Rust and the official
+`modelcontextprotocol/rust-sdk` / `rmcp` crate rather than treating this package
+as the canonical adapter layer for new products.
 
 ## Decision
 
 Adopt `docs/roadmap/sota-family-roadmap.md` as the repo-local roadmap.
 
-This repository should remain archived as a historical reference unless a future
-ADR gives it a new non-adapter purpose. Active product repos should build Rust
-MCP servers with `rmcp`.
+This repository remains an active legacy TypeScript SDK/reference until a
+separate archive or deprecation ADR changes its lifecycle. Active product repos
+should build new MCP servers with Rust and `rmcp`; this package must not become
+a new TypeScript adapter dependency for the Rust-native family.
 
 ## Consequences
 
-- Product repos must not depend on new unshipped SDK behavior while archived.
+- Product repos must not depend on new unshipped SDK behavior for future
+  Rust-native MCP serving.
 - The family default is Rust MCP serving, not a TypeScript adapter layer.
-- Reactivation requires a superseding ADR, protocol parity, conformance
-  evidence, release proof, and clear consumer migration policy.
+- Archive or deprecation requires a superseding ADR, consumer migration policy,
+  protocol parity evidence, conformance evidence, and release proof.
 
 ## Verification
 

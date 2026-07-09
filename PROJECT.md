@@ -12,6 +12,13 @@ transports, examples, tests, conformance support, and package release path.
 - Vendor-neutral manifest: [`project.manifest.json`](./project.manifest.json)
 - Doctrine adapter manifest: [`.doctrine/project.json`](./.doctrine/project.json)
 
+## Family Runtime Direction
+
+This package remains the active legacy TypeScript SDK/reference for existing
+package truth. New SylphxAI MCP products should use Rust-native serving through
+`modelcontextprotocol/rust-sdk` / `rmcp`; this package must not become a new
+TypeScript adapter layer for the Rust-native MCP family.
+
 ## Goals
 
 - Provide a type-safe, composable SDK for MCP tools, resources, prompts,
