@@ -1,0 +1,16 @@
+{
+	"request": {
+		"method": "GET",
+		"path": "/mcp/health",
+		"headers": {}
+	},
+	"auth": {
+		"apiKey": "contract-test-key"
+	},
+	"response": {
+		"status": 200,
+		"body": {
+			"status": "ok"
+		}
+	}
+}

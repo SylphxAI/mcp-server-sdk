@@ -1,0 +1,21 @@
+{
+	"request": {
+		"method": "POST",
+		"path": "/mcp",
+		"headers": {
+			"Content-Type": "application/json"
+		},
+		"body": "not-json"
+	},
+	"response": {
+		"status": 400,
+		"body": {
+			"jsonrpc": "2.0",
+			"id": null,
+			"error": {
+				"code": -32700,
+				"message": { "contains": "Parse error" }
+			}
+		}
+	}
+}

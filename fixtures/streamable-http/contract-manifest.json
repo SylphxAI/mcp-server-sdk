@@ -1,0 +1,55 @@
+{
+	"schemaVersion": 1,
+	"contract": "streamable-http-transport",
+	"protocolVersion": "2025-03-26",
+	"spec": "docs/specs/streamable-http-transport-contract.md",
+	"parityTest": "src/transports/http.contract.test.ts",
+	"entrypoint": "serve",
+	"defaults": {
+		"basePath": "/mcp",
+		"port": 3000,
+		"hostname": "127.0.0.1"
+	},
+	"scenarios": [
+		{
+			"id": "health-check",
+			"fixture": "health-check.json",
+			"description": "GET /mcp/health returns ok payload with server metadata"
+		},
+		{
+			"id": "health-open-when-auth-enabled",
+			"fixture": "health-open-when-auth.json",
+			"description": "Health stays open when apiKey auth is configured"
+		},
+		{
+			"id": "initialize-json",
+			"fixture": "initialize-json.json",
+			"description": "POST initialize returns JSON-RPC result and allocates Mcp-Session-Id"
+		},
+		{
+			"id": "auth-unauthorized-missing-key",
+			"fixture": "auth-unauthorized-missing-key.json",
+			"description": "POST without X-API-Key when apiKey configured returns 401"
+		},
+		{
+			"id": "auth-unauthorized-wrong-key",
+			"fixture": "auth-unauthorized-wrong-key.json",
+			"description": "POST with wrong X-API-Key returns 401"
+		},
+		{
+			"id": "auth-success",
+			"fixture": "auth-success.json",
+			"description": "POST with valid X-API-Key passes through to handler"
+		},
+		{
+			"id": "session-not-found",
+			"fixture": "session-not-found.json",
+			"description": "POST with unknown Mcp-Session-Id returns 404"
+		},
+		{
+			"id": "parse-error",
+			"fixture": "parse-error.json",
+			"description": "POST with invalid JSON body returns 400 parse error"
+		}
+	]
+}
