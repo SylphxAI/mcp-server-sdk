@@ -1,7 +1,7 @@
 # ADR-38: Adopt MCP Server SDK Family SOTA Roadmap
 
 Date: 2026-07-09
-Status: Proposed in PR #38
+Status: Accepted
 Slug: mcp-family-sota-roadmap
 
 ## Context
