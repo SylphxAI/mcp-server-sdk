@@ -1,0 +1,434 @@
+{
+  "schemaVersion": 3,
+  "repo": "SylphxAI/mcp-server-sdk",
+  "repoLedgerPath": "docs/specs/migration-ledger.json",
+  "lockedAt": "2026-07-10T22:00:00Z",
+  "programSpec": {
+    "id": "rust-first-fleet-migration",
+    "controlPlaneRepo": "SylphxAI/rust-first-fleet-control-plane",
+    "programSpecPath": "PROGRAM-SPEC.json",
+    "completionStandard": "COMPLETION-STANDARD.md",
+    "parityStandard": "PARITY-VERIFICATION-STANDARD.md"
+  },
+  "adrRefs": [
+    {
+      "path": "docs/adr/ADR-PROPOSED-fleet-mcp-server-sdk-rust-north-star.md",
+      "status": "proposed",
+      "note": "North Star ADR on disk \u2014 pending ADR PR; ADR number will equal introducing PR number per Doctrine"
+    }
+  ],
+  "reauditRef": "rej-010",
+  "verificationRef": "verification/mcp-server-sdk-cycle64-mcp-protocol-skip.json",
+  "inventorySource": [
+    "mcp-tools",
+    "manual"
+  ],
+  "inScopeBoundary": {
+    "includeGlobs": [
+      "src/**",
+      "examples/**",
+      "dist/**",
+      "crates/**",
+      "fixtures/**"
+    ],
+    "excludeGlobs": [
+      "node_modules/**",
+      "docs/**",
+      ".claude/**"
+    ]
+  },
+  "capabilities": [
+    {
+      "id": "transport/streamable-http",
+      "domain": "transport",
+      "weight": 5,
+      "state": "rust_impl",
+      "proof": {
+        "status": "missing",
+        "dependencyGlobs": [
+          "src/app/serve-ts.ts",
+          "src/app/http-authority.ts",
+          "fixtures/streamable-http/**",
+          "crates/mcp-streamable-http/**",
+          "crates/mcp-serve-bridge/**",
+          "crates/mcp-streamable-http/tests/streamable_http_differential.rs",
+          "scripts/differential/**",
+          "scripts/run-mcp-server-sdk-differential.sh"
+        ],
+        "staleReason": "rej-010: differential harness landed \u2014 awaiting differential_green at bound SHAs",
+        "verificationRef": "verification/mcp-server-sdk-2026-07-10T2200-streamable-http-differential.json"
+      },
+      "promotionHold": {
+        "active": true,
+        "reason": "rej-010: differential harness landed \u2014 awaiting differential_green at bound SHAs; NO auto-promotion",
+        "rejectionRef": "rej-010",
+        "since": "2026-07-10T22:00:00Z"
+      },
+      "tsSurface": "src/app/serve-ts.ts (useTsTransport opt-in only)",
+      "rustSurface": "crates/mcp-serve-bridge/**; crates/mcp-streamable-http/**; src/app/http-authority.ts; fixtures/streamable-http/**",
+      "parityTest": "src/transports/http.contract.test.ts; src/transports/check-no-ts-http-backend.test.ts; crates/mcp-streamable-http/tests/contract_parity.rs; fixtures/streamable-http/contract-manifest.json",
+      "differentialTest": "crates/mcp-streamable-http/tests/streamable_http_differential.rs#streamable_http_slice_differential_matches_ts_oracle; scripts/run-mcp-server-sdk-differential.sh --slice streamable-http",
+      "prodProbe": "bun run check:no-ts-http-backend; bun test src/transports/http.contract.test.ts; cargo test -p mcp-streamable-http --features contract",
+      "prUrl": "https://github.com/SylphxAI/mcp-server-sdk/pull/40",
+      "notes": "Cycle18/S4 authority_rust on disk (2026-07-10): default serve() routes to mcp-serve-bridge + mcp-streamable-http with schema-derived manifest; check-no-ts-http-backend gate blocks parallel TS gust default path. rej-010: SHA-bound differential harness at scripts/run-mcp-server-sdk-differential.sh (TS gust oracle vs Rust mcp-streamable-http). cycle38: streamable-http bounded slice ledger annotation at clonePath. ts_deleted NOT claimed \u2014 serve-ts/http/fetch opt-in paths retained."
+    },
+    {
+      "id": "transport/session-guard-helpers",
+      "domain": "transport",
+      "weight": 2,
+      "state": "rust_impl",
+      "proof": {
+        "status": "missing",
+        "dependencyGlobs": [
+          "fixtures/streamable-http/session-not-found.json",
+          "crates/mcp-streamable-http/src/shims.rs",
+          "crates/mcp-streamable-http/tests/streamable_http_differential.rs",
+          "scripts/differential/**",
+          "scripts/run-mcp-server-sdk-differential.sh"
+        ],
+        "staleReason": "rej-010: differential harness landed \u2014 awaiting differential_green at bound SHAs",
+        "verificationRef": "verification/mcp-server-sdk-2026-07-10T2200-streamable-http-differential.json"
+      },
+      "promotionHold": {
+        "active": true,
+        "reason": "rej-010: differential harness landed \u2014 awaiting differential_green at bound SHAs; NO auto-promotion",
+        "rejectionRef": "rej-010",
+        "since": "2026-07-10T22:00:00Z"
+      },
+      "tsSurface": "src/app/serve-ts.ts (useTsTransport opt-in only)",
+      "rustSurface": "crates/mcp-streamable-http/src/shims.rs (session_guard_middleware, session_not_found_body)",
+      "parityTest": "fixtures/streamable-http/session-not-found.json; src/transports/http.contract.test.ts; crates/mcp-streamable-http/tests/contract_parity.rs; crates/mcp-streamable-http/src/shims.rs",
+      "differentialTest": "crates/mcp-streamable-http/tests/streamable_http_differential.rs#session_guard_slice_differential_matches_ts_oracle; scripts/run-mcp-server-sdk-differential.sh --slice session-guard-helpers",
+      "prodProbe": "bun test src/transports/http.contract.test.ts --test-name-pattern session-not-found; cargo test -p mcp-streamable-http session_guard",
+      "notes": "Cycle18 authority_rust on disk (2026-07-10): session_guard_middleware on default Rust serve() path; golden session-not-found parity via mcp-streamable-http shims. rej-010: SHA-bound differential harness includes session-not-found slice."
+    },
+    {
+      "id": "transport/stdio",
+      "domain": "transport",
+      "weight": 4,
+      "state": "ts_only",
+      "tsSurface": "src/transports/stdio.ts, src/app/stdio.ts",
+      "notes": "Legacy stdio transport; deprecated in favor of createMcpApp + serve."
+    },
+    {
+      "id": "api/mcp-app",
+      "domain": "sdk-api",
+      "weight": 5,
+      "state": "ts_only",
+      "tsSurface": "src/app/app.ts"
+    },
+    {
+      "id": "api/tool-builder",
+      "domain": "sdk-api",
+      "weight": 4,
+      "state": "ts_only",
+      "tsSurface": "src/builders/tool.ts"
+    },
+    {
+      "id": "api/resource-builder",
+      "domain": "sdk-api",
+      "weight": 3,
+      "state": "ts_only",
+      "tsSurface": "src/builders/resource.ts"
+    },
+    {
+      "id": "api/prompt-builder",
+      "domain": "sdk-api",
+      "weight": 3,
+      "state": "ts_only",
+      "tsSurface": "src/builders/prompt.ts"
+    },
+    {
+      "id": "api/sampling-client",
+      "domain": "sdk-api",
+      "weight": 3,
+      "state": "ts_only",
+      "tsSurface": "src/sampling/client.ts"
+    },
+    {
+      "id": "api/elicitation-client",
+      "domain": "sdk-api",
+      "weight": 3,
+      "state": "ts_only",
+      "tsSurface": "src/elicitation/client.ts"
+    },
+    {
+      "id": "api/notifications",
+      "domain": "sdk-api",
+      "weight": 3,
+      "state": "ts_only",
+      "tsSurface": "src/notifications/"
+    },
+    {
+      "id": "api/pagination",
+      "domain": "sdk-api",
+      "weight": 2,
+      "state": "ts_only",
+      "tsSurface": "src/pagination/"
+    },
+    {
+      "id": "api/jsonrpc-protocol",
+      "domain": "protocol",
+      "weight": 4,
+      "state": "rust_impl",
+      "promotionHold": {
+        "active": true,
+        "reason": "rej-010: jsonrpc-protocol differential harness landed \u2014 awaiting differential_green at bound SHAs",
+        "rejectionRef": "rej-010",
+        "since": "2026-07-10T52:00:00Z"
+      },
+      "proof": {
+        "status": "missing",
+        "dependencyGlobs": [
+          "src/protocol/jsonrpc.ts",
+          "crates/mcp-jsonrpc-protocol/**",
+          "scripts/differential/jsonrpc-oracle.ts",
+          "scripts/differential/fixtures/jsonrpc-corpus.json",
+          "scripts/run-mcp-server-sdk-differential.sh"
+        ],
+        "staleReason": "rej-010 cycle62: jsonrpc-protocol bounded differential harness on-disk \u2014 awaiting differential_green at bound SHAs",
+        "verificationRef": "verification/mcp-server-sdk-cycle62-jsonrpc-protocol-rust-impl.json"
+      },
+      "tsSurface": "src/protocol/jsonrpc.ts",
+      "rustSurface": "crates/mcp-jsonrpc-protocol/src/lib.rs",
+      "differentialTest": "crates/mcp-jsonrpc-protocol/tests/jsonrpc_differential.rs#jsonrpc_protocol_differential_matches_ts_oracle; scripts/run-mcp-server-sdk-differential.sh --slice jsonrpc-protocol",
+      "notes": "Cycle62 rej-010: JSON-RPC 2.0 pure protocol helpers rust_impl + bounded differential harness (8 corpus cases). authority_rust NOT claimed."
+    },
+    {
+      "id": "api/mcp-protocol",
+      "domain": "protocol",
+      "weight": 4,
+      "state": "ts_only",
+      "tsSurface": "src/protocol/mcp.ts"
+    },
+    {
+      "id": "api/http-auth",
+      "domain": "transport",
+      "weight": 3,
+      "state": "ts_only",
+      "tsSurface": "src/transports/auth.ts"
+    },
+    {
+      "id": "api/legacy-create-server",
+      "domain": "sdk-api",
+      "weight": 3,
+      "state": "ts_only",
+      "tsSurface": "src/server/server.ts",
+      "notes": "Deprecated createServer API; consumers (coderag) still use during migration."
+    },
+    {
+      "id": "delivery/conformance-examples",
+      "domain": "delivery",
+      "weight": 3,
+      "state": "ts_only",
+      "tsSurface": "examples/conformance-server.ts",
+      "notes": "Conformance support exists; npm readback release proof gap per PROJECT.md."
+    }
+  ],
+  "summary": {
+    "total": 16,
+    "ts_only": 13,
+    "contracted": 0,
+    "rust_impl": 3,
+    "parity_proven": 0,
+    "authority_rust": 0,
+    "ts_deleted": 0,
+    "completion_progress": 0.0,
+    "authority_progress": 0.0,
+    "weighted_progress": 0.0,
+    "cycle50_delta": {
+      "rust_impl_verified": 1,
+      "slice": "streamable-http",
+      "verificationRef": "verification/mcp-server-sdk-cycle50-streamable-http-rust-impl.json",
+      "notes": "rej-010 rust_impl ONLY \u2014 cycle50 highest-value unimplemented slice: streamable-http bounded differential"
+    },
+    "cycle51_delta": {
+      "rust_impl_verified": 1,
+      "slice": "session-guard-helpers",
+      "verificationRef": "verification/mcp-server-sdk-cycle51-session-guard-rust-impl.json",
+      "notes": "rej-010 rust_impl ONLY \u2014 cycle51 next highest-value slice: session-guard-helpers bounded differential (1 session-not-found case)"
+    },
+    "cycle62_delta": {
+      "rust_impl_verified": 1,
+      "slice": "jsonrpc-protocol",
+      "verificationRef": "verification/mcp-server-sdk-cycle62-jsonrpc-protocol-rust-impl.json",
+      "notes": "rej-010 rust_impl ONLY \u2014 cycle62 next ts_only slice: api/jsonrpc-protocol bounded differential (8 corpus cases)"
+    },
+    "cycle63_delta": {
+      "action": "harness_metadata",
+      "slice": "api/mcp-protocol",
+      "verificationRef": "verification/mcp-server-sdk-cycle64-mcp-protocol-skip.json",
+      "notes": "rej-010 rust_impl ONLY \u2014 cycle63 next ts_only slice deferred: api/mcp-protocol pending canonical src/protocol/mcp.ts sync"
+    },
+    "cycle64_delta": {
+      "ts_only_deferred": 1,
+      "slice": "api/mcp-protocol",
+      "verificationRef": "verification/mcp-server-sdk-cycle64-mcp-protocol-skip.json",
+      "notes": "rej-010 cycle64 \u2014 api/mcp-protocol ts_only deferred"
+    }
+  },
+  "promotionFreeze": {
+    "active": true,
+    "reason": "rej-010 promotion freeze \u2014 0 capabilities with differential_green or canary_green proof",
+    "rejectionRef": "rej-010",
+    "since": "2026-07-10T22:00:00Z"
+  },
+  "slices": {
+    "S4": {
+      "status": "shipped",
+      "evidence": [
+        "scripts/run-mcp-server-sdk-differential.sh",
+        "scripts/differential/streamable-http-oracle.ts",
+        "scripts/differential/fixtures/streamable-http-corpus.json",
+        "crates/mcp-streamable-http/tests/streamable_http_differential.rs",
+        "src/transports/differentialHarness.matrix.test.ts",
+        "docs/specs/mcp-server-sdk-parity-slice.json",
+        "verification/mcp-server-sdk-2026-07-10T2200-streamable-http-differential.json"
+      ],
+      "notes": "cycle34 rej-010: streamable-http + session-guard differential harness + matrix gate. rust_impl only \u2014 proof.status missing."
+    }
+  },
+  "cycle38": {
+    "boundedSlice": "transport.streamable-http|transport.session-guard-helpers",
+    "status": "harness_landed_disk",
+    "evidenceRef": "/tmp/grok-goal-729a939ec6e2/implementer/cycle38-mcp/cycle38-mcp.json",
+    "clonePath": "/home/codex/Users/kyle/mcp-server-sdk",
+    "deliverables": [
+      "docs/specs/mcp-server-sdk-parity-slice.json",
+      "src/transports/differentialHarness.matrix.test.ts",
+      "scripts/run-mcp-server-sdk-differential.sh",
+      "crates/mcp-streamable-http/tests/streamable_http_differential.rs",
+      "verification/mcp-server-sdk-2026-07-10T2200-streamable-http-differential.json"
+    ],
+    "notes": "cycle38 rej-010: streamable-http rust_impl differential harness + matrix gate confirmed on disk at clonePath. proof.status missing until differential_green at bound SHAs."
+  },
+  "cycle39": {
+    "boundedSlice": "transport.streamable-http|transport.session-guard-helpers",
+    "status": "harness_landed_disk",
+    "evidenceRef": "/tmp/grok-goal-729a939ec6e2/implementer/cycle39-mcp-wave2.json",
+    "clonePath": "/home/codex/Users/kyle/mcp-server-sdk",
+    "deliverables": [
+      "docs/specs/mcp-server-sdk-parity-slice.json",
+      "src/transports/differentialHarness.matrix.test.ts",
+      "scripts/run-mcp-server-sdk-differential.sh",
+      "crates/mcp-streamable-http/tests/streamable_http_differential.rs",
+      "verification/mcp-server-sdk-2026-07-10T2200-streamable-http-differential.json"
+    ],
+    "notes": "cycle39 rej-010: S4 streamable-http differential harness re-verified on disk at clonePath. rust_impl only \u2014 proof.status missing until differential_green at bound SHAs."
+  },
+  "cycle43": {
+    "boundedSlice": "transport.streamable-http|transport.session-guard-helpers",
+    "status": "harness_landed_disk",
+    "clonePath": "/home/codex/Users/kyle/mcp-server-sdk",
+    "deliverables": [
+      "docs/specs/mcp-server-sdk-parity-slice.json",
+      "src/transports/differentialHarness.matrix.test.ts",
+      "scripts/run-mcp-server-sdk-differential.sh",
+      "crates/mcp-streamable-http/tests/streamable_http_differential.rs"
+    ],
+    "notes": "cycle43 rej-010: bounded --slice streamable-http|session-guard-helpers entrypoints. rust_impl only \u2014 proof.status missing until differential_green at bound SHAs."
+  },
+  "cycle47": {
+    "boundedSlice": "transport.streamable-http|transport.session-guard-helpers",
+    "status": "harness_synced_canonical",
+    "canonicalPath": "/home/codex/src/github.com/SylphxAI/mcp-server-sdk",
+    "sourceClonePath": "/home/codex/Users/kyle/mcp-server-sdk",
+    "deliverables": [
+      "docs/specs/mcp-server-sdk-parity-slice.json",
+      "src/transports/differentialHarness.matrix.test.ts",
+      "scripts/run-mcp-server-sdk-differential.sh",
+      "scripts/differential/streamable-http-oracle.ts",
+      "scripts/differential/fixtures/streamable-http-corpus.json",
+      "crates/mcp-streamable-http/tests/streamable_http_differential.rs",
+      "fixtures/streamable-http/contract-manifest.json",
+      "verification/mcp-server-sdk-2026-07-10T2200-streamable-http-differential.json"
+    ],
+    "notes": "cycle47 rej-010: cycle43 harness deliverables synced from clonePath to canonicalPath. rust_impl only \u2014 proof.status missing until differential_green at bound SHAs. Full crate src + src/app remain at sourceClonePath for end-to-end harness execution."
+  },
+  "clonePath": "/home/codex/src/github.com/SylphxAI/mcp-server-sdk",
+  "harnessPath": "scripts/run-mcp-server-sdk-differential.sh",
+  "cycle50Slice": "streamable-http \u2014 bounded --slice entrypoint; bash scripts/run-mcp-server-sdk-differential.sh --slice streamable-http",
+  "cycle51Slice": "session-guard-helpers \u2014 bounded --slice entrypoint; bash scripts/run-mcp-server-sdk-differential.sh --slice session-guard-helpers",
+  "cycle62Slice": "jsonrpc-protocol \u2014 bounded --slice entrypoint; bash scripts/run-mcp-server-sdk-differential.sh --slice jsonrpc-protocol; proof.status missing; authority_rust blocked per rej-010",
+  "cycle50": {
+    "boundedSlice": "streamable-http",
+    "status": "rust_impl_on_disk_verified",
+    "reauditRef": "rej-010",
+    "verificationRef": "verification/mcp-server-sdk-cycle50-streamable-http-rust-impl.json",
+    "harnessPath": "scripts/run-mcp-server-sdk-differential.sh --slice streamable-http",
+    "deliverables": [
+      "scripts/run-mcp-server-sdk-differential.sh",
+      "crates/mcp-streamable-http/tests/streamable_http_differential.rs",
+      "scripts/differential/streamable-http-oracle.ts",
+      "scripts/differential/fixtures/streamable-http-corpus.json",
+      "src/transports/differentialHarness.matrix.test.ts"
+    ],
+    "caseCounts": {
+      "streamableHttp": 6
+    },
+    "notes": "cycle50 rej-010: streamable-http bounded differential harness on-disk verify. rust_impl ONLY \u2014 proof.status missing until differential_green at bound SHAs."
+  },
+  "cycle51": {
+    "boundedSlice": "session-guard-helpers",
+    "status": "rust_impl_on_disk_verified",
+    "reauditRef": "rej-010",
+    "verificationRef": "verification/mcp-server-sdk-cycle51-session-guard-rust-impl.json",
+    "harnessPath": "scripts/run-mcp-server-sdk-differential.sh --slice session-guard-helpers",
+    "canonicalPath": "/home/codex/src/github.com/SylphxAI/mcp-server-sdk",
+    "sourceClonePath": "/home/codex/Users/kyle/mcp-server-sdk",
+    "deliverables": [
+      "scripts/run-mcp-server-sdk-differential.sh",
+      "crates/mcp-streamable-http/tests/streamable_http_differential.rs",
+      "scripts/differential/streamable-http-oracle.ts",
+      "scripts/differential/fixtures/streamable-http-corpus.json",
+      "fixtures/streamable-http/session-not-found.json",
+      "src/transports/differentialHarness.matrix.test.ts"
+    ],
+    "caseCounts": {
+      "sessionGuard": 1
+    },
+    "notes": "cycle51 rej-010: session-guard-helpers bounded differential harness on-disk verify at canonicalPath. rust_impl ONLY \u2014 proof.status missing until differential_green at bound SHAs."
+  },
+  "cycle62": {
+    "boundedSlice": "jsonrpc-protocol",
+    "status": "rust_impl_on_disk_verified",
+    "reauditRef": "rej-010",
+    "verificationRef": "verification/mcp-server-sdk-cycle62-jsonrpc-protocol-rust-impl.json",
+    "harnessPath": "scripts/run-mcp-server-sdk-differential.sh --slice jsonrpc-protocol",
+    "deliverables": [
+      "crates/mcp-jsonrpc-protocol/src/lib.rs",
+      "crates/mcp-jsonrpc-protocol/tests/jsonrpc_differential.rs",
+      "scripts/differential/jsonrpc-oracle.ts",
+      "scripts/differential/fixtures/jsonrpc-corpus.json",
+      "scripts/run-mcp-server-sdk-differential.sh"
+    ],
+    "caseCounts": {
+      "jsonrpcProtocol": 8
+    },
+    "notes": "cycle62 rej-010: api/jsonrpc-protocol ts_only\u2192rust_impl bounded differential harness on-disk verify. rust_impl ONLY \u2014 proof.status missing until differential_green at bound SHAs."
+  },
+  "cycle63Slice": "api/mcp-protocol \u2014 next ts_only slice deferred; jsonrpc-protocol re-verify via bash scripts/run-mcp-server-sdk-differential.sh --slice jsonrpc-protocol",
+  "cycle64Slice": "api/mcp-protocol \u2014 cycle64 skip; streamable-http re-verify via bash scripts/run-mcp-server-sdk-differential.sh --slice streamable-http",
+  "cycle63": {
+    "boundedSlice": "api/mcp-protocol",
+    "status": "harness_metadata_only",
+    "reauditRef": "rej-010",
+    "verificationRef": "verification/mcp-server-sdk-cycle63-mcp-protocol-rust-impl.json",
+    "harnessPath": "scripts/run-mcp-server-sdk-differential.sh --slice jsonrpc-protocol",
+    "tsOnlyAction": "defer",
+    "nextTsOnlyCandidate": "api/mcp-protocol",
+    "skipReason": "canonical src/protocol/mcp.ts not on disk at SylphxAI/mcp-server-sdk \u2014 bounded differential deferred",
+    "notes": "cycle63 rej-010: api/mcp-protocol ts_only harness metadata only. rust_impl ONLY \u2014 proof.status missing until differential_green at bound SHAs."
+  },
+  "cycle64": {
+    "boundedSlice": "api/mcp-protocol",
+    "status": "harness_metadata_only",
+    "reauditRef": "rej-010",
+    "verificationRef": "verification/mcp-server-sdk-cycle64-mcp-protocol-skip.json",
+    "tsOnlyAction": "skip",
+    "skipReason": "api/mcp-protocol pending canonical src/protocol/mcp.ts sync",
+    "harnessPath": "scripts/run-mcp-server-sdk-differential.sh --slice streamable-http",
+    "reverifySlice": "streamable-http",
+    "notes": "cycle64 rej-010: api/mcp-protocol ts_only deferred \u2014 harness metadata only."
+  }
+}
