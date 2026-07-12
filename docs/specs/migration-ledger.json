@@ -150,8 +150,15 @@
 			"id": "api/pagination",
 			"domain": "sdk-api",
 			"weight": 2,
-			"state": "ts_only",
-			"tsSurface": "src/pagination/"
+			"state": "rust_impl",
+			"tsSurface": "src/pagination/",
+			"rustSurface": "crates/mcp-pagination/src/lib.rs; crates/mcp-pagination/fixtures/pagination_golden.json",
+			"parityTest": "cargo test -p mcp-pagination",
+			"proof": {
+				"status": "missing",
+				"staleReason": "BW1 pure bulk: cursor paginate unit+golden on disk — awaiting SHA-bound differential vs TS oracle"
+			},
+			"notes": "BW1 pure residual: cursor encode/decode + paginate. TS pagination remains consumer API surface. No authority_rust/ts_deleted."
 		},
 		{
 			"id": "api/jsonrpc-protocol",
@@ -185,8 +192,15 @@
 			"id": "api/mcp-protocol",
 			"domain": "protocol",
 			"weight": 4,
-			"state": "ts_only",
-			"tsSurface": "src/protocol/mcp.ts"
+			"state": "rust_impl",
+			"tsSurface": "src/protocol/mcp.ts",
+			"rustSurface": "crates/mcp-protocol/src/lib.rs",
+			"parityTest": "cargo test -p mcp-protocol",
+			"proof": {
+				"status": "missing",
+				"staleReason": "BW1 pure bulk: version negotiate + content/tool list helpers on disk — full MCP method dispatch + differential still missing"
+			},
+			"notes": "BW1 pure residual: protocol version set/negotiate, Content/Tool types, tools_list_result. Handler dispatch remains TS. No authority_rust/ts_deleted."
 		},
 		{
 			"id": "api/http-auth",
@@ -214,15 +228,21 @@
 	],
 	"summary": {
 		"total": 16,
-		"ts_only": 13,
+		"ts_only": 11,
 		"contracted": 0,
-		"rust_impl": 3,
+		"rust_impl": 5,
 		"parity_proven": 0,
 		"authority_rust": 0,
 		"ts_deleted": 0,
 		"completion_progress": 0.0,
 		"authority_progress": 0.0,
 		"weighted_progress": 0.0,
+		"proof_missing": 5,
+		"bw1_delta": {
+			"rust_impl_verified": 2,
+			"slices": ["api/pagination", "api/mcp-protocol"],
+			"notes": "BW1 pure bulk offline — proof missing; no authority_rust/ts_deleted/parity_proven"
+		},
 		"cycle50_delta": {
 			"rust_impl_verified": 1,
 			"slice": "streamable-http",

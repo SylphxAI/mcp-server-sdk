@@ -1,0 +1,32 @@
+{
+  "schema": "mcp-pagination-golden/v1",
+  "source": "src/pagination/index.ts",
+  "cases": [
+    {
+      "name": "first_page_default",
+      "itemCount": 120,
+      "cursor": null,
+      "options": { "defaultPageSize": 50, "maxPageSize": 100 },
+      "expectedLen": 50,
+      "expectedFirst": 0,
+      "hasNext": true
+    },
+    {
+      "name": "small_list_no_next",
+      "itemCount": 10,
+      "cursor": null,
+      "options": { "defaultPageSize": 50, "maxPageSize": 100 },
+      "expectedLen": 10,
+      "expectedFirst": 0,
+      "hasNext": false
+    },
+    {
+      "name": "empty",
+      "itemCount": 0,
+      "cursor": null,
+      "options": { "defaultPageSize": 50, "maxPageSize": 100 },
+      "expectedLen": 0,
+      "hasNext": false
+    }
+  ]
+}
