@@ -1,0 +1,12 @@
+{
+  "schema": "honesty-map/v1",
+  "receipt": "FLEET-ENTERPRISE-WAVE6",
+  "at": "2026-07-13T01:40:28Z",
+  "repo": "SylphxAI/mcp-server-sdk",
+  "liveHeadHonesty": "origin/main still has no crates/ \u2014 offline pure cluster only; never claim main authority from offline tip",
+  "notClaims": [
+    "authority_rust",
+    "ts_deleted",
+    "main_has_crates"
+  ]
+}
