@@ -64,6 +64,22 @@ pub enum Content {
         #[serde(skip_serializing_if = "Option::is_none")]
         annotations: Option<ContentAnnotations>,
     },
+    Resource {
+        resource: EmbeddedResource,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        annotations: Option<ContentAnnotations>,
+    },
+}
+
+/// Embedded resource payload (parity with MCP ResourceContents text form).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EmbeddedResource {
+    pub uri: String,
+    #[serde(rename = "mimeType", skip_serializing_if = "Option::is_none")]
+    pub mime_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
 }
 
 impl Content {
@@ -103,7 +119,8 @@ impl Content {
         match &mut self {
             Self::Text { annotations: a, .. }
             | Self::Image { annotations: a, .. }
-            | Self::Audio { annotations: a, .. } => *a = Some(annotations),
+            | Self::Audio { annotations: a, .. }
+            | Self::Resource { annotations: a, .. } => *a = Some(annotations),
         }
         self
     }
@@ -258,6 +275,38 @@ pub fn cancelled(request_id: serde_json::Value, reason: Option<String>) -> Notif
         reason,
     }
 }
+
+/// Log notification (parity with src/notifications/helpers.ts `log`).
+#[must_use]
+pub fn log_notification(
+    level: impl Into<String>,
+    data: serde_json::Value,
+    logger: Option<String>,
+) -> Notification {
+    Notification::Log {
+        level: level.into(),
+        logger,
+        data,
+    }
+}
+
+/// Embedded resource content (parity with builders `embedded`).
+#[must_use]
+pub fn embedded_resource_content(
+    uri: impl Into<String>,
+    mime_type: Option<String>,
+    text: Option<String>,
+) -> Content {
+    Content::Resource {
+        resource: EmbeddedResource {
+            uri: uri.into(),
+            mime_type,
+            text,
+        },
+        annotations: None,
+    }
+}
+
 
 // ============================================================================
 // MCP method name constants (parity with src/protocol/mcp.ts Method)
@@ -547,5 +596,17 @@ mod tests {
         assert_eq!(body["messages"].as_array().unwrap().len(), 2);
         assert_eq!(methods::TOOLS_CALL, "tools/call");
         assert_eq!(methods::INITIALIZE, "initialize");
+    }
+
+    #[test]
+    fn wave5_log_and_embedded() {
+        let n = log_notification("info", serde_json::json!({"ok": true}), Some("app".into()));
+        assert!(matches!(n, Notification::Log { .. }));
+        let c = embedded_resource_content("file:///x", Some("text/plain".into()), Some("hi".into()));
+        assert!(matches!(c, Content::Resource { .. }));
+        if let Content::Resource { resource, .. } = c {
+            assert_eq!(resource.uri, "file:///x");
+            assert_eq!(resource.text.as_deref(), Some("hi"));
+        }
     }
 }
