@@ -79,6 +79,34 @@ impl Content {
     pub fn is_text(&self) -> bool {
         matches!(self, Self::Text { .. })
     }
+
+    #[must_use]
+    pub fn image(data: impl Into<String>, mime_type: impl Into<String>) -> Self {
+        Self::Image {
+            data: data.into(),
+            mime_type: mime_type.into(),
+            annotations: None,
+        }
+    }
+
+    #[must_use]
+    pub fn audio(data: impl Into<String>, mime_type: impl Into<String>) -> Self {
+        Self::Audio {
+            data: data.into(),
+            mime_type: mime_type.into(),
+            annotations: None,
+        }
+    }
+
+    #[must_use]
+    pub fn with_annotations(mut self, annotations: ContentAnnotations) -> Self {
+        match &mut self {
+            Self::Text { annotations: a, .. }
+            | Self::Image { annotations: a, .. }
+            | Self::Audio { annotations: a, .. } => *a = Some(annotations),
+        }
+        self
+    }
 }
 
 /// Tool annotations hints (pure data).
@@ -123,6 +151,112 @@ pub fn tools_list_result(tools: &[Tool], next_cursor: Option<String>) -> serde_j
         map.insert("nextCursor".into(), serde_json::Value::String(c));
     }
     serde_json::Value::Object(map)
+}
+
+
+/// tools/call error result envelope (parity with `toolError`).
+#[must_use]
+pub fn tool_error(message: impl Into<String>) -> serde_json::Value {
+    serde_json::json!({
+        "content": [{ "type": "text", "text": message.into() }],
+        "isError": true,
+    })
+}
+
+/// tools/call success with single text content.
+#[must_use]
+pub fn tool_text_result(message: impl Into<String>, is_error: bool) -> serde_json::Value {
+    serde_json::json!({
+        "content": [{ "type": "text", "text": message.into() }],
+        "isError": is_error,
+    })
+}
+
+/// JSON pretty text content (parity with builders `json`).
+#[must_use]
+pub fn json_text_content(value: &serde_json::Value) -> Content {
+    Content::text(serde_json::to_string_pretty(value).unwrap_or_else(|_| "{}".into()))
+}
+
+/// Notification constructors (parity with `src/notifications/helpers.ts`) — pure data only.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum Notification {
+    #[serde(rename = "progress")]
+    Progress {
+        #[serde(rename = "progressToken")]
+        progress_token: serde_json::Value,
+        progress: f64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        total: Option<f64>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        message: Option<String>,
+    },
+    #[serde(rename = "log")]
+    Log {
+        level: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        logger: Option<String>,
+        data: serde_json::Value,
+    },
+    #[serde(rename = "resources/list_changed")]
+    ResourcesListChanged {},
+    #[serde(rename = "tools/list_changed")]
+    ToolsListChanged {},
+    #[serde(rename = "prompts/list_changed")]
+    PromptsListChanged {},
+    #[serde(rename = "resource/updated")]
+    ResourceUpdated { uri: String },
+    #[serde(rename = "cancelled")]
+    Cancelled {
+        #[serde(rename = "requestId")]
+        request_id: serde_json::Value,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        reason: Option<String>,
+    },
+}
+
+#[must_use]
+pub fn progress_notification(
+    progress_token: serde_json::Value,
+    current: f64,
+    total: Option<f64>,
+    message: Option<String>,
+) -> Notification {
+    Notification::Progress {
+        progress_token,
+        progress: current,
+        total,
+        message,
+    }
+}
+
+#[must_use]
+pub fn tools_list_changed() -> Notification {
+    Notification::ToolsListChanged {}
+}
+
+#[must_use]
+pub fn resources_list_changed() -> Notification {
+    Notification::ResourcesListChanged {}
+}
+
+#[must_use]
+pub fn prompts_list_changed() -> Notification {
+    Notification::PromptsListChanged {}
+}
+
+#[must_use]
+pub fn resource_updated(uri: impl Into<String>) -> Notification {
+    Notification::ResourceUpdated { uri: uri.into() }
+}
+
+#[must_use]
+pub fn cancelled(request_id: serde_json::Value, reason: Option<String>) -> Notification {
+    Notification::Cancelled {
+        request_id,
+        reason,
+    }
 }
 
 #[cfg(test)]
@@ -171,4 +305,28 @@ mod tests {
         assert_eq!(body["tools"][0]["name"], "ping");
         assert_eq!(body["nextCursor"], "abc");
     }
+
+    #[test]
+    fn content_constructors_and_tool_error() {
+        let t = Content::text("hi");
+        assert!(t.is_text());
+        let img = Content::image("AAAA", "image/png");
+        assert!(matches!(img, Content::Image { .. }));
+        let err = tool_error("boom");
+        assert_eq!(err["isError"], true);
+        assert_eq!(err["content"][0]["text"], "boom");
+        let jt = json_text_content(&serde_json::json!({"a": 1}));
+        assert!(jt.is_text());
+    }
+
+    #[test]
+    fn notification_helpers() {
+        let n = tools_list_changed();
+        assert!(matches!(n, Notification::ToolsListChanged {}));
+        let p = progress_notification(serde_json::json!(1), 0.5, Some(1.0), None);
+        assert!(matches!(p, Notification::Progress { .. }));
+        let c = cancelled(serde_json::json!("id-1"), Some("stop".into()));
+        assert!(matches!(c, Notification::Cancelled { .. }));
+    }
+
 }
