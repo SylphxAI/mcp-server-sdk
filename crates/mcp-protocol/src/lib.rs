@@ -173,6 +173,53 @@ pub fn tools_list_result(tools: &[Tool], next_cursor: Option<String>) -> serde_j
 
 /// tools/call error result envelope (parity with `toolError`).
 #[must_use]
+
+/// resources/list result envelope (cursor-aware).
+#[must_use]
+pub fn resources_list_result(
+    resources: &[serde_json::Value],
+    next_cursor: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert(
+        "resources".into(),
+        serde_json::Value::Array(resources.to_vec()),
+    );
+    if let Some(c) = next_cursor {
+        map.insert("nextCursor".into(), serde_json::Value::String(c));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// prompts/list result envelope (cursor-aware).
+#[must_use]
+pub fn prompts_list_result(
+    prompts: &[serde_json::Value],
+    next_cursor: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert(
+        "prompts".into(),
+        serde_json::Value::Array(prompts.to_vec()),
+    );
+    if let Some(c) = next_cursor {
+        map.insert("nextCursor".into(), serde_json::Value::String(c));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Empty tools/call success (no content items).
+#[must_use]
+pub fn empty_tool_result() -> serde_json::Value {
+    tool_content_result(&[], false)
+}
+
+/// Whether a tools/call result body marks `isError: true`.
+#[must_use]
+pub fn is_tool_error_result(body: &serde_json::Value) -> bool {
+    body.get("isError").and_then(|v| v.as_bool()).unwrap_or(false)
+}
+
 pub fn tool_error(message: impl Into<String>) -> serde_json::Value {
     serde_json::json!({
         "content": [{ "type": "text", "text": message.into() }],
@@ -719,5 +766,24 @@ mod tests {
             Content::Text { text, .. } => assert!(text.contains("\"a\"")),
             _ => panic!("expected text"),
         }
+    }
+
+    #[test]
+    fn wave8_list_envelopes_and_error_flag() {
+        // FLEET-ENTERPRISE-WAVE8
+        let rr = resources_list_result(
+            &[serde_json::json!({"uri": "file:///a", "name": "a"})],
+            Some("c1".into()),
+        );
+        assert_eq!(rr["resources"].as_array().unwrap().len(), 1);
+        assert_eq!(rr["nextCursor"], "c1");
+        let pr = prompts_list_result(&[], None);
+        assert_eq!(pr["prompts"].as_array().unwrap().len(), 0);
+        assert!(pr.get("nextCursor").is_none());
+        let empty = empty_tool_result();
+        assert_eq!(empty["isError"], false);
+        assert_eq!(empty["content"].as_array().unwrap().len(), 0);
+        assert!(!is_tool_error_result(&empty));
+        assert!(is_tool_error_result(&tool_error("boom")));
     }
 }

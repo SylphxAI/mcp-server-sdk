@@ -1,0 +1,9 @@
+{
+  "wave": "FLEET-ENTERPRISE-WAVE8",
+  "repo": "SylphxAI/mcp-server-sdk",
+  "defaultBranch": "main",
+  "liveHeadHonesty": "origin/main still has no crates/ — offline pure cluster only; never claim main authority from offline tip",
+  "pureDeepened": ["resources_list_result", "prompts_list_result", "empty_tool_result", "is_tool_error_result"],
+  "product_effect_live": false,
+  "authority_rust": false
+}
