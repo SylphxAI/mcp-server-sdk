@@ -356,6 +356,34 @@ pub fn tool_content_result(content: &[Content], is_error: bool) -> serde_json::V
     })
 }
 
+/// Create image content (base64) — parity: builders/tool.ts#image.
+#[must_use]
+pub fn image_content(data: impl Into<String>, mime_type: impl Into<String>) -> Content {
+    Content::image(data, mime_type)
+}
+
+/// Create audio content (base64) — parity: builders/tool.ts#audio.
+#[must_use]
+pub fn audio_content(data: impl Into<String>, mime_type: impl Into<String>) -> Content {
+    Content::audio(data, mime_type)
+}
+
+/// Prompt message with arbitrary content (parity: builders/prompt.ts#message).
+#[must_use]
+pub fn prompt_message(role: impl Into<String>, content: Content) -> PromptMessage {
+    PromptMessage {
+        role: role.into(),
+        content,
+    }
+}
+
+/// Pretty-printed JSON as text content (parity: builders/tool.ts#json).
+#[must_use]
+pub fn json_text_pretty(value: &serde_json::Value) -> Content {
+    Content::text(serde_json::to_string_pretty(value).unwrap_or_else(|_| "null".into()))
+}
+
+
 // ============================================================================
 // MCP method name constants (parity with src/protocol/mcp.ts Method)
 // ============================================================================
@@ -677,4 +705,19 @@ mod tests {
         assert_eq!(body["content"].as_array().unwrap().len(), 3);
     }
 
+    #[test]
+    fn wave7_media_prompt_json() {
+        // FLEET-ENTERPRISE-WAVE7
+        let img = image_content("AAAA", "image/png");
+        assert!(matches!(img, Content::Image { .. }));
+        let aud = audio_content("BBBB", "audio/wav");
+        assert!(matches!(aud, Content::Audio { .. }));
+        let msg = prompt_message("user", Content::text("hi"));
+        assert_eq!(msg.role, "user");
+        let pretty = json_text_pretty(&serde_json::json!({"a": 1}));
+        match pretty {
+            Content::Text { text, .. } => assert!(text.contains("\"a\"")),
+            _ => panic!("expected text"),
+        }
+    }
 }
