@@ -308,6 +308,54 @@ pub fn embedded_resource_content(
 }
 
 
+
+/// resources/read result envelope from one or more embedded resources.
+#[must_use]
+pub fn resources_read_result(items: &[EmbeddedResource]) -> serde_json::Value {
+    serde_json::json!({
+        "contents": items,
+    })
+}
+
+/// Text resource contents (parity with builders `resourceText`).
+#[must_use]
+pub fn resource_text(
+    uri: impl Into<String>,
+    text: impl Into<String>,
+    mime_type: Option<String>,
+) -> EmbeddedResource {
+    EmbeddedResource {
+        uri: uri.into(),
+        mime_type: mime_type.or_else(|| Some("text/plain".into())),
+        text: Some(text.into()),
+    }
+}
+
+/// Blob resource contents — blob stored as text field for pure envelope (no binary I/O).
+#[must_use]
+pub fn resource_blob(
+    uri: impl Into<String>,
+    blob_b64: impl Into<String>,
+    mime_type: impl Into<String>,
+) -> serde_json::Value {
+    serde_json::json!({
+        "contents": [{
+            "uri": uri.into(),
+            "mimeType": mime_type.into(),
+            "blob": blob_b64.into(),
+        }]
+    })
+}
+
+/// tools/call multi-content result envelope.
+#[must_use]
+pub fn tool_content_result(content: &[Content], is_error: bool) -> serde_json::Value {
+    serde_json::json!({
+        "content": content,
+        "isError": is_error,
+    })
+}
+
 // ============================================================================
 // MCP method name constants (parity with src/protocol/mcp.ts Method)
 // ============================================================================
@@ -609,4 +657,24 @@ mod tests {
             assert_eq!(resource.text.as_deref(), Some("hi"));
         }
     }
+    #[test]
+    fn wave6_resource_and_multi_content() {
+        let rt = resource_text("file:///a", "hello", None);
+        assert_eq!(rt.uri, "file:///a");
+        assert_eq!(rt.text.as_deref(), Some("hello"));
+        assert_eq!(rt.mime_type.as_deref(), Some("text/plain"));
+        let rr = resources_read_result(&[rt]);
+        assert_eq!(rr["contents"].as_array().unwrap().len(), 1);
+        let blob = resource_blob("file:///b", "AAAA", "image/png");
+        assert_eq!(blob["contents"][0]["blob"], "AAAA");
+        let contents = [
+            Content::text("t"),
+            Content::image("AA", "image/png"),
+            Content::audio("BB", "audio/wav"),
+        ];
+        let body = tool_content_result(&contents, false);
+        assert_eq!(body["isError"], false);
+        assert_eq!(body["content"].as_array().unwrap().len(), 3);
+    }
+
 }
