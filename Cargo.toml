@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "crates/mcp-pagination",
   "crates/mcp-protocol",
+  "crates/mcp-jsonrpc",
 ]
 
 [workspace.package]
