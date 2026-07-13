@@ -786,4 +786,42 @@ mod tests {
         assert!(!is_tool_error_result(&empty));
         assert!(is_tool_error_result(&tool_error("boom")));
     }
+
+
+    #[test]
+    fn bulk_template_multi_segment_and_reject_extra() {
+        assert!(!matches_template("/users/{id}/posts/{pid}", "/users/1/posts/2/extra"));
+        let p = extract_params("/users/{id}/posts/{pid}", "/users/1/posts/2").expect("params");
+        assert_eq!(p.get("id").map(String::as_str), Some("1"));
+        assert_eq!(p.get("pid").map(String::as_str), Some("2"));
+        assert!(extract_params("/users/{id}", "/users/a/b").is_none());
+        assert!(extract_params("/users/{id}", "/users/").is_none());
+    }
+
+    #[test]
+    fn bulk_interpolate_missing_and_valid() {
+        let mut args = std::collections::BTreeMap::new();
+        args.insert("name".into(), "Ada".into());
+        assert_eq!(interpolate("hi {{name}}", &args), "hi Ada");
+        assert_eq!(interpolate("hi {{missing}}", &args), "hi {{missing}}");
+    }
+
+    #[test]
+    fn bulk_notifications_cancelled_and_progress() {
+        let n = cancelled(serde_json::json!(1), Some("stop".into()));
+        assert!(matches!(n, Notification::Cancelled { .. }));
+        let p = progress_notification(serde_json::json!("t1"), 1.0, Some(10.0), Some("working".into()));
+        assert!(matches!(p, Notification::Progress { .. }));
+        assert!(!is_tool_error_result(&empty_tool_result()));
+        assert!(is_tool_error_result(&tool_text_result("x", true)));
+        assert!(!is_tool_error_result(&tool_text_result("x", false)));
+    }
+
+    #[test]
+    fn bulk_list_results_without_cursor_omit_next() {
+        let tools = tools_list_result(&[], None);
+        assert!(tools.get("nextCursor").is_none() || tools.get("nextCursor").unwrap().is_null());
+        let tools2 = tools_list_result(&[], Some("c".into()));
+        assert_eq!(tools2.get("nextCursor").and_then(|v| v.as_str()), Some("c"));
+    }
 }

@@ -279,4 +279,34 @@ mod tests {
         assert_eq!(error_code::INVALID_PARAMS, -32602);
         assert_eq!(error_code::INTERNAL_ERROR, -32603);
     }
+
+
+    #[test]
+    fn bulk_parse_rejects_array_and_missing_fields() {
+        match parse_message("[]") {
+            ParseResult::Err(e) => assert!(e.to_lowercase().contains("object") || e.contains("object") || !e.is_empty()),
+            ParseResult::Ok(_) => panic!("expected err"),
+        }
+        match parse_message(r#"{"jsonrpc":"2.0"}"#) {
+            ParseResult::Err(_) => {}
+            ParseResult::Ok(_) => panic!("ambiguous message should fail"),
+        }
+        let req = request(RequestId::Number(7), "tools/list", Some(serde_json::json!({})));
+        let msg = JsonRpcMessage::Request(req);
+        let s = stringify(&msg);
+        assert!(s.contains("tools/list"));
+        assert!(is_request(&msg));
+        assert!(!is_response(&msg));
+    }
+
+    #[test]
+    fn bulk_notification_and_error_constructors() {
+        let n = notification("notifications/initialized", None);
+        let msg = JsonRpcMessage::Notification(n);
+        assert!(is_notification(&msg));
+        let err = error_response(Some(RequestId::Number(1)), error_code::METHOD_NOT_FOUND, "nope", None);
+        let msg = JsonRpcMessage::Error(err);
+        assert!(is_error(&msg));
+        assert!(!is_success(&msg));
+    }
 }

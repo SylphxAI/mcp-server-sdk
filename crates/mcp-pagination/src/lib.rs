@@ -157,4 +157,26 @@ mod tests {
         );
         assert_eq!(page.items.len(), 100);
     }
+
+
+    #[test]
+    fn bulk_paginate_empty_and_offset_past_end() {
+        let items: Vec<i32> = vec![];
+        let page = paginate(&items, None, PaginationOptions::default());
+        assert!(page.items.is_empty());
+        assert!(page.next_cursor.is_none());
+        let items = vec![1, 2, 3];
+        let cursor = encode_cursor(&CursorData { offset: 99, page_size: 2 });
+        let page = paginate(&items, Some(&cursor), PaginationOptions::default());
+        assert!(page.items.is_empty());
+        assert!(page.next_cursor.is_none());
+    }
+
+    #[test]
+    fn bulk_decode_cursor_rejects_garbage() {
+        assert!(decode_cursor("!!!not-base64!!!").is_none());
+        assert!(decode_cursor("").is_none());
+        let good = encode_cursor(&CursorData { offset: 0, page_size: 10 });
+        assert!(decode_cursor(&good).is_some());
+    }
 }
