@@ -1,0 +1,18 @@
+{
+	"request": {
+		"method": "GET",
+		"path": "/mcp/health",
+		"headers": {}
+	},
+	"response": {
+		"status": 200,
+		"headers": {
+			"content-type": "application/json"
+		},
+		"body": {
+			"status": "ok",
+			"server": "contract-fixture-server",
+			"version": "0.0.0-contract"
+		}
+	}
+}

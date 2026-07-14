@@ -1,0 +1,36 @@
+{
+	"request": {
+		"method": "POST",
+		"path": "/mcp",
+		"headers": {
+			"Content-Type": "application/json"
+		},
+		"body": {
+			"jsonrpc": "2.0",
+			"id": 1,
+			"method": "initialize",
+			"params": {
+				"protocolVersion": "2025-03-26",
+				"capabilities": {},
+				"clientInfo": { "name": "contract-test", "version": "1.0.0" }
+			}
+		}
+	},
+	"auth": {
+		"apiKey": "contract-test-key"
+	},
+	"response": {
+		"status": 401,
+		"headers": {
+			"www-authenticate": "Bearer realm=\"mcp\", charset=\"UTF-8\""
+		},
+		"body": {
+			"jsonrpc": "2.0",
+			"id": null,
+			"error": {
+				"code": -32001,
+				"message": "Unauthorized"
+			}
+		}
+	}
+}

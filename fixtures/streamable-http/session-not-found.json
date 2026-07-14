@@ -1,0 +1,26 @@
+{
+	"request": {
+		"method": "POST",
+		"path": "/mcp",
+		"headers": {
+			"Content-Type": "application/json",
+			"Mcp-Session-Id": "00000000-0000-4000-8000-000000000000"
+		},
+		"body": {
+			"jsonrpc": "2.0",
+			"id": 1,
+			"method": "initialize",
+			"params": {
+				"protocolVersion": "2025-03-26",
+				"capabilities": {},
+				"clientInfo": { "name": "contract-test", "version": "1.0.0" }
+			}
+		}
+	},
+	"response": {
+		"status": 404,
+		"body": {
+			"error": "Session not found"
+		}
+	}
+}
