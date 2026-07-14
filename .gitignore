@@ -8,3 +8,4 @@ coverage/
 results/
 
 .groundatlas-pilot/
+target/

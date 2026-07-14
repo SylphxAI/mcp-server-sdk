@@ -1,0 +1,20 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/mcp-pagination",
+  "crates/mcp-protocol",
+  "crates/mcp-jsonrpc",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+publish = false
+version = "0.1.0"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+unwrap_used = "deny"
+expect_used = "warn"

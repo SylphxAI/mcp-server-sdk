@@ -1,0 +1,8 @@
+{
+  "wave": "FLEET-ENTERPRISE-WAVE5",
+  "repo": "SylphxAI/mcp-server-sdk",
+  "authority_rust": false,
+  "product_effect_live": false,
+  "liveHeadHonesty": "origin/main still has no crates/ — offline pure cluster only",
+  "ports": ["log_notification", "embedded_resource_content", "Content::Resource", "EmbeddedResource"]
+}
