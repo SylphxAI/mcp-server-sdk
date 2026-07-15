@@ -3000,6 +3000,93 @@ pub fn is_core_handler_method(method: &str) -> bool {
     )
 }
 
+// ── WAVE25 pure residual dens: progress/roots/sampling kernels ──────────────
+// Dual-oracle of notifications/helpers + roots list + sampling param gates.
+// NO authority_rust / package_main_rust / prod authority invent.
+
+/// Dual-oracle of progress notification params shape checks.
+#[must_use]
+pub fn progress_params_valid(progress: f64, total: Option<f64>) -> bool {
+    if !progress.is_finite() || progress < 0.0 {
+        return false;
+    }
+    if let Some(t) = total {
+        if !t.is_finite() || t < 0.0 || progress > t {
+            return false;
+        }
+    }
+    true
+}
+
+/// Dual-oracle of progress fraction (None when total missing/zero).
+#[must_use]
+pub fn progress_fraction(progress: f64, total: Option<f64>) -> Option<f64> {
+    let t = total.filter(|v| v.is_finite() && *v > 0.0)?;
+    if !progress.is_finite() || progress < 0.0 {
+        return None;
+    }
+    Some((progress / t).clamp(0.0, 1.0))
+}
+
+/// Dual-oracle of roots/list empty result body.
+#[must_use]
+pub fn roots_list_is_empty(result: &serde_json::Value) -> bool {
+    result
+        .get("roots")
+        .and_then(|v| v.as_array())
+        .map(|a| a.is_empty())
+        .unwrap_or(true)
+}
+
+/// Count roots entries.
+#[must_use]
+pub fn roots_list_count(result: &serde_json::Value) -> usize {
+    result
+        .get("roots")
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0)
+}
+
+/// Extract root URI at index.
+#[must_use]
+pub fn root_uri_at(result: &serde_json::Value, index: usize) -> Option<&str> {
+    result
+        .get("roots")
+        .and_then(|v| v.as_array())
+        .and_then(|a| a.get(index))
+        .and_then(|r| r.get("uri"))
+        .and_then(|u| u.as_str())
+}
+
+/// Sampling maxTokens gate (must be positive).
+#[must_use]
+pub fn sampling_max_tokens_valid(max_tokens: i64) -> bool {
+    max_tokens > 0
+}
+
+/// Dual-oracle of sampling temperature clamp policy (None = omit).
+#[must_use]
+pub fn sampling_temperature_ok(temp: Option<f64>) -> bool {
+    match temp {
+        None => true,
+        Some(t) => t.is_finite() && (0.0..=2.0).contains(&t),
+    }
+}
+
+/// Whether sampling createMessage may run (client caps + request fn).
+#[must_use]
+pub fn sampling_client_available(client_declared: bool, request_fn_present: bool) -> bool {
+    client_declared && request_fn_present
+}
+
+/// Whether elicitation create may run.
+#[must_use]
+pub fn elicitation_client_available(client_declared: bool, request_fn_present: bool) -> bool {
+    client_declared && request_fn_present
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -5176,5 +5263,45 @@ mod tests {
         assert!(is_core_handler_method(methods::INITIALIZE));
         assert!(is_core_handler_method(methods::COMPLETION_COMPLETE));
         assert!(!is_core_handler_method("no/such"));
+    }
+
+    #[test]
+    fn wave25_progress_roots_sampling_residual() {
+        assert!(progress_params_valid(0.0, None));
+        assert!(progress_params_valid(5.0, Some(10.0)));
+        assert!(!progress_params_valid(-1.0, None));
+        assert!(!progress_params_valid(11.0, Some(10.0)));
+        assert_eq!(progress_fraction(5.0, Some(10.0)), Some(0.5));
+        assert_eq!(progress_fraction(5.0, None), None);
+
+        let empty = serde_json::json!({"roots": []});
+        assert!(roots_list_is_empty(&empty));
+        assert_eq!(roots_list_count(&empty), 0);
+        let roots = serde_json::json!({"roots": [{"uri": "file:///a"}, {"uri": "file:///b"}]});
+        assert!(!roots_list_is_empty(&roots));
+        assert_eq!(roots_list_count(&roots), 2);
+        assert_eq!(root_uri_at(&roots, 0), Some("file:///a"));
+
+        assert!(sampling_max_tokens_valid(1));
+        assert!(!sampling_max_tokens_valid(0));
+        assert!(sampling_temperature_ok(None));
+        assert!(sampling_temperature_ok(Some(0.7)));
+        assert!(!sampling_temperature_ok(Some(3.0)));
+
+        let params = progress_notification_params(
+            serde_json::json!("tok"),
+            3.0,
+            Some(10.0),
+            Some("half".into()),
+        );
+        assert_eq!(params["progressToken"], "tok");
+        assert_eq!(params["progress"], 3.0);
+        assert_eq!(params["total"], 10.0);
+        assert_eq!(params["message"], "half");
+
+        assert!(sampling_client_available(true, true));
+        assert!(!sampling_client_available(true, false));
+        assert!(elicitation_client_available(true, true));
+        assert!(!elicitation_client_available(false, true));
     }
 }
