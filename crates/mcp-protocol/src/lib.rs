@@ -2903,6 +2903,103 @@ pub fn logging_set_level_accepts(level: &str) -> bool {
     is_valid_log_level(level)
 }
 
+/// Dual-oracle of `throw new Error(\`Unknown prompt: ${params.name}\`)`.
+#[must_use]
+pub fn unknown_prompt_error_message(name: &str) -> String {
+    format!("Unknown prompt: {name}")
+}
+
+/// Dual-oracle of unknown resource error message shape.
+#[must_use]
+pub fn unknown_resource_error_message(uri: &str) -> String {
+    format!("Unknown resource: {uri}")
+}
+
+/// Dual-oracle of `params.arguments ?? {}` for prompts/get.
+#[must_use]
+pub fn prompt_arguments_from_get_params(params: &serde_json::Value) -> serde_json::Value {
+    params
+        .get("arguments")
+        .filter(|v| v.is_object())
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}))
+}
+
+/// Dual-oracle of completion ref type branch (`ref/prompt`).
+#[must_use]
+pub fn completion_ref_is_prompt(params: &serde_json::Value) -> bool {
+    completion_ref_type(params) == Some("ref/prompt")
+}
+
+/// Dual-oracle of completion ref type branch (`ref/resource`).
+#[must_use]
+pub fn completion_ref_is_resource(params: &serde_json::Value) -> bool {
+    completion_ref_type(params) == Some("ref/resource")
+}
+
+/// Dual-oracle of handler notification switch: initialized vs ignore-other.
+#[must_use]
+pub fn notification_should_mark_initialized(method: &str) -> bool {
+    is_initialized_notification_method(method)
+}
+
+/// Dual-oracle of `dispatch` returning `{ type: "none" }` for notification/other.
+#[must_use]
+pub fn dispatch_returns_none(is_notification: bool, is_request: bool) -> bool {
+    !matches!(
+        dispatch_message_kind(is_notification, is_request),
+        DispatchMessageKind::Request
+    )
+}
+
+/// Dual-oracle of success response path (request + handler ok).
+#[must_use]
+pub fn dispatch_success_result_present(is_request: bool, handler_ok: bool) -> bool {
+    is_request && handler_ok
+}
+
+/// Dual-oracle of logging/setLevel body after level assign.
+#[must_use]
+pub fn logging_set_level_result() -> serde_json::Value {
+    empty_object_result()
+}
+
+/// Dual-oracle of resources/subscribe|unsubscribe result body.
+#[must_use]
+pub fn subscription_mutation_result() -> serde_json::Value {
+    empty_object_result()
+}
+
+/// Dual-oracle of tools/call `params.arguments ?? {}` coalesce.
+#[must_use]
+pub fn tool_arguments_or_empty(params: &serde_json::Value) -> serde_json::Value {
+    tool_arguments_from_call_params(params)
+        .filter(|v| v.is_object())
+        .cloned()
+        .unwrap_or_else(|| serde_json::json!({}))
+}
+
+/// Dual-oracle of handleRequest switch membership for core methods.
+#[must_use]
+pub fn is_core_handler_method(method: &str) -> bool {
+    matches!(
+        method,
+        methods::INITIALIZE
+            | methods::PING
+            | methods::TOOLS_LIST
+            | methods::TOOLS_CALL
+            | methods::RESOURCES_LIST
+            | methods::RESOURCES_TEMPLATES_LIST
+            | methods::RESOURCES_READ
+            | methods::RESOURCES_SUBSCRIBE
+            | methods::RESOURCES_UNSUBSCRIBE
+            | methods::PROMPTS_LIST
+            | methods::PROMPTS_GET
+            | methods::LOGGING_SET_LEVEL
+            | methods::COMPLETION_COMPLETE
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -5020,5 +5117,64 @@ mod tests {
         );
         assert!(logging_set_level_accepts("info"));
         assert!(!logging_set_level_accepts("verbose"));
+    }
+
+    #[test]
+    fn wave24_handler_prompt_args_dispatch_routing() {
+        assert_eq!(
+            unknown_prompt_error_message("greet"),
+            "Unknown prompt: greet"
+        );
+        assert_eq!(
+            unknown_resource_error_message("file:///a"),
+            "Unknown resource: file:///a"
+        );
+        assert_eq!(
+            prompt_arguments_from_get_params(&serde_json::json!({
+                "name": "g",
+                "arguments": {"x": 1}
+            })),
+            serde_json::json!({"x": 1})
+        );
+        assert_eq!(
+            prompt_arguments_from_get_params(&serde_json::json!({"name": "g"})),
+            serde_json::json!({})
+        );
+        let prompt_params = serde_json::json!({
+            "ref": {"type": "ref/prompt", "name": "greet"},
+            "argument": {"name": "who", "value": "Ad"}
+        });
+        let resource_params = serde_json::json!({
+            "ref": {"type": "ref/resource", "uri": "file:///{id}"},
+            "argument": {"name": "id", "value": "a"}
+        });
+        assert!(completion_ref_is_prompt(&prompt_params));
+        assert!(!completion_ref_is_resource(&prompt_params));
+        assert!(completion_ref_is_resource(&resource_params));
+        assert!(!completion_ref_is_prompt(&resource_params));
+        assert!(notification_should_mark_initialized(methods::INITIALIZED));
+        assert!(!notification_should_mark_initialized(methods::TOOLS_CALL));
+        assert!(dispatch_returns_none(true, false));
+        assert!(dispatch_returns_none(false, false));
+        assert!(!dispatch_returns_none(false, true));
+        assert!(dispatch_success_result_present(true, true));
+        assert!(!dispatch_success_result_present(true, false));
+        assert!(!dispatch_success_result_present(false, true));
+        assert_eq!(logging_set_level_result(), serde_json::json!({}));
+        assert_eq!(subscription_mutation_result(), empty_object_result());
+        assert_eq!(
+            tool_arguments_or_empty(&serde_json::json!({
+                "name": "t",
+                "arguments": {"a": true}
+            })),
+            serde_json::json!({"a": true})
+        );
+        assert_eq!(
+            tool_arguments_or_empty(&serde_json::json!({"name": "t"})),
+            serde_json::json!({})
+        );
+        assert!(is_core_handler_method(methods::INITIALIZE));
+        assert!(is_core_handler_method(methods::COMPLETION_COMPLETE));
+        assert!(!is_core_handler_method("no/such"));
     }
 }

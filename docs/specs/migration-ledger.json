@@ -892,5 +892,35 @@
       "migration-ledger honesty_2026_07_15_wave15"
     ],
     "notes": "Ordinary reversible pure residual only. NO ts_deleted, authority_rust, differential_green, or prod_audit_pass. Full package product authority remains TypeScript."
+  },
+  "lastMutation": "WAVE24-PURE-RESIDUAL-HANDLER-PROMPT-DISPATCH-2026-07-15",
+  "updatedAt": "2026-07-15T22:33:49Z",
+  "honesty_2026_07_15_wave24": {
+    "at": "2026-07-15T22:33:49Z",
+    "liveHead": "origin/main",
+    "pureResidualDeepen": [
+      "unknown_prompt_error_message",
+      "unknown_resource_error_message",
+      "prompt_arguments_from_get_params",
+      "completion_ref_is_prompt/resource",
+      "notification_should_mark_initialized",
+      "dispatch_returns_none",
+      "dispatch_success_result_present",
+      "logging_set_level_result",
+      "subscription_mutation_result",
+      "tool_arguments_or_empty",
+      "is_core_handler_method"
+    ],
+    "notClaims": [
+      "authority_rust",
+      "ts_deleted",
+      "differential_green",
+      "product_effect_live",
+      "sole_rust_production_authority",
+      "prod_audit_pass",
+      "package_main_rust"
+    ],
+    "notes": "Ordinary reversible pure residual WAVE24. No denom shrink. No false prod authority.",
+    "gitSha": "38c8a8aadf267ebacaf4eff79f5244f3232ef3a6"
   }
 }
