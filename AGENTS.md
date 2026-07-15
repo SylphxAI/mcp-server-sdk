@@ -1,19 +1,27 @@
-# Repository Instructions
+# mcp-server-sdk — local agent notes only
 
-Engineering doctrine: https://github.com/SylphxAI/doctrine. Read doctrine
-`AGENTS.md`, `PRINCIPLES.md`, and `ADR.md`; load doctrine `standards/*.md` when
-the task triggers them.
+Doctrine and fleet delivery law live in the **host always-on constitution**
+(`~/.grok/AGENTS.md` / Doctrine template). This file must **not** restate,
+weaken, or fork that law (including PR-vs-direct-trunk delivery).
 
-Read [PROJECT.md](./PROJECT.md) and
-[.doctrine/project.json](./.doctrine/project.json) before changing behavior,
-CI, delivery, documentation, public surfaces, persistence, security posture, or
-cross-repository integrations.
+Local truth: `PROJECT.md`, `.doctrine/project.json` when present.
 
-This repository owns the `@sylphx/mcp-server-sdk` package only. Keep consumer
-server business logic and product-specific tools/resources/prompts out of SDK
-core. Consumers must rely on package exports and documented examples, not
-internal source paths.
+## Boundary hazards
 
-Generated `.groundatlas*` files and GroundAtlas JSON/Markdown reports are
-evidence/read models only. Do not treat them as project-control SSOT; update
-`project.manifest.json` or `.doctrine/project.json` at the owning boundary.
+- Never commit secrets, tokens, `.env` files, or credentials.
+
+## Local commands
+
+- `bun run typecheck`
+- `bun run test`
+- `bun run lint`
+- `bun run build`
+- `bun run check`
+- `cargo test --workspace`
+- Prefer the **narrowest** affected check before full workspace runs.
+- Report layers honestly: local diff · trunk FF · deploy · prod proof (do not collapse).
+
+## Validation notes
+
+- Prefer the **narrowest** affected check before full workspace runs.
+- Report layers honestly: local diff · trunk FF · deploy · prod proof (do not collapse).
