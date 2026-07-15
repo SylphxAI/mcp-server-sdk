@@ -2121,6 +2121,121 @@ pub fn prompt_result(description: impl Into<String>, msgs: &[PromptMessage]) -> 
     })
 }
 
+// --- WAVE17 pure residual deepen (no product transport cutover) ---
+
+/// Extract prompt description from a `prompts/get` result envelope.
+#[must_use]
+pub fn prompt_result_description(result: &serde_json::Value) -> Option<&str> {
+    result.get("description").and_then(|v| v.as_str())
+}
+
+/// Count messages in a prompt result.
+#[must_use]
+pub fn prompt_result_message_count(result: &serde_json::Value) -> usize {
+    result
+        .get("messages")
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0)
+}
+
+/// First message role in a prompt result (if any).
+#[must_use]
+pub fn prompt_result_first_role(result: &serde_json::Value) -> Option<&str> {
+    result
+        .get("messages")
+        .and_then(|v| v.as_array())
+        .and_then(|a| a.first())
+        .and_then(|m| m.get("role"))
+        .and_then(|v| v.as_str())
+}
+
+/// Normalize role strings (trim + lowercase); unknown → None.
+/// Complements existing `is_valid_message_role` (exact match only).
+#[must_use]
+pub fn normalize_message_role(role: &str) -> Option<&'static str> {
+    match role.trim().to_ascii_lowercase().as_str() {
+        "user" => Some("user"),
+        "assistant" => Some("assistant"),
+        _ => None,
+    }
+}
+
+/// Extract tool name list from a tools/list result.
+#[must_use]
+pub fn tool_names_from_list(result: &serde_json::Value) -> Vec<String> {
+    result
+        .get("tools")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|t| t.get("name").and_then(|n| n.as_str()).map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Whether structuredContent is present on a tool result.
+#[must_use]
+pub fn tool_result_has_structured(result: &serde_json::Value) -> bool {
+    result
+        .get("structuredContent")
+        .is_some_and(|v| !v.is_null())
+}
+
+/// Extract resource URIs from a resources/list result.
+#[must_use]
+pub fn resource_uris_from_list(result: &serde_json::Value) -> Vec<String> {
+    result
+        .get("resources")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|r| r.get("uri").and_then(|u| u.as_str()).map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Extract log level from logging/setLevel params.
+#[must_use]
+pub fn logging_level_from_params(params: &serde_json::Value) -> Option<&str> {
+    params.get("level").and_then(|v| v.as_str())
+}
+
+/// Whether a content array is non-empty tool payload.
+#[must_use]
+pub fn content_array_nonempty(result: &serde_json::Value) -> bool {
+    result
+        .get("content")
+        .and_then(|v| v.as_array())
+        .is_some_and(|a| !a.is_empty())
+}
+
+/// Join template params back into a URI (inverse of extract_params for simple templates).
+#[must_use]
+pub fn apply_template_params(
+    template: &str,
+    params: &std::collections::BTreeMap<String, String>,
+) -> Option<String> {
+    let mut out = String::new();
+    let mut rest = template;
+    while let Some(start) = rest.find('{') {
+        out.push_str(&rest[..start]);
+        let after = &rest[start + 1..];
+        let end = after.find('}')?;
+        let name = &after[..end];
+        let value = params.get(name)?;
+        if value.is_empty() || value.contains('/') {
+            return None;
+        }
+        out.push_str(value);
+        rest = &after[end + 1..];
+    }
+    out.push_str(rest);
+    Some(out)
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -3783,6 +3898,74 @@ mod tests {
         );
         assert_eq!(initialize_result_server_name(&init), Some("demo"));
         assert!(initialize_result_server_name(&serde_json::json!({})).is_none());
+    }
+
+    #[test]
+    fn wave17_prompt_list_template_and_role_extractors() {
+        let msgs = [user_message("hi"), assistant_message("yo")];
+        let pr = prompt_result("desc", &msgs);
+        assert_eq!(prompt_result_description(&pr), Some("desc"));
+        assert_eq!(prompt_result_message_count(&pr), 2);
+        assert_eq!(prompt_result_first_role(&pr), Some("user"));
+        assert!(is_valid_message_role("user"));
+        assert!(is_valid_message_role("assistant"));
+        assert!(!is_valid_message_role("system"));
+        assert_eq!(normalize_message_role(" User "), Some("user"));
+        assert_eq!(normalize_message_role("ASSISTANT"), Some("assistant"));
+        assert!(normalize_message_role("system").is_none());
+
+        let tools = tools_list_result(
+            &[Tool {
+                name: "ping".into(),
+                title: None,
+                description: None,
+                input_schema: serde_json::json!({"type": "object"}),
+                output_schema: None,
+                annotations: None,
+            }],
+            None,
+        );
+        assert_eq!(tool_names_from_list(&tools), vec!["ping".to_string()]);
+        assert!(tool_names_from_list(&serde_json::json!({})).is_empty());
+
+        let structured = serde_json::json!({
+            "content": [{"type":"text","text":"x"}],
+            "structuredContent": {"ok": true},
+            "isError": false
+        });
+        assert!(tool_result_has_structured(&structured));
+        assert!(!tool_result_has_structured(&serde_json::json!({"content":[]})));
+        assert!(content_array_nonempty(&structured));
+        assert!(!content_array_nonempty(&serde_json::json!({"content":[]})));
+
+        let res = protocol_resource("a", "file:///a", None, None);
+        let resources = resources_list_result(
+            &[serde_json::to_value(&res).expect("resource wire")],
+            None,
+        );
+        assert_eq!(
+            resource_uris_from_list(&resources),
+            vec!["file:///a".to_string()]
+        );
+
+        let log_params = logging_set_level_params("info");
+        assert_eq!(logging_level_from_params(&log_params), Some("info"));
+        assert!(logging_level_from_params(&serde_json::json!({})).is_none());
+
+        let mut params = std::collections::BTreeMap::new();
+        params.insert("name".into(), "demo".into());
+        assert_eq!(
+            apply_template_params("file:///{name}/x", &params).as_deref(),
+            Some("file:///demo/x")
+        );
+        assert!(apply_template_params(
+            "file:///{name}/x",
+            &std::collections::BTreeMap::new()
+        )
+        .is_none());
+        let mut bad = std::collections::BTreeMap::new();
+        bad.insert("name".into(), "a/b".into());
+        assert!(apply_template_params("file:///{name}/x", &bad).is_none());
     }
 
 }

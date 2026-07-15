@@ -233,6 +233,50 @@ pub fn items_on_last_page(total_len: usize, page_size: usize) -> usize {
     }
 }
 
+// --- WAVE17 pure residual ---
+
+/// Maximum page size constant used when options omit a max (default 100).
+pub const DEFAULT_MAX_PAGE_SIZE: usize = 100;
+
+/// Build default pagination options (50 / 100) matching TS defaults.
+#[must_use]
+pub fn default_pagination_options() -> PaginationOptions {
+    PaginationOptions {
+        default_page_size: DEFAULT_PAGE_SIZE,
+        max_page_size: DEFAULT_MAX_PAGE_SIZE,
+    }
+}
+
+/// True when offset points past the end of the collection.
+#[must_use]
+pub fn is_offset_past_end(offset: usize, total_len: usize) -> bool {
+    offset >= total_len
+}
+
+/// Normalize requested page size: clamp to `[1, max]` when requested is 0 → max default path.
+/// Product TS keeps `0` as-is after min with max; this helper documents the pure residual clamp for
+/// non-zero requested sizes only.
+#[must_use]
+pub fn effective_page_size(requested: usize, default_page_size: usize, max_page_size: usize) -> usize {
+    if requested == 0 {
+        default_page_size.min(max_page_size)
+    } else {
+        requested.min(max_page_size)
+    }
+}
+
+/// Whether a page of items is empty.
+#[must_use]
+pub fn page_is_empty<T>(page: &PageResult<T>) -> bool {
+    page.items.is_empty()
+}
+
+/// Whether a page carries a next cursor.
+#[must_use]
+pub fn page_has_next_cursor<T>(page: &PageResult<T>) -> bool {
+    page.next_cursor.is_some()
+}
+
 /// Paginate a slice of items (parity with TS `paginate`).
 #[must_use]
 pub fn paginate<T: Clone>(
@@ -752,5 +796,28 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn wave17_defaults_offset_and_page_flags() {
+        let opts = default_pagination_options();
+        assert_eq!(opts.default_page_size, DEFAULT_PAGE_SIZE);
+        assert_eq!(opts.max_page_size, DEFAULT_MAX_PAGE_SIZE);
+        assert!(is_offset_past_end(10, 10));
+        assert!(!is_offset_past_end(9, 10));
+        assert_eq!(effective_page_size(0, 50, 100), 50);
+        assert_eq!(effective_page_size(200, 50, 100), 100);
+        assert_eq!(effective_page_size(25, 50, 100), 25);
+
+        let items: Vec<i32> = (0..5).collect();
+        let page = paginate(&items, None, PaginationOptions {
+            default_page_size: 2,
+            max_page_size: 100,
+        });
+        assert!(!page_is_empty(&page));
+        assert!(page_has_next_cursor(&page));
+        let empty = empty_page::<i32>();
+        assert!(page_is_empty(&empty));
+        assert!(!page_has_next_cursor(&empty));
     }
 }

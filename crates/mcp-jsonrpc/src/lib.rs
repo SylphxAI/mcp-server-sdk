@@ -568,6 +568,55 @@ pub fn stringify(msg: &JsonRpcMessage) -> String {
     serde_json::to_string(msg).unwrap_or_else(|_| "{}".into())
 }
 
+// --- WAVE17 pure residual ---
+
+/// Pretty-print a message (indent 2) for diagnostics; never panics.
+#[must_use]
+pub fn stringify_pretty(msg: &JsonRpcMessage) -> String {
+    serde_json::to_string_pretty(msg).unwrap_or_else(|_| "{}".into())
+}
+
+/// Whether a parse result is Ok.
+#[must_use]
+pub fn parse_result_is_ok(result: &ParseResult) -> bool {
+    matches!(result, ParseResult::Ok(_))
+}
+
+/// Extract error string from a failed parse.
+#[must_use]
+pub fn parse_result_error(result: &ParseResult) -> Option<&str> {
+    match result {
+        ParseResult::Err(e) => Some(e.as_str()),
+        ParseResult::Ok(_) => None,
+    }
+}
+
+/// Build a minimal successful response with a null result.
+#[must_use]
+pub fn empty_success_response(id: RequestId) -> JsonRpcMessage {
+    JsonRpcMessage::Success(success(id, Value::Null))
+}
+
+/// Whether a response id matches a request id (wire equality).
+#[must_use]
+pub fn response_matches_request_id(response: &JsonRpcMessage, request_id: &RequestId) -> bool {
+    match message_id(response) {
+        Some(id) => id == request_id,
+        None => false,
+    }
+}
+
+/// Normalize method name (trim); empty → None.
+#[must_use]
+pub fn normalize_method_name(method: &str) -> Option<&str> {
+    let t = method.trim();
+    if t.is_empty() {
+        None
+    } else {
+        Some(t)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1217,6 +1266,30 @@ mod tests {
         assert!(!is_batch_payload(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#));
         assert!(!is_batch_payload("not-json"));
         assert!(!is_batch_payload(""));
+    }
+
+    #[test]
+    fn wave17_stringify_pretty_parse_helpers_and_empty_success() {
+        let req = JsonRpcMessage::Request(request(RequestId::Number(7), "ping", None));
+        let pretty = stringify_pretty(&req);
+        assert!(pretty.contains("ping"));
+        assert!(pretty.contains('\n'));
+
+        let ok = parse_message(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#);
+        assert!(parse_result_is_ok(&ok));
+        assert!(parse_result_error(&ok).is_none());
+        let bad = parse_message("not-json");
+        assert!(!parse_result_is_ok(&bad));
+        assert!(parse_result_error(&bad).is_some());
+
+        let id = RequestId::Number(9);
+        let resp = empty_success_response(id.clone());
+        assert!(is_success(&resp));
+        assert!(response_matches_request_id(&resp, &id));
+        assert!(!response_matches_request_id(&resp, &RequestId::Number(1)));
+        assert_eq!(normalize_method_name("  tools/list  "), Some("tools/list"));
+        assert!(normalize_method_name("   ").is_none());
+        assert!(normalize_method_name("").is_none());
     }
 
 }
