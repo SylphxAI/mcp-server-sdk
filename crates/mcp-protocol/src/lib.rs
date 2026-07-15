@@ -2635,6 +2635,114 @@ pub fn tools_list_is_empty(result: &serde_json::Value) -> bool {
     tool_count_from_list(result) == 0
 }
 
+
+// --- WAVE22 pure residual (handler/list/call dual-oracle kernels) ---
+
+/// Tool arguments object from tools/call params (missing/non-object → None).
+#[must_use]
+pub fn tool_arguments_from_call_params(params: &serde_json::Value) -> Option<&serde_json::Value> {
+    params.get("arguments").filter(|v| v.is_object())
+}
+
+/// True when tools/call params carry a progressToken in `_meta`.
+#[must_use]
+pub fn tools_call_has_progress_token(params: &serde_json::Value) -> bool {
+    progress_token_from_params(params).is_some()
+        || params
+            .get("_meta")
+            .and_then(|m| m.get("progressToken"))
+            .is_some()
+}
+
+/// URI from resources/read|subscribe|unsubscribe params.
+#[must_use]
+pub fn resource_uri_from_params(params: &serde_json::Value) -> Option<&str> {
+    params
+        .get("uri")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+}
+
+/// Prompt name from prompts/get params.
+#[must_use]
+pub fn prompt_name_from_get_params(params: &serde_json::Value) -> Option<&str> {
+    params
+        .get("name")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+}
+
+/// Count of resource templates in templates/list result.
+#[must_use]
+pub fn resource_template_count_from_list(result: &serde_json::Value) -> usize {
+    list_result_len(result, "resourceTemplates")
+}
+
+/// True when resources/list is empty.
+#[must_use]
+pub fn resources_list_is_empty(result: &serde_json::Value) -> bool {
+    resource_count_from_list(result) == 0
+}
+
+/// True when prompts/list is empty.
+#[must_use]
+pub fn prompts_list_is_empty(result: &serde_json::Value) -> bool {
+    prompt_count_from_list(result) == 0
+}
+
+/// True when resource templates list is empty.
+#[must_use]
+pub fn resource_templates_list_is_empty(result: &serde_json::Value) -> bool {
+    resource_template_count_from_list(result) == 0
+}
+
+/// Log level from logging/setLevel params.
+#[must_use]
+pub fn log_level_from_set_params(params: &serde_json::Value) -> Option<&str> {
+    params.get("level").and_then(|v| v.as_str())
+}
+
+/// Client capability flags summary for initialize negotiation dual-oracle.
+#[must_use]
+pub fn client_capability_flags(capabilities: &serde_json::Value) -> (bool, bool, bool) {
+    let roots = capabilities
+        .get("roots")
+        .is_some_and(|v| !v.is_null());
+    (
+        roots,
+        client_has_sampling(capabilities),
+        client_has_elicitation(capabilities),
+    )
+}
+
+/// True when a method is a server→client request (sampling/elicitation).
+#[must_use]
+pub fn is_server_to_client_request_method(method: &str) -> bool {
+    matches!(
+        method,
+        methods::SAMPLING_CREATE_MESSAGE | methods::ELICITATION_CREATE
+    )
+}
+
+/// Content text builder for a simple tool success result.
+#[must_use]
+pub fn tool_text_success_result(text: impl Into<String>) -> serde_json::Value {
+    serde_json::json!({
+        "content": [{ "type": "text", "text": text.into() }],
+        "isError": false
+    })
+}
+
+/// Cursor from list params (None when absent/empty).
+#[must_use]
+pub fn cursor_from_list_params(params: &serde_json::Value) -> Option<&str> {
+    params
+        .get("cursor")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4604,4 +4712,73 @@ mod tests {
         assert_eq!(ping_result(), empty_object_result());
     }
 
+
+    #[test]
+    fn wave22_call_list_capability_helpers() {
+        let call = serde_json::json!({
+            "name": "echo",
+            "arguments": {"x": 1},
+            "_meta": {"progressToken": "t1"}
+        });
+        assert_eq!(tool_name_from_call_params(&call), Some("echo"));
+        assert_eq!(
+            tool_arguments_from_call_params(&call).and_then(|a| a.get("x").and_then(|v| v.as_i64())),
+            Some(1)
+        );
+        assert!(tools_call_has_progress_token(&call));
+        assert!(!tools_call_has_progress_token(&serde_json::json!({"name": "x"})));
+
+        assert_eq!(
+            resource_uri_from_params(&serde_json::json!({"uri": "file:///a"})),
+            Some("file:///a")
+        );
+        assert_eq!(
+            prompt_name_from_get_params(&serde_json::json!({"name": "greet"})),
+            Some("greet")
+        );
+
+        let empty_res = serde_json::json!({"resources": []});
+        assert!(resources_list_is_empty(&empty_res));
+        assert!(prompts_list_is_empty(&serde_json::json!({"prompts": []})));
+        assert!(resource_templates_list_is_empty(
+            &serde_json::json!({"resourceTemplates": []})
+        ));
+        assert_eq!(
+            resource_template_count_from_list(&serde_json::json!({
+                "resourceTemplates": [{"uriTemplate": "f://{id}"}]
+            })),
+            1
+        );
+
+        assert_eq!(
+            log_level_from_set_params(&serde_json::json!({"level": "debug"})),
+            Some("debug")
+        );
+
+        let caps = serde_json::json!({
+            "roots": {"listChanged": true},
+            "sampling": {},
+            "elicitation": {}
+        });
+        assert_eq!(client_capability_flags(&caps), (true, true, true));
+        assert_eq!(
+            client_capability_flags(&serde_json::json!({})),
+            (false, false, false)
+        );
+
+        assert!(is_server_to_client_request_method(methods::SAMPLING_CREATE_MESSAGE));
+        assert!(is_server_to_client_request_method(methods::ELICITATION_CREATE));
+        assert!(!is_server_to_client_request_method(methods::TOOLS_CALL));
+
+        let ok = tool_text_success_result("hi");
+        assert_eq!(ok["isError"], false);
+        assert_eq!(ok["content"][0]["text"], "hi");
+
+        assert_eq!(
+            cursor_from_list_params(&serde_json::json!({"cursor": "  abc  "})),
+            Some("abc")
+        );
+        assert!(cursor_from_list_params(&serde_json::json!({"cursor": "   "})).is_none());
+        assert!(cursor_from_list_params(&serde_json::json!({})).is_none());
+    }
 }

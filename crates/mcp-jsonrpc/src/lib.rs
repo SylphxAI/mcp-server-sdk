@@ -862,6 +862,51 @@ pub fn method_not_found_response(id: RequestId, method: &str) -> JsonRpcMessage 
     JsonRpcMessage::Error(method_not_found(id, method))
 }
 
+
+// --- WAVE22 pure residual ---
+
+/// Standard invalid-params error response dual-oracle (message enum form).
+#[must_use]
+pub fn invalid_params_response(id: RequestId, details: impl Into<String>) -> JsonRpcMessage {
+    JsonRpcMessage::Error(invalid_params(id, details))
+}
+
+/// Standard internal-error response dual-oracle (message enum form).
+#[must_use]
+pub fn internal_error_response(id: RequestId, details: impl Into<String>) -> JsonRpcMessage {
+    JsonRpcMessage::Error(internal_error(Some(id), details))
+}
+
+/// True when every message in a batch is a response (success or error).
+#[must_use]
+pub fn batch_all_responses(msgs: &[JsonRpcMessage]) -> bool {
+    !msgs.is_empty() && msgs.iter().all(is_response)
+}
+
+/// First error message in a batch, if any.
+#[must_use]
+pub fn first_error_in_batch(msgs: &[JsonRpcMessage]) -> Option<&JsonRpcMessage> {
+    msgs.iter().find(|m| is_error_response(m))
+}
+
+/// Count of request messages in a batch.
+#[must_use]
+pub fn batch_request_count(msgs: &[JsonRpcMessage]) -> usize {
+    msgs.iter().filter(|m| is_request(m)).count()
+}
+
+/// Count of notification messages in a batch.
+#[must_use]
+pub fn batch_notification_count(msgs: &[JsonRpcMessage]) -> usize {
+    msgs.iter().filter(|m| is_notification(m)).count()
+}
+
+/// True when a response carries a numeric error code in the JSON-RPC reserved server range.
+#[must_use]
+pub fn response_is_server_error(msg: &JsonRpcMessage) -> bool {
+    response_error_code(msg).is_some_and(is_server_error_code)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1699,5 +1744,37 @@ mod tests {
             response_error_message(&mnf),
             Some("Method not found: nope")
         );
+    }
+
+    #[test]
+    fn wave22_batch_and_error_helpers() {
+        let id = RequestId::Number(1);
+        let inv = invalid_params_response(id.clone(), "bad");
+        assert_eq!(response_error_code(&inv), Some(error_code::INVALID_PARAMS));
+        let ie = internal_error_response(RequestId::Number(2), "boom");
+        assert_eq!(response_error_code(&ie), Some(error_code::INTERNAL_ERROR));
+
+        let req = JsonRpcMessage::Request(request(RequestId::Number(3), "ping", None));
+        let ok = JsonRpcMessage::Success(success(RequestId::Number(3), serde_json::json!({})));
+        assert!(!batch_all_responses(&[req.clone(), ok.clone()]));
+        assert!(batch_all_responses(&[ok.clone(), inv.clone()]));
+        assert!(first_error_in_batch(&[ok.clone(), inv.clone()]).is_some());
+        assert!(first_error_in_batch(&[ok.clone()]).is_none());
+
+        let note = JsonRpcMessage::Notification(notification(
+            "notifications/message",
+            Some(serde_json::json!({})),
+        ));
+        assert_eq!(batch_request_count(&[req, note.clone(), ok.clone()]), 1);
+        assert_eq!(batch_notification_count(&[note]), 1);
+
+        let srv = JsonRpcMessage::Error(error_response(
+            Some(RequestId::Number(9)),
+            error_code::SERVER_ERROR_MIN,
+            "x",
+            None,
+        ));
+        assert!(response_is_server_error(&srv));
+        assert!(!response_is_server_error(&ok));
     }
 }

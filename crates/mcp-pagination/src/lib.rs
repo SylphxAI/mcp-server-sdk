@@ -483,6 +483,46 @@ pub fn cursor_is_usable(cursor: Option<&str>) -> bool {
     }
 }
 
+
+// --- WAVE22 pure residual ---
+
+/// Number of items returned on the page (alias dual-oracle of slice len).
+#[must_use]
+pub fn items_on_page(offset: usize, page_size: usize, total_len: usize) -> usize {
+    page_slice_len(offset, page_size, total_len)
+}
+
+/// Total page count for a collection (ceil division; empty → 0).
+#[must_use]
+pub fn total_pages(total_len: usize, page_size: usize) -> usize {
+    if page_size == 0 || total_len == 0 {
+        return 0;
+    }
+    total_len.div_ceil(page_size)
+}
+
+/// 0-based page index containing `offset` (None if offset past end or empty).
+#[must_use]
+pub fn page_index_for_offset(offset: usize, page_size: usize, total_len: usize) -> Option<usize> {
+    if page_size == 0 || total_len == 0 || offset >= total_len {
+        return None;
+    }
+    Some(offset / page_size)
+}
+
+/// True when offset points exactly at a page boundary.
+#[must_use]
+pub fn is_page_aligned(offset: usize, page_size: usize) -> bool {
+    page_size > 0 && offset.is_multiple_of(page_size)
+}
+
+/// Next cursor string when more pages remain; None at end.
+#[must_use]
+pub fn next_cursor_if_more(offset: usize, page_size: usize, total_len: usize) -> Option<String> {
+    let next = next_offset_after_page(offset, page_size, total_len)?;
+    Some(encode_page_cursor(next, page_size))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1078,5 +1118,24 @@ mod tests {
         assert!(!cursor_is_usable(None));
         assert!(!cursor_is_usable(Some("   ")));
         assert!(!cursor_is_usable(Some("not-base64-json!!!")));
+    }
+
+    #[test]
+    fn wave22_page_index_and_next_cursor() {
+        assert_eq!(page_bounds(0, 50, 120), (0, 50)); // existing pure helper
+        assert_eq!(items_on_page(100, 50, 120), 20);
+        assert_eq!(total_pages(120, 50), 3);
+        assert_eq!(total_pages(0, 50), 0);
+        assert_eq!(total_pages(10, 0), 0);
+        assert_eq!(page_index_for_offset(0, 50, 120), Some(0));
+        assert_eq!(page_index_for_offset(50, 50, 120), Some(1));
+        assert_eq!(page_index_for_offset(120, 50, 120), None);
+        assert!(is_page_aligned(100, 50));
+        assert!(!is_page_aligned(101, 50));
+        assert!(!is_page_aligned(0, 0));
+
+        let cur = next_cursor_if_more(0, 50, 120).expect("more");
+        assert_eq!(cursor_offset(&cur), Some(50));
+        assert!(next_cursor_if_more(100, 50, 120).is_none());
     }
 }
