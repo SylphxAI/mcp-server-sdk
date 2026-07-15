@@ -401,6 +401,9 @@ pub enum Notification {
         #[serde(skip_serializing_if = "Option::is_none")]
         reason: Option<String>,
     },
+    /// Client→server: roots list changed (parity with Method.RootsListChanged).
+    #[serde(rename = "roots/list_changed")]
+    RootsListChanged {},
 }
 
 #[must_use]
@@ -444,6 +447,12 @@ pub fn cancelled(request_id: serde_json::Value, reason: Option<String>) -> Notif
         request_id,
         reason,
     }
+}
+
+/// Roots list changed notification (parity with Method.RootsListChanged).
+#[must_use]
+pub fn roots_list_changed() -> Notification {
+    Notification::RootsListChanged {}
 }
 
 /// Log notification (parity with src/notifications/helpers.ts `log`).
@@ -575,6 +584,10 @@ pub fn notification_to_jsonrpc(n: &Notification) -> JsonRpcNotificationWire {
                 params: Some(serde_json::Value::Object(map)),
             }
         }
+        Notification::RootsListChanged {} => JsonRpcNotificationWire {
+            method: methods::ROOTS_LIST_CHANGED.into(),
+            params: None,
+        },
     }
 }
 
@@ -1505,6 +1518,154 @@ pub fn sampling_create_params_ext(
     serde_json::Value::Object(map)
 }
 
+// ============================================================================
+// WAVE14 pure residual catalogs + extractors
+// ============================================================================
+
+/// Prompt / sampling message roles (parity with PromptMessage.role / SamplingMessage.role).
+pub const MESSAGE_ROLES: &[&str] = &["user", "assistant"];
+
+/// True when `role` is a recognized message role.
+#[must_use]
+pub fn is_valid_message_role(role: &str) -> bool {
+    MESSAGE_ROLES.contains(&role)
+}
+
+/// Content type discriminators (parity with Content union).
+pub const CONTENT_TYPES: &[&str] = &["text", "image", "audio", "resource"];
+
+/// True when `ty` is a recognized content type string.
+#[must_use]
+pub fn is_valid_content_type(ty: &str) -> bool {
+    CONTENT_TYPES.contains(&ty)
+}
+
+/// ContentAnnotations.audience values.
+pub const AUDIENCE_VALUES: &[&str] = &["user", "assistant"];
+
+/// True when `audience` is a recognized content audience value.
+#[must_use]
+pub fn is_valid_audience(audience: &str) -> bool {
+    AUDIENCE_VALUES.contains(&audience)
+}
+
+/// Server→client request methods (sampling + elicitation).
+pub const SERVER_TO_CLIENT_METHODS: &[&str] =
+    &[methods::SAMPLING_CREATE_MESSAGE, methods::ELICITATION_CREATE];
+
+/// True when `method` is a server-initiated request toward the client.
+#[must_use]
+pub fn is_server_to_client_method(method: &str) -> bool {
+    SERVER_TO_CLIENT_METHODS.contains(&method)
+}
+
+/// Completion reference types (parity with CompletionReference.type).
+pub const COMPLETION_REF_TYPES: &[&str] = &["ref/prompt", "ref/resource"];
+
+/// True when `ty` is a recognized completion ref type.
+#[must_use]
+pub fn is_valid_completion_ref_type(ty: &str) -> bool {
+    COMPLETION_REF_TYPES.contains(&ty)
+}
+
+/// Elicitation property JSON Schema types (parity with ElicitationProperty.type).
+pub const ELICITATION_PROPERTY_TYPES: &[&str] = &["string", "number", "integer", "boolean"];
+
+/// True when `ty` is a recognized elicitation property type.
+#[must_use]
+pub fn is_valid_elicitation_property_type(ty: &str) -> bool {
+    ELICITATION_PROPERTY_TYPES.contains(&ty)
+}
+
+/// Tool annotations free constructor (parity with `ToolAnnotations`).
+#[must_use]
+pub fn tool_annotations(
+    title: Option<String>,
+    read_only_hint: Option<bool>,
+    destructive_hint: Option<bool>,
+    idempotent_hint: Option<bool>,
+    open_world_hint: Option<bool>,
+) -> ToolAnnotations {
+    ToolAnnotations {
+        title,
+        read_only_hint,
+        destructive_hint,
+        idempotent_hint,
+        open_world_hint,
+    }
+}
+
+/// Prompt argument free constructor (parity with `PromptArgument`).
+#[must_use]
+pub fn prompt_argument(
+    name: impl Into<String>,
+    description: Option<String>,
+    required: Option<bool>,
+) -> PromptArgument {
+    PromptArgument {
+        name: name.into(),
+        description,
+        required,
+    }
+}
+
+/// Build a completion `ref` object (parity with CompletionReference).
+#[must_use]
+pub fn completion_ref(
+    ref_type: impl Into<String>,
+    name: Option<String>,
+    uri: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("type".into(), serde_json::Value::String(ref_type.into()));
+    if let Some(n) = name {
+        map.insert("name".into(), serde_json::Value::String(n));
+    }
+    if let Some(u) = uri {
+        map.insert("uri".into(), serde_json::Value::String(u));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Extract `_meta.progressToken` from a tools/call params object (pure residual).
+///
+/// Returns `None` when `_meta` or `progressToken` is absent.
+#[must_use]
+pub fn progress_token_from_call_params(params: &serde_json::Value) -> Option<&serde_json::Value> {
+    params
+        .get("_meta")
+        .and_then(|m| m.get("progressToken"))
+}
+
+/// Index of a log level in [`LOG_LEVELS`] (0 = most verbose). `None` if unknown.
+#[must_use]
+pub fn log_level_index(level: &str) -> Option<usize> {
+    LOG_LEVELS.iter().position(|l| *l == level)
+}
+
+/// True when `level` is at least as severe as `minimum` (higher index in LOG_LEVELS).
+///
+/// Unknown levels return `false`.
+#[must_use]
+pub fn log_level_at_least(level: &str, minimum: &str) -> bool {
+    match (log_level_index(level), log_level_index(minimum)) {
+        (Some(l), Some(m)) => l >= m,
+        _ => false,
+    }
+}
+
+/// True when `method` is a `*/list_changed` notification method.
+#[must_use]
+pub fn is_list_changed_notification(method: &str) -> bool {
+    matches!(
+        method,
+        methods::RESOURCES_LIST_CHANGED
+            | methods::TOOLS_LIST_CHANGED
+            | methods::PROMPTS_LIST_CHANGED
+            | methods::ROOTS_LIST_CHANGED
+    )
+}
+
 /// Check if a URI matches a template pattern (`{param}` → single path segment).
 #[must_use]
 pub fn matches_template(template: &str, uri: &str) -> bool {
@@ -2324,6 +2485,93 @@ mod tests {
                 }
             }
         }
+
+        // WAVE14: catalogs + server→client + list_changed + progressToken extract
+        if let Some(vals) = doc.get("messageRoles").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_valid_message_role(s), "role {s}");
+            }
+        }
+        if let Some(vals) = doc.get("contentTypes").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_valid_content_type(s), "contentType {s}");
+            }
+        }
+        if let Some(vals) = doc.get("audienceValues").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_valid_audience(s), "audience {s}");
+            }
+        }
+        if let Some(vals) = doc.get("serverToClientMethods").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_server_to_client_method(s), "s2c {s}");
+            }
+        }
+        if let Some(vals) = doc.get("completionRefTypes").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_valid_completion_ref_type(s), "ref {s}");
+            }
+        }
+        if let Some(vals) = doc.get("elicitationPropertyTypes").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_valid_elicitation_property_type(s), "prop {s}");
+            }
+        }
+        if let Some(cases) = doc.get("listChangedMethods").and_then(|v| v.as_array()) {
+            for case in cases {
+                let method = case["method"].as_str().unwrap_or("");
+                let expected = case["isListChanged"].as_bool().unwrap_or(false);
+                assert_eq!(
+                    is_list_changed_notification(method),
+                    expected,
+                    "listChanged {method}"
+                );
+            }
+        }
+        if let Some(cases) = doc.get("logLevelAtLeast").and_then(|v| v.as_array()) {
+            for case in cases {
+                let level = case["level"].as_str().unwrap_or("");
+                let minimum = case["minimum"].as_str().unwrap_or("");
+                let expected = case["expected"].as_bool().unwrap_or(false);
+                assert_eq!(
+                    log_level_at_least(level, minimum),
+                    expected,
+                    "log {level}>={minimum}"
+                );
+            }
+        }
+        if let Some(cases) = doc.get("progressTokenExtract").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let params = case
+                    .get("params")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!({}));
+                let got = progress_token_from_call_params(&params);
+                if case.get("expected").map(|v| v.is_null()).unwrap_or(true)
+                    && case.get("expectedToken").is_none()
+                {
+                    assert!(got.is_none(), "case {name}");
+                } else if let Some(tok) = case.get("expectedToken") {
+                    assert_eq!(got, Some(tok), "case {name}");
+                }
+            }
+        }
+        if let Some(case) = doc.get("rootsListChangedWire") {
+            let wire = notification_to_jsonrpc(&roots_list_changed());
+            assert_eq!(
+                wire.method.as_str(),
+                case["expectedMethod"].as_str().unwrap_or(""),
+                "roots list_changed method"
+            );
+            assert!(wire.params.is_none());
+        }
     }
 
     #[test]
@@ -2769,6 +3017,85 @@ mod tests {
         let rc = resource_content(EmbeddedResource::text_item("file:///a", "body", None));
         assert!(rc.is_resource());
         assert_eq!(empty_client_capabilities(), serde_json::json!({}));
+    }
+
+    #[test]
+    fn wave14_catalogs_extractors_and_roots_list_changed() {
+        assert!(is_valid_message_role("user"));
+        assert!(is_valid_message_role("assistant"));
+        assert!(!is_valid_message_role("system"));
+
+        assert!(is_valid_content_type("text"));
+        assert!(is_valid_content_type("image"));
+        assert!(is_valid_content_type("audio"));
+        assert!(is_valid_content_type("resource"));
+        assert!(!is_valid_content_type("video"));
+
+        assert!(is_valid_audience("user"));
+        assert!(is_valid_audience("assistant"));
+        assert!(!is_valid_audience("system"));
+
+        assert!(is_server_to_client_method(methods::SAMPLING_CREATE_MESSAGE));
+        assert!(is_server_to_client_method(methods::ELICITATION_CREATE));
+        assert!(!is_server_to_client_method(methods::TOOLS_CALL));
+        assert!(!is_server_to_client_method(methods::INITIALIZE));
+
+        assert!(is_valid_completion_ref_type("ref/prompt"));
+        assert!(is_valid_completion_ref_type("ref/resource"));
+        assert!(!is_valid_completion_ref_type("ref/tool"));
+
+        assert!(is_valid_elicitation_property_type("string"));
+        assert!(is_valid_elicitation_property_type("integer"));
+        assert!(!is_valid_elicitation_property_type("object"));
+
+        let ann = tool_annotations(
+            Some("Read file".into()),
+            Some(true),
+            Some(false),
+            Some(true),
+            Some(false),
+        );
+        assert_eq!(ann.title.as_deref(), Some("Read file"));
+        assert_eq!(ann.read_only_hint, Some(true));
+        assert_eq!(ann.destructive_hint, Some(false));
+
+        let arg = prompt_argument("who", Some("person".into()), Some(true));
+        assert_eq!(arg.name, "who");
+        assert_eq!(arg.required, Some(true));
+
+        let r = completion_ref("ref/prompt", Some("greet".into()), None);
+        assert_eq!(r["type"], "ref/prompt");
+        assert_eq!(r["name"], "greet");
+        let r2 = completion_ref("ref/resource", None, Some("file:///{p}".into()));
+        assert_eq!(r2["type"], "ref/resource");
+        assert_eq!(r2["uri"], "file:///{p}");
+
+        let call = tools_call_params_with_progress(
+            "ping",
+            None,
+            Some(serde_json::json!("tok-wave14")),
+        );
+        assert_eq!(
+            progress_token_from_call_params(&call),
+            Some(&serde_json::json!("tok-wave14"))
+        );
+        let no_meta = tools_call_params("ping", None);
+        assert!(progress_token_from_call_params(&no_meta).is_none());
+
+        assert_eq!(log_level_index("debug"), Some(0));
+        assert_eq!(log_level_index("emergency"), Some(7));
+        assert!(log_level_at_least("error", "warning"));
+        assert!(log_level_at_least("error", "error"));
+        assert!(!log_level_at_least("info", "error"));
+        assert!(!log_level_at_least("nope", "info"));
+
+        assert!(is_list_changed_notification(methods::TOOLS_LIST_CHANGED));
+        assert!(is_list_changed_notification(methods::ROOTS_LIST_CHANGED));
+        assert!(!is_list_changed_notification(methods::RESOURCES_UPDATED));
+
+        let wire = notification_to_jsonrpc(&roots_list_changed());
+        assert_eq!(wire.method, methods::ROOTS_LIST_CHANGED);
+        assert!(wire.params.is_none());
     }
 
 }

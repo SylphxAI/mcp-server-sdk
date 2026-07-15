@@ -179,5 +179,51 @@
       "hasMore": true,
       "nextOffset": 3
     }
+  ],
+  "pageEnd": [
+    {
+      "name": "first_slice",
+      "offset": 0,
+      "pageSize": 50,
+      "total": 120,
+      "expectedEnd": 50,
+      "remaining": 120
+    },
+    {
+      "name": "tail_slice",
+      "offset": 100,
+      "pageSize": 50,
+      "total": 120,
+      "expectedEnd": 120,
+      "remaining": 20
+    },
+    {
+      "name": "past_end",
+      "offset": 200,
+      "pageSize": 50,
+      "total": 120,
+      "expectedEnd": 120,
+      "remaining": 0
+    }
+  ],
+  "cursorValid": [
+    {
+      "name": "encoded_ok",
+      "encode": {
+        "offset": 10,
+        "pageSize": 20
+      },
+      "valid": true
+    },
+    {
+      "name": "garbage",
+      "cursor": "!!!",
+      "valid": false
+    },
+    {
+      "name": "empty",
+      "cursor": "",
+      "valid": false
+    }
   ]
 }

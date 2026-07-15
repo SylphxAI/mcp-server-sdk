@@ -1,0 +1,60 @@
+{
+  "schema": "honesty-map/v1",
+  "wave": "FLEET-ENTERPRISE-WAVE14",
+  "receipt": "FLEET-ENTERPRISE-WAVE14",
+  "at": "2026-07-15T12:30:00Z",
+  "repo": "SylphxAI/mcp-server-sdk",
+  "defaultBranch": "main",
+  "liveHeadHonesty": "origin/main pure residual crates/mcp-{pagination,protocol,jsonrpc} only; WAVE14 deepens messageRoles/contentTypes/audience catalogs, server-to-client method classifier, completion_ref + elicitation property types, tool_annotations/prompt_argument free ctors, progress_token_from_call_params, log_level_index/at_least, is_list_changed_notification, roots_list_changed notification wire; jsonrpc SERVER_ERROR_MIN/MAX, message_result/error/error_data extractors, request_id_to/from_value; pagination is_valid_page_cursor, page_end, items_remaining; expanded goldens; full package product surface remains TypeScript",
+  "cratesOnMain": ["mcp-pagination", "mcp-protocol", "mcp-jsonrpc"],
+  "pureResidual": true,
+  "pureResidualDeepen": [
+    "MESSAGE_ROLES / is_valid_message_role",
+    "CONTENT_TYPES / is_valid_content_type",
+    "AUDIENCE_VALUES / is_valid_audience",
+    "SERVER_TO_CLIENT_METHODS / is_server_to_client_method",
+    "COMPLETION_REF_TYPES / is_valid_completion_ref_type",
+    "ELICITATION_PROPERTY_TYPES / is_valid_elicitation_property_type",
+    "tool_annotations free ctor",
+    "prompt_argument free ctor",
+    "completion_ref builder",
+    "progress_token_from_call_params",
+    "log_level_index / log_level_at_least",
+    "is_list_changed_notification",
+    "roots_list_changed notification + notification_to_jsonrpc",
+    "error_code::SERVER_ERROR_MIN / SERVER_ERROR_MAX",
+    "message_result / message_error / message_error_data",
+    "request_id_to_value / request_id_from_value",
+    "is_valid_page_cursor / page_end / items_remaining",
+    "expanded protocol/jsonrpc/pagination goldens"
+  ],
+  "product_effect_live": false,
+  "authority_rust": false,
+  "ts_deleted": false,
+  "differential_green": false,
+  "sole_rust_production_authority": false,
+  "auditVerdict": "prod_audit_fail",
+  "auditVerdictReason": "3 pure residual library crates only; 13 caps remain ts_only product path; no differential_green; package publish/runtime authority remains TypeScript",
+  "capabilitySummary": {
+    "total": 16,
+    "ts_only": 13,
+    "rust_impl": 3,
+    "authority_rust": 0,
+    "ts_deleted": 0,
+    "parity_proven": 0
+  },
+  "notClaims": [
+    "authority_rust",
+    "ts_deleted",
+    "differential_green",
+    "product_effect_live",
+    "sole_rust_library_for_all_caps",
+    "sole_rust_production_authority",
+    "prod_audit_pass"
+  ],
+  "checks": {
+    "cargo_test_workspace": "pass",
+    "cargo_clippy_workspace_deny_warnings": "pass"
+  },
+  "residualTs": "entire @sylphx/mcp-server-sdk package (src/**, examples/**) — intentional legacy TypeScript product authority per PROJECT.md / ADR-38"
+}

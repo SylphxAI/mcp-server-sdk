@@ -108,6 +108,24 @@ pub fn empty_page<T>() -> PageResult<T> {
     }
 }
 
+/// True when `cursor` decodes as a valid page cursor.
+#[must_use]
+pub fn is_valid_page_cursor(cursor: &str) -> bool {
+    decode_page_cursor(cursor).is_some()
+}
+
+/// Exclusive end index of a page slice (`min(offset + page_size, total_len)`).
+#[must_use]
+pub fn page_end(offset: usize, page_size: usize, total_len: usize) -> usize {
+    offset.saturating_add(page_size).min(total_len)
+}
+
+/// Items remaining after `offset` (saturating).
+#[must_use]
+pub fn items_remaining(offset: usize, total_len: usize) -> usize {
+    total_len.saturating_sub(offset)
+}
+
 /// Paginate a slice of items (parity with TS `paginate`).
 #[must_use]
 pub fn paginate<T: Clone>(
@@ -303,6 +321,31 @@ mod tests {
         assert_eq!(off, next_page_offset(0, DEFAULT_PAGE_SIZE));
     }
 
+    #[test]
+    fn wave14_page_end_remaining_and_cursor_valid() {
+        assert_eq!(page_end(0, 50, 120), 50);
+        assert_eq!(page_end(100, 50, 120), 120);
+        assert_eq!(page_end(0, 50, 10), 10);
+        assert_eq!(page_end(200, 50, 120), 120);
+
+        assert_eq!(items_remaining(0, 120), 120);
+        assert_eq!(items_remaining(50, 120), 70);
+        assert_eq!(items_remaining(200, 120), 0);
+
+        let c = encode_page_cursor(10, 20);
+        assert!(is_valid_page_cursor(&c));
+        assert!(!is_valid_page_cursor("!!!"));
+        assert!(!is_valid_page_cursor(""));
+
+        // page_end aligns with paginate slice length for first page
+        let items: Vec<i32> = (0..75).collect();
+        let page = paginate(&items, None, PaginationOptions::default());
+        assert_eq!(
+            page.items.len(),
+            page_end(0, DEFAULT_PAGE_SIZE, items.len())
+        );
+    }
+
     /// Load committed golden fixture (TS oracle surface contract) and assert Rust paginate.
     #[test]
     fn pure_residual_pagination_golden_fixture() {
@@ -374,6 +417,41 @@ mod tests {
                 defs["maxPageSize"].as_u64().unwrap_or(0) as usize,
                 MAX_PAGE_SIZE
             );
+        }
+        if let Some(cases) = doc.get("pageEnd").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let offset = case["offset"].as_u64().unwrap_or(0) as usize;
+                let page_size = case["pageSize"].as_u64().unwrap_or(0) as usize;
+                let total = case["total"].as_u64().unwrap_or(0) as usize;
+                let expected = case["expectedEnd"].as_u64().unwrap_or(0) as usize;
+                assert_eq!(
+                    page_end(offset, page_size, total),
+                    expected,
+                    "case {name}"
+                );
+                if let Some(rem) = case.get("remaining").and_then(|v| v.as_u64()) {
+                    assert_eq!(
+                        items_remaining(offset, total),
+                        rem as usize,
+                        "case {name} remaining"
+                    );
+                }
+            }
+        }
+        if let Some(cases) = doc.get("cursorValid").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let expected = case["valid"].as_bool().unwrap_or(false);
+                if let Some(cursor) = case.get("cursor").and_then(|v| v.as_str()) {
+                    assert_eq!(is_valid_page_cursor(cursor), expected, "case {name}");
+                } else if case.get("encode").is_some() {
+                    let offset = case["encode"]["offset"].as_u64().unwrap_or(0) as usize;
+                    let page_size = case["encode"]["pageSize"].as_u64().unwrap_or(0) as usize;
+                    let c = encode_page_cursor(offset, page_size);
+                    assert_eq!(is_valid_page_cursor(&c), expected, "case {name}");
+                }
+            }
         }
     }
 }

@@ -16,6 +16,10 @@ pub mod error_code {
     pub const METHOD_NOT_FOUND: i64 = -32601;
     pub const INVALID_PARAMS: i64 = -32602;
     pub const INTERNAL_ERROR: i64 = -32603;
+    /// Inclusive lower bound of the reserved server-error range.
+    pub const SERVER_ERROR_MIN: i64 = -32099;
+    /// Inclusive upper bound of the reserved server-error range.
+    pub const SERVER_ERROR_MAX: i64 = -32000;
 }
 
 /// Request id: string or number.
@@ -188,7 +192,7 @@ pub fn is_standard_error_code(code: i64) -> bool {
 /// True when `code` is in the JSON-RPC reserved server-error range `[-32099, -32000]`.
 #[must_use]
 pub fn is_server_error_code(code: i64) -> bool {
-    (-32099..=-32000).contains(&code)
+    (error_code::SERVER_ERROR_MIN..=error_code::SERVER_ERROR_MAX).contains(&code)
 }
 
 /// Convenience: invalid params with optional structured `data`.
@@ -309,6 +313,51 @@ pub fn method_not_found_with_data(
         format!("Method not found: {}", method.into()),
         data,
     )
+}
+
+/// Extract `result` from a success response; `None` otherwise.
+#[must_use]
+pub fn message_result(msg: &JsonRpcMessage) -> Option<&Value> {
+    match msg {
+        JsonRpcMessage::Success(s) => Some(&s.result),
+        _ => None,
+    }
+}
+
+/// Extract error body from an error response; `None` otherwise.
+#[must_use]
+pub fn message_error(msg: &JsonRpcMessage) -> Option<&JsonRpcErrorBody> {
+    match msg {
+        JsonRpcMessage::Error(e) => Some(&e.error),
+        _ => None,
+    }
+}
+
+/// Extract optional structured `data` from an error response.
+#[must_use]
+pub fn message_error_data(msg: &JsonRpcMessage) -> Option<&Value> {
+    message_error(msg).and_then(|e| e.data.as_ref())
+}
+
+/// Convert a [`RequestId`] to a JSON value (number or string).
+#[must_use]
+pub fn request_id_to_value(id: &RequestId) -> Value {
+    match id {
+        RequestId::Number(n) => Value::Number((*n).into()),
+        RequestId::String(s) => Value::String(s.clone()),
+    }
+}
+
+/// Parse a JSON value as a [`RequestId`] (number or string only).
+#[must_use]
+pub fn request_id_from_value(v: &Value) -> Option<RequestId> {
+    if let Some(n) = v.as_i64() {
+        return Some(RequestId::Number(n));
+    }
+    if let Some(s) = v.as_str() {
+        return Some(RequestId::String(s.to_string()));
+    }
+    None
 }
 
 /// Type guard: message is a request (`id` + `method`).
@@ -587,11 +636,45 @@ mod tests {
         if let Some(range) = doc.get("serverErrorRange") {
             let min = range["min"].as_i64().unwrap_or(0);
             let max = range["max"].as_i64().unwrap_or(0);
+            assert_eq!(min, error_code::SERVER_ERROR_MIN);
+            assert_eq!(max, error_code::SERVER_ERROR_MAX);
             assert!(is_server_error_code(min));
             assert!(is_server_error_code(max));
             assert!(is_server_error_code(-32050));
             assert!(!is_server_error_code(min - 1));
             assert!(!is_server_error_code(max + 1));
+        }
+        if let Some(cases) = doc.get("messageResultExtract").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let input = case["input"].as_str().unwrap_or("");
+                match parse_message(input) {
+                    ParseResult::Ok(msg) => {
+                        if case.get("hasResult").and_then(|v| v.as_bool()).unwrap_or(false) {
+                            assert!(message_result(&msg).is_some(), "{name}");
+                        } else {
+                            assert!(message_result(&msg).is_none(), "{name}");
+                        }
+                        if case.get("hasError").and_then(|v| v.as_bool()).unwrap_or(false) {
+                            assert!(message_error(&msg).is_some(), "{name}");
+                        } else {
+                            assert!(message_error(&msg).is_none(), "{name}");
+                        }
+                    }
+                    ParseResult::Err(e) => panic!("{name}: {e}"),
+                }
+            }
+        }
+        if let Some(cases) = doc.get("requestIdRoundtrip").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let v = case.get("value").cloned().unwrap_or(Value::Null);
+                let id = match request_id_from_value(&v) {
+                    Some(id) => id,
+                    None => panic!("expected id for {name}"),
+                };
+                assert_eq!(request_id_to_value(&id), v, "{name}");
+            }
         }
         if let Some(names) = doc.get("standardErrorNames") {
             assert!(names.is_object(), "standardErrorNames object");
@@ -708,6 +791,58 @@ mod tests {
         let ok = success(RequestId::Number(2), json!(true));
         let msg = JsonRpcMessage::Success(ok);
         assert!(message_params(&msg).is_none());
+    }
+
+    #[test]
+    fn wave14_result_error_extractors_and_request_id() {
+        assert_eq!(error_code::SERVER_ERROR_MIN, -32099);
+        assert_eq!(error_code::SERVER_ERROR_MAX, -32000);
+        assert!(is_server_error_code(error_code::SERVER_ERROR_MIN));
+        assert!(is_server_error_code(error_code::SERVER_ERROR_MAX));
+
+        let ok = success(RequestId::Number(2), json!({"tools": []}));
+        let msg = JsonRpcMessage::Success(ok);
+        assert_eq!(message_result(&msg), Some(&json!({"tools": []})));
+        assert!(message_error(&msg).is_none());
+        assert!(message_error_data(&msg).is_none());
+
+        let err = invalid_params_with_data(
+            RequestId::String("a".into()),
+            "bad",
+            Some(json!({"field": "name"})),
+        );
+        let msg = JsonRpcMessage::Error(err);
+        assert!(message_result(&msg).is_none());
+        let body = match message_error(&msg) {
+            Some(b) => b,
+            None => panic!("expected error body"),
+        };
+        assert_eq!(body.code, error_code::INVALID_PARAMS);
+        assert_eq!(message_error_data(&msg), Some(&json!({"field": "name"})));
+
+        let req = request(RequestId::Number(1), "ping", None);
+        let msg = JsonRpcMessage::Request(req);
+        assert!(message_result(&msg).is_none());
+        assert!(message_error(&msg).is_none());
+
+        assert_eq!(
+            request_id_to_value(&RequestId::Number(7)),
+            json!(7)
+        );
+        assert_eq!(
+            request_id_to_value(&RequestId::String("x".into())),
+            json!("x")
+        );
+        assert_eq!(
+            request_id_from_value(&json!(9)),
+            Some(RequestId::Number(9))
+        );
+        assert_eq!(
+            request_id_from_value(&json!("id-1")),
+            Some(RequestId::String("id-1".into()))
+        );
+        assert!(request_id_from_value(&json!(true)).is_none());
+        assert!(request_id_from_value(&json!(null)).is_none());
     }
 
 }

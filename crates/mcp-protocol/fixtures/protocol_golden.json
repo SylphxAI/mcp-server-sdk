@@ -416,5 +416,93 @@
       },
       "progressToken": "prog-1"
     }
-  ]
+  ],
+  "messageRoles": [
+    "user",
+    "assistant"
+  ],
+  "contentTypes": [
+    "text",
+    "image",
+    "audio",
+    "resource"
+  ],
+  "audienceValues": [
+    "user",
+    "assistant"
+  ],
+  "serverToClientMethods": [
+    "sampling/createMessage",
+    "elicitation/create"
+  ],
+  "completionRefTypes": [
+    "ref/prompt",
+    "ref/resource"
+  ],
+  "elicitationPropertyTypes": [
+    "string",
+    "number",
+    "integer",
+    "boolean"
+  ],
+  "listChangedMethods": [
+    {
+      "method": "notifications/tools/list_changed",
+      "isListChanged": true
+    },
+    {
+      "method": "notifications/resources/list_changed",
+      "isListChanged": true
+    },
+    {
+      "method": "notifications/prompts/list_changed",
+      "isListChanged": true
+    },
+    {
+      "method": "notifications/roots/list_changed",
+      "isListChanged": true
+    },
+    {
+      "method": "notifications/resources/updated",
+      "isListChanged": false
+    }
+  ],
+  "logLevelAtLeast": [
+    {
+      "level": "error",
+      "minimum": "warning",
+      "expected": true
+    },
+    {
+      "level": "info",
+      "minimum": "error",
+      "expected": false
+    },
+    {
+      "level": "emergency",
+      "minimum": "debug",
+      "expected": true
+    }
+  ],
+  "progressTokenExtract": [
+    {
+      "name": "present",
+      "params": {
+        "name": "ping",
+        "_meta": {
+          "progressToken": "tok-g"
+        }
+      },
+      "expectedToken": "tok-g"
+    },
+    {
+      "name": "absent",
+      "params": {
+        "name": "ping"
+      }
+    }
+  ],
+  "rootsListChangedWire": {
+    "expectedMethod": "notifications/roots/list_changed"
+  }
 }

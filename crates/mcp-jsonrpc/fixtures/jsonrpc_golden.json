@@ -116,5 +116,35 @@
       "code": -32603,
       "isApplication": false
     }
+  ],
+  "messageResultExtract": [
+    {
+      "name": "success_has_result",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"ok\":true}}",
+      "hasResult": true,
+      "hasError": false
+    },
+    {
+      "name": "error_has_error",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":2,\"error\":{\"code\":-32602,\"message\":\"bad\"}}",
+      "hasResult": false,
+      "hasError": true
+    },
+    {
+      "name": "request_neither",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"ping\"}",
+      "hasResult": false,
+      "hasError": false
+    }
+  ],
+  "requestIdRoundtrip": [
+    {
+      "name": "number",
+      "value": 42
+    },
+    {
+      "name": "string",
+      "value": "req-9"
+    }
   ]
 }
