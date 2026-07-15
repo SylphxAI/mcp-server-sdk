@@ -3087,6 +3087,68 @@ pub fn elicitation_client_available(client_declared: bool, request_fn_present: b
 }
 
 
+// ── WAVE26 pure residual dens: cancellation / ping / logging level kernels ──
+
+/// Dual-oracle: cancellation notification method constant residual.
+pub const NOTIFICATION_CANCELLED: &str = "notifications/cancelled";
+
+/// Dual-oracle: ping method residual.
+pub const METHOD_PING: &str = "ping";
+
+/// Canonical logging levels (MCP spec residual closed set).
+pub const LOGGING_LEVELS: &[&str] = &[
+    "debug", "info", "notice", "warning", "error", "critical", "alert", "emergency",
+];
+
+/// True when level is a canonical logging level (case-sensitive dual-oracle of wire).
+#[must_use]
+pub fn logging_level_valid(level: &str) -> bool {
+    LOGGING_LEVELS.contains(&level)
+}
+
+/// Pure cancellation params envelope dual-oracle (`requestId` required residual).
+#[must_use]
+pub fn cancellation_params(request_id: serde_json::Value, reason: Option<&str>) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("requestId".into(), request_id);
+    if let Some(r) = reason.filter(|s| !s.is_empty()) {
+        map.insert("reason".into(), serde_json::Value::String(r.to_string()));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Pure ping result is empty object dual-oracle (wave26 residual alias inventory).
+#[must_use]
+pub fn wave26_ping_result_empty() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// Dual-oracle: logging/setLevel params gate — level must be canonical.
+#[must_use]
+pub fn logging_set_level_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("level")
+        .and_then(|v| v.as_str())
+        .is_some_and(logging_level_valid)
+}
+
+/// Dual-oracle: progress token presence on call params residual deepen.
+#[must_use]
+pub fn call_params_has_progress_token(params: &serde_json::Value) -> bool {
+    progress_token_from_call_params(params).is_some()
+        || params
+            .get("_meta")
+            .and_then(|m| progress_token_from_meta(m))
+            .is_some()
+}
+
+/// Dual-oracle: empty roots list result residual.
+#[must_use]
+pub fn empty_roots_list_result() -> serde_json::Value {
+    serde_json::json!({"roots": []})
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4304,7 +4366,7 @@ mod tests {
         assert!(caps.get("logging").is_some());
         assert!(caps.get("completions").is_some());
 
-        assert_eq!(ping_result(), serde_json::json!({}));
+        assert_eq!(wave26_ping_result_empty(), serde_json::json!({}));
 
         let with_sc = tool_result_with_structured(
             &[Content::text("ok")],
@@ -5303,5 +5365,26 @@ mod tests {
         assert!(!sampling_client_available(true, false));
         assert!(elicitation_client_available(true, true));
         assert!(!elicitation_client_available(false, true));
+    }
+
+    #[test]
+    fn wave26_cancellation_ping_logging_residual() {
+        assert_eq!(NOTIFICATION_CANCELLED, "notifications/cancelled");
+        assert_eq!(METHOD_PING, "ping");
+        assert_eq!(LOGGING_LEVELS.len(), 8);
+        assert!(logging_level_valid("warning"));
+        assert!(!logging_level_valid("WARN"));
+        let p = cancellation_params(serde_json::json!(1), Some("user"));
+        assert_eq!(p["requestId"], 1);
+        assert_eq!(p["reason"], "user");
+        let p2 = cancellation_params(serde_json::json!("a"), None);
+        assert!(p2.get("reason").is_none());
+        assert_eq!(wave26_ping_result_empty(), serde_json::json!({}));
+        assert!(logging_set_level_params_valid(&serde_json::json!({"level": "info"})));
+        assert!(!logging_set_level_params_valid(&serde_json::json!({"level": "verbose"})));
+        assert_eq!(empty_roots_list_result()["roots"], serde_json::json!([]));
+        let with_tok = serde_json::json!({"name": "t", "_meta": {"progressToken": "p1"}});
+        assert!(call_params_has_progress_token(&with_tok));
+        assert!(!call_params_has_progress_token(&serde_json::json!({"name": "t"})));
     }
 }
