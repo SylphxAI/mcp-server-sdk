@@ -670,6 +670,62 @@ pub fn request_id_is_string(id: &RequestId) -> bool {
     matches!(id, RequestId::String(_))
 }
 
+
+// --- WAVE19 pure residual ---
+
+/// Parse a JSON-RPC **batch** payload (JSON array of messages).
+/// Returns Ok(messages) only when every element is a valid JSON-RPC 2.0 message object.
+/// Empty arrays are rejected (JSON-RPC 2.0: batch must be non-empty).
+pub fn parse_batch_messages(input: &str) -> Result<Vec<JsonRpcMessage>, String> {
+    let trimmed = input.trim();
+    if !trimmed.starts_with('[') {
+        return Err("batch payload must be a JSON array".into());
+    }
+    let value: serde_json::Value = serde_json::from_str(trimmed)
+        .map_err(|e| format!("JSON parse error: {e}"))?;
+    let arr = value
+        .as_array()
+        .ok_or_else(|| "batch payload must be a JSON array".to_string())?;
+    if arr.is_empty() {
+        return Err("batch must be a non-empty array".into());
+    }
+    let mut out = Vec::with_capacity(arr.len());
+    for (i, el) in arr.iter().enumerate() {
+        match parse_message_value(el.clone()) {
+            ParseResult::Ok(msg) => out.push(msg),
+            ParseResult::Err(e) => return Err(format!("batch[{i}]: {e}")),
+        }
+    }
+    Ok(out)
+}
+
+/// Normalized method name from a request/notification message (trimmed); None otherwise.
+#[must_use]
+pub fn message_method_normalized(msg: &JsonRpcMessage) -> Option<&str> {
+    message_method(msg).and_then(normalize_method_name)
+}
+
+/// True when message is a request that carries a `params` field (including null/empty object).
+#[must_use]
+pub fn request_has_params(msg: &JsonRpcMessage) -> bool {
+    matches!(msg, JsonRpcMessage::Request(r) if r.params.is_some())
+}
+
+/// Display form of RequestId for logging (numbers as decimal, strings as-is).
+#[must_use]
+pub fn request_id_display(id: &RequestId) -> String {
+    match id {
+        RequestId::Number(n) => n.to_string(),
+        RequestId::String(s) => s.clone(),
+    }
+}
+
+/// True when two request ids are equal (wire equality).
+#[must_use]
+pub fn request_ids_equal(a: &RequestId, b: &RequestId) -> bool {
+    a == b
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1372,6 +1428,51 @@ mod tests {
         assert!(is_null_result_success(&empty));
         let with = JsonRpcMessage::Success(success(RequestId::Number(1), json!({"ok": true})));
         assert!(!is_null_result_success(&with));
+    }
+
+    #[test]
+    fn wave19_batch_parse_and_message_helpers() {
+        let batch = r#"[
+          {"jsonrpc":"2.0","id":1,"method":"ping"},
+          {"jsonrpc":"2.0","method":"notifications/initialized"},
+          {"jsonrpc":"2.0","id":2,"result":null}
+        ]"#;
+        let msgs = match parse_batch_messages(batch) {
+            Ok(m) => m,
+            Err(e) => panic!("batch: {e}"),
+        };
+        assert_eq!(msgs.len(), 3);
+        assert!(is_request(&msgs[0]));
+        assert!(is_notification(&msgs[1]));
+        assert!(is_null_result_success(&msgs[2]));
+        assert_eq!(message_method_normalized(&msgs[0]), Some("ping"));
+
+        assert!(parse_batch_messages("[]").is_err());
+        assert!(parse_batch_messages(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#).is_err());
+        assert!(parse_batch_messages(r#"[{"jsonrpc":"1.0","id":1,"method":"x"}]"#).is_err());
+
+        let req = JsonRpcMessage::Request(request(
+            RequestId::Number(7),
+            "  tools/list  ",
+            Some(json!({"cursor": "a"})),
+        ));
+        // method stored as provided; normalize extracts trim
+        assert_eq!(message_method_normalized(&req), Some("tools/list"));
+        assert!(request_has_params(&req));
+        let bare = JsonRpcMessage::Request(request(RequestId::Number(1), "ping", None));
+        assert!(!request_has_params(&bare));
+
+        let err = JsonRpcMessage::Error(invalid_params(RequestId::Number(3), "bad"));
+        assert_eq!(message_error_code(&err), Some(-32602));
+        assert!(message_error_code(&bare).is_none());
+
+        assert_eq!(request_id_display(&RequestId::Number(42)), "42");
+        assert_eq!(request_id_display(&RequestId::String("abc".into())), "abc");
+        assert!(request_ids_equal(&RequestId::Number(1), &RequestId::Number(1)));
+        assert!(!request_ids_equal(
+            &RequestId::Number(1),
+            &RequestId::String("1".into())
+        ));
     }
 
 }

@@ -14,7 +14,7 @@
     {
       "path": "docs/adr/ADR-PROPOSED-fleet-mcp-server-sdk-rust-north-star.md",
       "status": "proposed",
-      "note": "North Star ADR on disk \u2014 pending ADR PR; ADR number will equal introducing PR number per Doctrine"
+      "note": "North Star ADR on disk — pending ADR PR; ADR number will equal introducing PR number per Doctrine"
     }
   ],
   "reauditRef": "rej-010",
@@ -49,7 +49,7 @@
       "parityTest": "cargo test -p mcp-streamable-http --lib",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE5 product kernels unit-green + golden fixtures; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE5 product kernels unit-green + golden fixtures; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -63,7 +63,7 @@
       "parityTest": "cargo test -p mcp-session-guard --lib",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE5 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE5 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -77,7 +77,7 @@
       "parityTest": "cargo test -p mcp-stdio --lib",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -91,7 +91,7 @@
       "notes": "WAVE4 product: createMcpApp/createServer state builders, capability styles, identity defaults, conformance catalog. Handler dispatch + fetch adapter remain app-layer. TS read-only oracle.",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -105,7 +105,7 @@
       "notes": "WAVE4 product: ToolBuilder/ToolDefinitionMeta + content helpers + normalize_result + to_protocol. Vex schema validate + async handler execution remain app-layer.",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -119,7 +119,7 @@
       "notes": "WAVE4 product: Resource/Template builders, matches_template/extract_params, resourceText/Blob. Handler I/O remains app-layer.",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -133,7 +133,7 @@
       "notes": "WAVE4 product: PromptBuilder, args, messages/user/assistant/interpolate. Schema extractObjectFields remains app-layer.",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -147,7 +147,7 @@
       "notes": "WAVE4 product: sampling method/params/result pure client kernels. Transport send injection remains app-layer.",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -161,7 +161,7 @@
       "notes": "WAVE4 product: elicitation schema/params/result pure client kernels. Transport send injection remains app-layer.",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -175,7 +175,7 @@
       "parityTest": "cargo test -p mcp-notifications --lib",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -188,7 +188,7 @@
       "parityTest": "cargo test -p mcp-pagination pure_residual_pagination_golden_fixture",
       "proof": {
         "status": "missing",
-        "staleReason": "Pure residual on disk with golden fixture regression; SHA-bound TS oracle harness for full differential_green still missing \u2014 NOT authority_rust/ts_deleted"
+        "staleReason": "Pure residual on disk with golden fixture regression; SHA-bound TS oracle harness for full differential_green still missing — NOT authority_rust/ts_deleted"
       },
       "notes": "BW1 pure residual: cursor paginate + expanded golden fixture. TS pagination remains consumer API. No authority_rust/ts_deleted. WAVE16 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted). WAVE4: retained rust_impl pure residual; product list wiring uses mcp-app pagination meta."
     },
@@ -199,7 +199,7 @@
       "state": "rust_impl",
       "proof": {
         "status": "missing",
-        "staleReason": "Pure residual mcp-jsonrpc + golden fixture on main; phantom mcp-jsonrpc-protocol crate and scripts/run-mcp-server-sdk-differential.sh NOT on main \u2014 no differential_green",
+        "staleReason": "Pure residual mcp-jsonrpc + golden fixture on main; phantom mcp-jsonrpc-protocol crate and scripts/run-mcp-server-sdk-differential.sh NOT on main — no differential_green",
         "dependencyGlobs": [
           "src/protocol/jsonrpc.ts",
           "crates/mcp-jsonrpc/**"
@@ -235,7 +235,7 @@
       "notes": "WAVE4 product: verify_api_key (SHA-256 + CT eq), header read, unauthorized body, authorize_request gate. Custom authenticate hook remains transport binding.",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -249,7 +249,7 @@
       "parityTest": "cargo test -p mcp-app --lib",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     },
     {
@@ -263,7 +263,7 @@
       "parityTest": "cargo test -p mcp-app conformance_catalog_and_config",
       "proof": {
         "status": "missing",
-        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed — TS package surface remains oracle"
       }
     }
   ],
@@ -447,8 +447,8 @@
       ],
       "notes": "WAVE15 pure residual deepen only. rust_impl x3 pure residual; ts_only x13 product path. prod_audit_fail. Full package remains TypeScript product authority."
     },
-    "lastMutation": "WAVE4-PRODUCT-SURFACES-2026-07-15",
-    "updatedAt": "2026-07-15T18:00:00Z",
+    "lastMutation": "WAVE19-PURE-RESIDUAL-2026-07-15",
+    "updatedAt": "2026-07-15T18:31:02Z",
     "honesty_2026_07_15_wave17": {
       "at": "2026-07-15T17:40:00Z",
       "liveHead": "origin/main",
@@ -473,7 +473,7 @@
         "product_effect_live",
         "sole_rust_production_authority"
       ],
-      "notes": "WAVE17 pure residual deepen only. rust_impl\u00d73 pure residual; ts_only\u00d713 product path. prod_audit_fail until true sole authority."
+      "notes": "WAVE17 pure residual deepen only. rust_impl×3 pure residual; ts_only×13 product path. prod_audit_fail until true sole authority."
     },
     "honesty_2026_07_15_wave4_product": {
       "at": "2026-07-15T18:00:00Z",
@@ -513,7 +513,7 @@
         "product_effect_live",
         "sole_rust_production_authority"
       ],
-      "notes": "WAVE4 product kernels: 6 new crates covering 11 former ts_only product surfaces \u2192 rust_impl. streamable-http + session-guard remain ts_only. TS package is read-only oracle; no ts_deleted. prod_audit_fail until differential_green + sole authority."
+      "notes": "WAVE4 product kernels: 6 new crates covering 11 former ts_only product surfaces → rust_impl. streamable-http + session-guard remain ts_only. TS package is read-only oracle; no ts_deleted. prod_audit_fail until differential_green + sole authority."
     },
     "honesty_2026_07_15_wave5_product": {
       "at": "2026-07-15T17:47:59Z",
@@ -536,11 +536,38 @@
         "prod_audit_pass"
       ],
       "notes": "WAVE5 closed remaining ts_only caps with real product crates + async serve handle. Golden fixtures/streamable-http/* exercised in-process. No TCP listen binary; no dual-oracle differential harness on main."
-    }
+    },
+    "honesty_2026_07_15_wave19": {
+      "at": "2026-07-15T18:31:02Z",
+      "pureResidualDeepen": [
+        "parse_batch_messages",
+        "message_method_normalized",
+        "request_has_params",
+        "request_id_display",
+        "request_ids_equal",
+        "resource_mime_type",
+        "tool_title_of",
+        "prompt_argument_names",
+        "content_has_annotations",
+        "initialize_server_name/version",
+        "tool_result_content_count",
+        "remaining_items/page_window/cursors_equal/normalize_cursor_option/is_valid_page_size"
+      ],
+      "notClaims": [
+        "authority_rust",
+        "ts_deleted",
+        "differential_green",
+        "product_effect_live",
+        "sole_rust_production_authority",
+        "prod_audit_pass"
+      ],
+      "notes": "WAVE19 pure residual deepen only. rust_impl×16 product surfaces retained; TS package remains read-only oracle. prod_audit_fail until sole production authority + differential_green."
+    },
+    "notes": "WAVE19 pure residual batch/parse/extractors dual-oracle deepen. NO authority_rust/ts_deleted/prod_audit_pass. "
   },
   "promotionFreeze": {
     "active": true,
-    "reason": "rej-010 promotion freeze \u2014 0 capabilities with differential_green or canary_green proof",
+    "reason": "rej-010 promotion freeze — 0 capabilities with differential_green or canary_green proof",
     "rejectionRef": "rej-010",
     "since": "2026-07-10T22:00:00Z"
   },
@@ -556,7 +583,7 @@
         "docs/specs/mcp-server-sdk-parity-slice.json",
         "verification/mcp-server-sdk-2026-07-10T2200-streamable-http-differential.json"
       ],
-      "notes": "cycle34 rej-010: streamable-http + session-guard differential harness + matrix gate. rust_impl only \u2014 proof.status missing."
+      "notes": "cycle34 rej-010: streamable-http + session-guard differential harness + matrix gate. rust_impl only — proof.status missing."
     }
   },
   "cycle38": {
@@ -585,7 +612,7 @@
       "crates/mcp-streamable-http/tests/streamable_http_differential.rs",
       "verification/mcp-server-sdk-2026-07-10T2200-streamable-http-differential.json"
     ],
-    "notes": "cycle39 rej-010: S4 streamable-http differential harness re-verified on disk at clonePath. rust_impl only \u2014 proof.status missing until differential_green at bound SHAs."
+    "notes": "cycle39 rej-010: S4 streamable-http differential harness re-verified on disk at clonePath. rust_impl only — proof.status missing until differential_green at bound SHAs."
   },
   "cycle43": {
     "boundedSlice": "transport.streamable-http|transport.session-guard-helpers",
@@ -597,7 +624,7 @@
       "scripts/run-mcp-server-sdk-differential.sh",
       "crates/mcp-streamable-http/tests/streamable_http_differential.rs"
     ],
-    "notes": "cycle43 rej-010: bounded --slice streamable-http|session-guard-helpers entrypoints. rust_impl only \u2014 proof.status missing until differential_green at bound SHAs."
+    "notes": "cycle43 rej-010: bounded --slice streamable-http|session-guard-helpers entrypoints. rust_impl only — proof.status missing until differential_green at bound SHAs."
   },
   "cycle47": {
     "boundedSlice": "transport.streamable-http|transport.session-guard-helpers",
@@ -614,13 +641,13 @@
       "fixtures/streamable-http/contract-manifest.json",
       "verification/mcp-server-sdk-2026-07-10T2200-streamable-http-differential.json"
     ],
-    "notes": "cycle47 rej-010: cycle43 harness deliverables synced from clonePath to canonicalPath. rust_impl only \u2014 proof.status missing until differential_green at bound SHAs. Full crate src + src/app remain at sourceClonePath for end-to-end harness execution."
+    "notes": "cycle47 rej-010: cycle43 harness deliverables synced from clonePath to canonicalPath. rust_impl only — proof.status missing until differential_green at bound SHAs. Full crate src + src/app remain at sourceClonePath for end-to-end harness execution."
   },
   "clonePath": "/home/codex/src/github.com/SylphxAI/mcp-server-sdk",
   "harnessPath": "scripts/run-mcp-server-sdk-differential.sh",
-  "cycle50Slice": "streamable-http \u2014 bounded --slice entrypoint; bash scripts/run-mcp-server-sdk-differential.sh --slice streamable-http",
-  "cycle51Slice": "session-guard-helpers \u2014 bounded --slice entrypoint; bash scripts/run-mcp-server-sdk-differential.sh --slice session-guard-helpers",
-  "cycle62Slice": "jsonrpc-protocol \u2014 bounded --slice entrypoint; bash scripts/run-mcp-server-sdk-differential.sh --slice jsonrpc-protocol; proof.status missing; authority_rust blocked per rej-010",
+  "cycle50Slice": "streamable-http — bounded --slice entrypoint; bash scripts/run-mcp-server-sdk-differential.sh --slice streamable-http",
+  "cycle51Slice": "session-guard-helpers — bounded --slice entrypoint; bash scripts/run-mcp-server-sdk-differential.sh --slice session-guard-helpers",
+  "cycle62Slice": "jsonrpc-protocol — bounded --slice entrypoint; bash scripts/run-mcp-server-sdk-differential.sh --slice jsonrpc-protocol; proof.status missing; authority_rust blocked per rej-010",
   "cycle50": {
     "boundedSlice": "streamable-http",
     "status": "rust_impl_on_disk_verified",
@@ -637,7 +664,7 @@
     "caseCounts": {
       "streamableHttp": 6
     },
-    "notes": "cycle50 rej-010: streamable-http bounded differential harness on-disk verify. rust_impl ONLY \u2014 proof.status missing until differential_green at bound SHAs."
+    "notes": "cycle50 rej-010: streamable-http bounded differential harness on-disk verify. rust_impl ONLY — proof.status missing until differential_green at bound SHAs."
   },
   "cycle51": {
     "boundedSlice": "session-guard-helpers",
@@ -658,7 +685,7 @@
     "caseCounts": {
       "sessionGuard": 1
     },
-    "notes": "cycle51 rej-010: session-guard-helpers bounded differential harness on-disk verify at canonicalPath. rust_impl ONLY \u2014 proof.status missing until differential_green at bound SHAs."
+    "notes": "cycle51 rej-010: session-guard-helpers bounded differential harness on-disk verify at canonicalPath. rust_impl ONLY — proof.status missing until differential_green at bound SHAs."
   },
   "cycle62": {
     "boundedSlice": "jsonrpc-protocol",
@@ -676,10 +703,10 @@
     "caseCounts": {
       "jsonrpcProtocol": 8
     },
-    "notes": "cycle62 rej-010: api/jsonrpc-protocol ts_only\u2192rust_impl bounded differential harness on-disk verify. rust_impl ONLY \u2014 proof.status missing until differential_green at bound SHAs."
+    "notes": "cycle62 rej-010: api/jsonrpc-protocol ts_only→rust_impl bounded differential harness on-disk verify. rust_impl ONLY — proof.status missing until differential_green at bound SHAs."
   },
-  "cycle63Slice": "api/mcp-protocol \u2014 next ts_only slice deferred; jsonrpc-protocol re-verify via bash scripts/run-mcp-server-sdk-differential.sh --slice jsonrpc-protocol",
-  "cycle64Slice": "api/mcp-protocol \u2014 cycle64 skip; streamable-http re-verify via bash scripts/run-mcp-server-sdk-differential.sh --slice streamable-http",
+  "cycle63Slice": "api/mcp-protocol — next ts_only slice deferred; jsonrpc-protocol re-verify via bash scripts/run-mcp-server-sdk-differential.sh --slice jsonrpc-protocol",
+  "cycle64Slice": "api/mcp-protocol — cycle64 skip; streamable-http re-verify via bash scripts/run-mcp-server-sdk-differential.sh --slice streamable-http",
   "cycle63": {
     "boundedSlice": "api/mcp-protocol",
     "status": "harness_metadata_only",
@@ -688,8 +715,8 @@
     "harnessPath": "scripts/run-mcp-server-sdk-differential.sh --slice jsonrpc-protocol",
     "tsOnlyAction": "defer",
     "nextTsOnlyCandidate": "api/mcp-protocol",
-    "skipReason": "canonical src/protocol/mcp.ts not on disk at SylphxAI/mcp-server-sdk \u2014 bounded differential deferred",
-    "notes": "cycle63 rej-010: api/mcp-protocol ts_only harness metadata only. rust_impl ONLY \u2014 proof.status missing until differential_green at bound SHAs."
+    "skipReason": "canonical src/protocol/mcp.ts not on disk at SylphxAI/mcp-server-sdk — bounded differential deferred",
+    "notes": "cycle63 rej-010: api/mcp-protocol ts_only harness metadata only. rust_impl ONLY — proof.status missing until differential_green at bound SHAs."
   },
   "cycle64": {
     "boundedSlice": "api/mcp-protocol",
@@ -700,7 +727,7 @@
     "skipReason": "api/mcp-protocol pending canonical src/protocol/mcp.ts sync",
     "harnessPath": "scripts/run-mcp-server-sdk-differential.sh --slice streamable-http",
     "reverifySlice": "streamable-http",
-    "notes": "cycle64 rej-010: api/mcp-protocol ts_only deferred \u2014 harness metadata only."
+    "notes": "cycle64 rej-010: api/mcp-protocol ts_only deferred — harness metadata only."
   },
   "cycle65": {
     "boundedSlice": "pure-residual-honesty+clippy+golden",
@@ -714,7 +741,7 @@
       "docs/specs/migration-ledger.json honesty demote phantom transport rust_impl",
       "CI cargo test/clippy packaging gate"
     ],
-    "notes": "ts_deleted NOT claimed \u2014 residual TS is entire product surface. authority_rust 0. pure residual library crates only."
+    "notes": "ts_deleted NOT claimed — residual TS is entire product surface. authority_rust 0. pure residual library crates only."
   },
   "cycle66": {
     "boundedSlice": "pure-residual-wave10-protocol-helpers",

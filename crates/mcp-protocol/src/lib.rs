@@ -2330,6 +2330,82 @@ pub fn progress_value_from_params(params: &serde_json::Value) -> Option<f64> {
     params.get("progress").and_then(|v| v.as_f64())
 }
 
+
+// --- WAVE19 pure residual ---
+
+/// Extract `mimeType` from a protocol resource wire object.
+#[must_use]
+pub fn resource_mime_type(resource: &serde_json::Value) -> Option<&str> {
+    resource.get("mimeType").and_then(|v| v.as_str()).filter(|s| !s.is_empty())
+}
+
+/// Extract optional tool title from a Tool wire object / struct JSON.
+#[must_use]
+pub fn tool_title_of(tool: &serde_json::Value) -> Option<&str> {
+    tool.get("title").and_then(|v| v.as_str()).filter(|s| !s.is_empty())
+}
+
+/// Collect prompt argument names from a prompt wire object (order preserved).
+#[must_use]
+pub fn prompt_argument_names(prompt: &serde_json::Value) -> Vec<String> {
+    prompt
+        .get("arguments")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|a| a.get("name").and_then(|n| n.as_str()).map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// True when a Content wire object carries non-empty annotations.
+#[must_use]
+pub fn content_has_annotations(content: &serde_json::Value) -> bool {
+    match content.get("annotations") {
+        Some(a) if a.is_object() => !a.as_object().map(|o| o.is_empty()).unwrap_or(true),
+        _ => false,
+    }
+}
+
+/// Server name from initialize result envelope.
+#[must_use]
+pub fn initialize_server_name(result: &serde_json::Value) -> Option<&str> {
+    result
+        .get("serverInfo")
+        .and_then(|s| s.get("name"))
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+}
+
+/// Server version from initialize result envelope.
+#[must_use]
+pub fn initialize_server_version(result: &serde_json::Value) -> Option<&str> {
+    result
+        .get("serverInfo")
+        .and_then(|s| s.get("version"))
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+}
+
+/// Count of content blocks on a tool result (0 if missing/non-array).
+#[must_use]
+pub fn tool_result_content_count(result: &serde_json::Value) -> usize {
+    result
+        .get("content")
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0)
+}
+
+/// True when method is logging-related (`logging/*` or `notifications/message`).
+#[must_use]
+pub fn is_logging_method(method: &str) -> bool {
+    method == methods::LOGGING_SET_LEVEL
+        || method == methods::LOG_MESSAGE
+        || method.starts_with("logging/")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4032,8 +4108,12 @@ mod tests {
         assert!(!content_array_nonempty(&serde_json::json!({"content":[]})));
 
         let res = protocol_resource("a", "file:///a", None, None);
+        let res_wire = match serde_json::to_value(&res) {
+            Ok(v) => v,
+            Err(e) => panic!("resource wire: {e}"),
+        };
         let resources = resources_list_result(
-            &[serde_json::to_value(&res).expect("resource wire")],
+            &[res_wire],
             None,
         );
         assert_eq!(
@@ -4126,6 +4206,45 @@ mod tests {
         );
         assert_eq!(progress_value_from_params(&prog), Some(0.5));
         assert!(progress_value_from_params(&serde_json::json!({})).is_none());
+    }
+
+    #[test]
+    fn wave19_resource_tool_prompt_initialize_extractors() {
+        let res = serde_json::json!({"uri":"file:///a","name":"a","mimeType":"text/plain"});
+        assert_eq!(resource_mime_type(&res), Some("text/plain"));
+        assert!(resource_mime_type(&serde_json::json!({"uri":"x"})).is_none());
+
+        let tool = serde_json::json!({"name":"ping","title":"Ping tool","inputSchema":{"type":"object"}});
+        assert_eq!(tool_title_of(&tool), Some("Ping tool"));
+        assert!(tool_title_of(&serde_json::json!({"name":"x"})).is_none());
+
+        let prompt = serde_json::json!({
+            "name":"greet",
+            "arguments":[{"name":"who","required":true},{"name":"tone"}]
+        });
+        assert_eq!(prompt_argument_names(&prompt), vec!["who".to_string(), "tone".to_string()]);
+        assert!(prompt_argument_names(&serde_json::json!({"name":"x"})).is_empty());
+
+        let with_ann = serde_json::json!({"type":"text","text":"hi","annotations":{"priority":0.5}});
+        assert!(content_has_annotations(&with_ann));
+        assert!(!content_has_annotations(&serde_json::json!({"type":"text","text":"hi"})));
+        assert!(!content_has_annotations(&serde_json::json!({"type":"text","text":"hi","annotations":{}})));
+
+        let init = serde_json::json!({
+            "protocolVersion":"2025-03-26",
+            "serverInfo":{"name":"demo","version":"1.2.3"},
+            "capabilities":{}
+        });
+        assert_eq!(initialize_server_name(&init), Some("demo"));
+        assert_eq!(initialize_server_version(&init), Some("1.2.3"));
+
+        let tr = serde_json::json!({"content":[{"type":"text","text":"a"},{"type":"text","text":"b"}]});
+        assert_eq!(tool_result_content_count(&tr), 2);
+        assert_eq!(tool_result_content_count(&serde_json::json!({})), 0);
+
+        assert!(is_logging_method(methods::LOGGING_SET_LEVEL));
+        assert!(is_logging_method(methods::LOG_MESSAGE));
+        assert!(!is_logging_method(methods::TOOLS_CALL));
     }
 
 }

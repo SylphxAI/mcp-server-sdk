@@ -351,6 +351,48 @@ pub fn paginate<T: Clone>(
     }
 }
 
+
+// --- WAVE19 pure residual ---
+
+/// Remaining item count after `offset` (0 when past end).
+#[must_use]
+pub fn remaining_items(offset: usize, total_len: usize) -> usize {
+    total_len.saturating_sub(offset)
+}
+
+/// Inclusive start / exclusive end window for a page, clamped to collection bounds.
+#[must_use]
+pub fn page_window(offset: usize, page_size: usize, total_len: usize) -> (usize, usize) {
+    let start = clamp_offset(offset, total_len);
+    let end = start.saturating_add(page_size).min(total_len);
+    (start, end)
+}
+
+/// True when two optional cursors are equal (both None, or same non-empty string).
+#[must_use]
+pub fn cursors_equal(a: Option<&str>, b: Option<&str>) -> bool {
+    match (a, b) {
+        (None, None) => true,
+        (Some(x), Some(y)) => x == y,
+        _ => false,
+    }
+}
+
+/// Normalize cursor option: empty/whitespace-only → None.
+#[must_use]
+pub fn normalize_cursor_option(cursor: Option<&str>) -> Option<&str> {
+    cursor.and_then(|c| {
+        let t = c.trim();
+        if t.is_empty() { None } else { Some(t) }
+    })
+}
+
+/// True when page_size is within (0, max] inclusive of max, exclusive of 0.
+#[must_use]
+pub fn is_valid_page_size(page_size: usize, max_page_size: usize) -> bool {
+    page_size > 0 && page_size <= max_page_size
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -870,4 +912,32 @@ mod tests {
         assert!(!would_return_items(5, 10, 5));
         assert!(!would_return_items(0, 0, 5));
     }
+    #[test]
+    fn wave19_remaining_window_cursor_normalize() {
+        assert_eq!(remaining_items(0, 10), 10);
+        assert_eq!(remaining_items(7, 10), 3);
+        assert_eq!(remaining_items(10, 10), 0);
+        assert_eq!(remaining_items(12, 10), 0);
+
+        assert_eq!(page_window(0, 50, 120), (0, 50));
+        assert_eq!(page_window(100, 50, 120), (100, 120));
+        assert_eq!(page_window(200, 50, 120), (120, 120));
+        assert_eq!(page_window(0, 50, 0), (0, 0));
+
+        assert!(cursors_equal(None, None));
+        assert!(cursors_equal(Some("a"), Some("a")));
+        assert!(!cursors_equal(Some("a"), Some("b")));
+        assert!(!cursors_equal(None, Some("a")));
+
+        assert_eq!(normalize_cursor_option(Some("  abc  ")), Some("abc"));
+        assert!(normalize_cursor_option(Some("   ")).is_none());
+        assert!(normalize_cursor_option(None).is_none());
+        assert!(normalize_cursor_option(Some("")).is_none());
+
+        assert!(is_valid_page_size(1, 50));
+        assert!(is_valid_page_size(50, 50));
+        assert!(!is_valid_page_size(0, 50));
+        assert!(!is_valid_page_size(51, 50));
+    }
+
 }
