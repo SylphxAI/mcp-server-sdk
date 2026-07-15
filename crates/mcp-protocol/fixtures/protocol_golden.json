@@ -173,5 +173,52 @@
     "messageCount": 1,
     "model": "fixture-model",
     "stopReason": "endTurn"
-  }
+  },
+  "requestParams": [
+    {
+      "name": "initialize_client",
+      "kind": "initialize",
+      "protocolVersion": "2025-03-26",
+      "clientName": "fixture-client",
+      "clientVersion": "0.1.0",
+      "capabilities": { "sampling": {} }
+    },
+    {
+      "name": "tools_call_ping",
+      "kind": "tools_call",
+      "toolName": "ping",
+      "arguments": { "n": 1 }
+    },
+    {
+      "name": "resources_read_file",
+      "kind": "resources_read",
+      "uri": "file:///README.md"
+    },
+    {
+      "name": "list_with_cursor",
+      "kind": "list",
+      "cursor": "abc"
+    },
+    {
+      "name": "list_empty",
+      "kind": "list",
+      "cursor": null
+    },
+    {
+      "name": "completion_prompt_ref",
+      "kind": "completion",
+      "refType": "ref/prompt",
+      "refName": "greet",
+      "argumentName": "who",
+      "argumentValue": "A"
+    }
+  ],
+  "methodKinds": [
+    { "method": "initialize", "kind": "request" },
+    { "method": "tools/call", "kind": "request" },
+    { "method": "ping", "kind": "request" },
+    { "method": "notifications/initialized", "kind": "notification" },
+    { "method": "notifications/tools/list_changed", "kind": "notification" },
+    { "method": "notifications/progress", "kind": "notification" }
+  ]
 }

@@ -185,6 +185,53 @@ pub fn is_standard_error_code(code: i64) -> bool {
     )
 }
 
+/// True when `code` is in the JSON-RPC reserved server-error range `[-32099, -32000]`.
+#[must_use]
+pub fn is_server_error_code(code: i64) -> bool {
+    (-32099..=-32000).contains(&code)
+}
+
+/// Convenience: invalid params with optional structured `data`.
+#[must_use]
+pub fn invalid_params_with_data(
+    id: RequestId,
+    message: impl Into<String>,
+    data: Option<Value>,
+) -> JsonRpcError {
+    error_response(Some(id), error_code::INVALID_PARAMS, message, data)
+}
+
+/// Convenience: internal error with optional structured `data`.
+#[must_use]
+pub fn internal_error_with_data(
+    id: Option<RequestId>,
+    message: impl Into<String>,
+    data: Option<Value>,
+) -> JsonRpcError {
+    error_response(id, error_code::INTERNAL_ERROR, message, data)
+}
+
+/// Extract method name from request/notification messages; `None` for responses.
+#[must_use]
+pub fn message_method(msg: &JsonRpcMessage) -> Option<&str> {
+    match msg {
+        JsonRpcMessage::Request(r) => Some(r.method.as_str()),
+        JsonRpcMessage::Notification(n) => Some(n.method.as_str()),
+        JsonRpcMessage::Success(_) | JsonRpcMessage::Error(_) => None,
+    }
+}
+
+/// Extract request id from request/success/error; `None` for notifications or null-id errors.
+#[must_use]
+pub fn message_id(msg: &JsonRpcMessage) -> Option<&RequestId> {
+    match msg {
+        JsonRpcMessage::Request(r) => Some(&r.id),
+        JsonRpcMessage::Success(s) => Some(&s.id),
+        JsonRpcMessage::Error(e) => e.id.as_ref(),
+        JsonRpcMessage::Notification(_) => None,
+    }
+}
+
 /// Type guard: message is a request (`id` + `method`).
 #[must_use]
 pub fn is_request(msg: &JsonRpcMessage) -> bool {
@@ -386,6 +433,47 @@ mod tests {
         assert!(!is_standard_error_code(0));
     }
 
+    #[test]
+    fn wave12_server_error_range_and_message_extractors() {
+        assert!(is_server_error_code(-32000));
+        assert!(is_server_error_code(-32099));
+        assert!(is_server_error_code(-32050));
+        assert!(!is_server_error_code(-32100));
+        assert!(!is_server_error_code(-31999));
+        assert!(!is_server_error_code(error_code::PARSE_ERROR));
+
+        let e = invalid_params_with_data(
+            RequestId::Number(9),
+            "bad field",
+            Some(json!({"field": "name"})),
+        );
+        assert_eq!(e.error.code, error_code::INVALID_PARAMS);
+        assert_eq!(e.error.data, Some(json!({"field": "name"})));
+
+        let e = internal_error_with_data(
+            Some(RequestId::String("x".into())),
+            "boom",
+            Some(json!({"retry": true})),
+        );
+        assert_eq!(e.error.code, error_code::INTERNAL_ERROR);
+        assert_eq!(e.error.data, Some(json!({"retry": true})));
+
+        let req = request(RequestId::Number(1), "tools/list", None);
+        let msg = JsonRpcMessage::Request(req);
+        assert_eq!(message_method(&msg), Some("tools/list"));
+        assert_eq!(message_id(&msg), Some(&RequestId::Number(1)));
+
+        let n = notification("notifications/initialized", None);
+        let msg = JsonRpcMessage::Notification(n);
+        assert_eq!(message_method(&msg), Some("notifications/initialized"));
+        assert!(message_id(&msg).is_none());
+
+        let ok = success(RequestId::Number(2), json!(true));
+        let msg = JsonRpcMessage::Success(ok);
+        assert!(message_method(&msg).is_none());
+        assert_eq!(message_id(&msg), Some(&RequestId::Number(2)));
+    }
+
     /// Load committed golden fixture and assert parse/kind parity (pure residual differential).
     #[test]
     fn pure_residual_jsonrpc_golden_fixture() {
@@ -417,6 +505,15 @@ mod tests {
             );
             assert!(is_standard_error_code(error_code::METHOD_NOT_FOUND));
         }
+        if let Some(range) = doc.get("serverErrorRange") {
+            let min = range["min"].as_i64().unwrap_or(0);
+            let max = range["max"].as_i64().unwrap_or(0);
+            assert!(is_server_error_code(min));
+            assert!(is_server_error_code(max));
+            assert!(is_server_error_code(-32050));
+            assert!(!is_server_error_code(min - 1));
+            assert!(!is_server_error_code(max + 1));
+        }
         let cases = match doc["cases"].as_array() {
             Some(a) => a,
             None => panic!("cases"),
@@ -433,10 +530,29 @@ mod tests {
             };
             match parse_message(input) {
                 ParseResult::Ok(msg) => match kind {
-                    "request" => assert!(is_request(&msg), "{name}"),
-                    "notification" => assert!(is_notification(&msg), "{name}"),
-                    "success" => assert!(is_success(&msg), "{name}"),
-                    "error" => assert!(is_error(&msg), "{name}"),
+                    "request" => {
+                        assert!(is_request(&msg), "{name}");
+                        assert!(message_method(&msg).is_some(), "{name} method");
+                        assert!(message_id(&msg).is_some(), "{name} id");
+                    }
+                    "notification" => {
+                        assert!(is_notification(&msg), "{name}");
+                        assert!(message_method(&msg).is_some(), "{name} method");
+                        assert!(message_id(&msg).is_none(), "{name} id");
+                    }
+                    "success" => {
+                        assert!(is_success(&msg), "{name}");
+                        assert!(message_method(&msg).is_none(), "{name} method");
+                        assert!(message_id(&msg).is_some(), "{name} id");
+                    }
+                    "error" => {
+                        assert!(is_error(&msg), "{name}");
+                        if name == "error_server_range" {
+                            if let JsonRpcMessage::Error(e) = &msg {
+                                assert!(is_server_error_code(e.error.code), "{name}");
+                            }
+                        }
+                    }
                     other => panic!("unexpected kind {other} for ok parse in {name}"),
                 },
                 ParseResult::Err(e) => match kind {

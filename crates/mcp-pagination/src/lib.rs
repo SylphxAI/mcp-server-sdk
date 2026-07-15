@@ -51,6 +51,27 @@ fn decode_cursor(cursor: &str) -> Option<CursorData> {
     Some(data)
 }
 
+/// Clamp a requested page size into `[1, max_page_size]` (pure residual helper).
+#[must_use]
+pub fn clamp_page_size(requested: usize, max_page_size: usize) -> usize {
+    if max_page_size == 0 {
+        return 0;
+    }
+    requested.clamp(1, max_page_size)
+}
+
+/// Encode a pagination cursor from offset + page size (parity with internal TS encoder).
+#[must_use]
+pub fn encode_page_cursor(offset: usize, page_size: usize) -> String {
+    encode_cursor(&CursorData { offset, page_size })
+}
+
+/// Decode a pagination cursor into `(offset, page_size)`; `None` on garbage.
+#[must_use]
+pub fn decode_page_cursor(cursor: &str) -> Option<(usize, usize)> {
+    decode_cursor(cursor).map(|d| (d.offset, d.page_size))
+}
+
 /// Paginate a slice of items (parity with TS `paginate`).
 #[must_use]
 pub fn paginate<T: Clone>(
@@ -64,6 +85,7 @@ pub fn paginate<T: Clone>(
     if let Some(c) = cursor {
         if let Some(data) = decode_cursor(c) {
             offset = data.offset;
+            // Parity with TS: Math.min(data.pageSize, maxPageSize) — do not force min 1.
             page_size = data.page_size.min(options.max_page_size);
         }
     }
@@ -181,6 +203,30 @@ mod tests {
             page_size: 10,
         });
         assert!(decode_cursor(&good).is_some());
+    }
+
+    #[test]
+    fn wave12_clamp_and_public_cursor_roundtrip() {
+        assert_eq!(clamp_page_size(0, 100), 1);
+        assert_eq!(clamp_page_size(50, 100), 50);
+        assert_eq!(clamp_page_size(10_000, 100), 100);
+        assert_eq!(clamp_page_size(5, 0), 0);
+
+        let c = encode_page_cursor(25, 10);
+        assert_eq!(decode_page_cursor(&c), Some((25, 10)));
+        assert!(decode_page_cursor("!!!").is_none());
+
+        let items: Vec<i32> = (0..40).collect();
+        let page = paginate(
+            &items,
+            Some(&c),
+            PaginationOptions {
+                default_page_size: 50,
+                max_page_size: 100,
+            },
+        );
+        assert_eq!(page.items, (25..35).collect::<Vec<i32>>());
+        assert!(page.next_cursor.is_some());
     }
 
     /// Load committed golden fixture (TS oracle surface contract) and assert Rust paginate.

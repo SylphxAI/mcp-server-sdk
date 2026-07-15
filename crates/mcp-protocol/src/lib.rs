@@ -140,6 +140,21 @@ impl Content {
     }
 
     #[must_use]
+    pub fn is_image(&self) -> bool {
+        matches!(self, Self::Image { .. })
+    }
+
+    #[must_use]
+    pub fn is_audio(&self) -> bool {
+        matches!(self, Self::Audio { .. })
+    }
+
+    #[must_use]
+    pub fn is_resource(&self) -> bool {
+        matches!(self, Self::Resource { .. })
+    }
+
+    #[must_use]
     pub fn image(data: impl Into<String>, mime_type: impl Into<String>) -> Self {
         Self::Image {
             data: data.into(),
@@ -167,6 +182,12 @@ impl Content {
         }
         self
     }
+}
+
+/// Text content free function (parity with builders/tool.ts `text`).
+#[must_use]
+pub fn text_content(text: impl Into<String>) -> Content {
+    Content::text(text)
 }
 
 /// Tool annotations hints (pure data).
@@ -1060,6 +1081,199 @@ pub fn is_mcp_method(method: &str) -> bool {
     methods::ALL.contains(&method)
 }
 
+/// True when `method` is a known MCP **notification** method (`notifications/*`).
+#[must_use]
+pub fn is_mcp_notification_method(method: &str) -> bool {
+    is_mcp_method(method) && method.starts_with("notifications/")
+}
+
+/// True when `method` is a known MCP **request** method (not a notification).
+#[must_use]
+pub fn is_mcp_request_method(method: &str) -> bool {
+    is_mcp_method(method) && !method.starts_with("notifications/")
+}
+
+// ============================================================================
+// Request param envelopes (pure data — parity with src/protocol/mcp.ts params)
+// ============================================================================
+
+/// Implementation info (`name` + `version`) — parity with `Implementation`.
+#[must_use]
+pub fn implementation_info(
+    name: impl Into<String>,
+    version: impl Into<String>,
+) -> serde_json::Value {
+    serde_json::json!({
+        "name": name.into(),
+        "version": version.into(),
+    })
+}
+
+/// Client capabilities object (pure builder — no runtime enablement).
+#[must_use]
+pub fn client_capabilities(
+    roots_list_changed: Option<bool>,
+    sampling: bool,
+    elicitation: bool,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    if let Some(v) = roots_list_changed {
+        map.insert(
+            "roots".into(),
+            serde_json::json!({ "listChanged": v }),
+        );
+    }
+    if sampling {
+        map.insert("sampling".into(), serde_json::json!({}));
+    }
+    if elicitation {
+        map.insert("elicitation".into(), serde_json::json!({}));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// `initialize` request params envelope (parity with `InitializeParams`).
+#[must_use]
+pub fn initialize_params(
+    protocol_version: impl Into<String>,
+    client_name: impl Into<String>,
+    client_version: impl Into<String>,
+    capabilities: serde_json::Value,
+) -> serde_json::Value {
+    serde_json::json!({
+        "protocolVersion": protocol_version.into(),
+        "capabilities": capabilities,
+        "clientInfo": implementation_info(client_name, client_version),
+    })
+}
+
+/// Cursor list params (`ListParams`).
+#[must_use]
+pub fn list_params(cursor: Option<String>) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    if let Some(c) = cursor {
+        map.insert("cursor".into(), serde_json::Value::String(c));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// `tools/call` params envelope.
+#[must_use]
+pub fn tools_call_params(
+    name: impl Into<String>,
+    arguments: Option<serde_json::Value>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("name".into(), serde_json::Value::String(name.into()));
+    if let Some(args) = arguments {
+        map.insert("arguments".into(), args);
+    }
+    serde_json::Value::Object(map)
+}
+
+/// `resources/read` params envelope.
+#[must_use]
+pub fn resources_read_params(uri: impl Into<String>) -> serde_json::Value {
+    serde_json::json!({ "uri": uri.into() })
+}
+
+/// `resources/subscribe` params envelope.
+#[must_use]
+pub fn resources_subscribe_params(uri: impl Into<String>) -> serde_json::Value {
+    serde_json::json!({ "uri": uri.into() })
+}
+
+/// `resources/unsubscribe` params envelope.
+#[must_use]
+pub fn resources_unsubscribe_params(uri: impl Into<String>) -> serde_json::Value {
+    serde_json::json!({ "uri": uri.into() })
+}
+
+/// `prompts/get` params envelope.
+#[must_use]
+pub fn prompts_get_params(
+    name: impl Into<String>,
+    arguments: Option<std::collections::BTreeMap<String, String>>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("name".into(), serde_json::Value::String(name.into()));
+    if let Some(args) = arguments {
+        map.insert(
+            "arguments".into(),
+            serde_json::to_value(args).unwrap_or_else(|_| serde_json::json!({})),
+        );
+    }
+    serde_json::Value::Object(map)
+}
+
+/// `logging/setLevel` params envelope.
+#[must_use]
+pub fn logging_set_level_params(level: impl Into<String>) -> serde_json::Value {
+    serde_json::json!({ "level": level.into() })
+}
+
+/// `completion/complete` params envelope (pure data — no completion engine).
+#[must_use]
+pub fn completion_complete_params(
+    ref_type: impl Into<String>,
+    ref_name: Option<String>,
+    ref_uri: Option<String>,
+    argument_name: impl Into<String>,
+    argument_value: impl Into<String>,
+) -> serde_json::Value {
+    let mut r = serde_json::Map::new();
+    r.insert("type".into(), serde_json::Value::String(ref_type.into()));
+    if let Some(n) = ref_name {
+        r.insert("name".into(), serde_json::Value::String(n));
+    }
+    if let Some(u) = ref_uri {
+        r.insert("uri".into(), serde_json::Value::String(u));
+    }
+    serde_json::json!({
+        "ref": serde_json::Value::Object(r),
+        "argument": {
+            "name": argument_name.into(),
+            "value": argument_value.into(),
+        }
+    })
+}
+
+/// Progress notification params envelope (parity with `ProgressParams`).
+#[must_use]
+pub fn progress_params(
+    progress_token: serde_json::Value,
+    progress: f64,
+    total: Option<f64>,
+    message: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("progressToken".into(), progress_token);
+    map.insert(
+        "progress".into(),
+        serde_json::Value::Number(
+            serde_json::Number::from_f64(progress).unwrap_or_else(|| serde_json::Number::from(0)),
+        ),
+    );
+    if let Some(t) = total {
+        if let Some(num) = serde_json::Number::from_f64(t) {
+            map.insert("total".into(), serde_json::Value::Number(num));
+        }
+    }
+    if let Some(m) = message {
+        map.insert("message".into(), serde_json::Value::String(m));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Sampling message helper (role + content) — pure data, no client RPC.
+#[must_use]
+pub fn sampling_message(role: impl Into<String>, content: Content) -> serde_json::Value {
+    serde_json::json!({
+        "role": role.into(),
+        "content": content,
+    })
+}
+
 /// Check if a URI matches a template pattern (`{param}` → single path segment).
 #[must_use]
 pub fn matches_template(template: &str, uri: &str) -> bool {
@@ -1731,6 +1945,97 @@ mod tests {
                 sc.get("stopReason").and_then(|v| v.as_str())
             );
         }
+
+        // WAVE12: request params + method kind goldens
+        if let Some(cases) = doc.get("requestParams").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let kind = case["kind"].as_str().unwrap_or("?");
+                match kind {
+                    "initialize" => {
+                        let p = initialize_params(
+                            case["protocolVersion"].as_str().unwrap_or(""),
+                            case["clientName"].as_str().unwrap_or(""),
+                            case["clientVersion"].as_str().unwrap_or(""),
+                            case.get("capabilities")
+                                .cloned()
+                                .unwrap_or_else(|| serde_json::json!({})),
+                        );
+                        assert_eq!(
+                            p["clientInfo"]["name"].as_str(),
+                            case["clientName"].as_str(),
+                            "case {name}"
+                        );
+                    }
+                    "tools_call" => {
+                        let p = tools_call_params(
+                            case["toolName"].as_str().unwrap_or(""),
+                            case.get("arguments").cloned(),
+                        );
+                        assert_eq!(
+                            p["name"].as_str(),
+                            case["toolName"].as_str(),
+                            "case {name}"
+                        );
+                    }
+                    "resources_read" => {
+                        let p = resources_read_params(case["uri"].as_str().unwrap_or(""));
+                        assert_eq!(p["uri"].as_str(), case["uri"].as_str(), "case {name}");
+                    }
+                    "list" => {
+                        let cursor = case
+                            .get("cursor")
+                            .and_then(|v| if v.is_null() { None } else { v.as_str() })
+                            .map(str::to_string);
+                        let p = list_params(cursor);
+                        if let Some(c) = case.get("cursor").and_then(|v| v.as_str()) {
+                            assert_eq!(p["cursor"], c, "case {name}");
+                        } else {
+                            assert!(
+                                p.as_object().is_some_and(|m| m.is_empty()),
+                                "case {name}"
+                            );
+                        }
+                    }
+                    "completion" => {
+                        let p = completion_complete_params(
+                            case["refType"].as_str().unwrap_or(""),
+                            case.get("refName")
+                                .and_then(|v| v.as_str())
+                                .map(str::to_string),
+                            case.get("refUri")
+                                .and_then(|v| v.as_str())
+                                .map(str::to_string),
+                            case["argumentName"].as_str().unwrap_or(""),
+                            case["argumentValue"].as_str().unwrap_or(""),
+                        );
+                        assert_eq!(
+                            p["ref"]["type"].as_str(),
+                            case["refType"].as_str(),
+                            "case {name}"
+                        );
+                    }
+                    other => panic!("unknown requestParams kind {other} in {name}"),
+                }
+            }
+        }
+        if let Some(cases) = doc.get("methodKinds").and_then(|v| v.as_array()) {
+            for case in cases {
+                let method = case["method"].as_str().unwrap_or("");
+                let kind = case["kind"].as_str().unwrap_or("");
+                match kind {
+                    "request" => {
+                        assert!(is_mcp_request_method(method), "{method}");
+                        assert!(!is_mcp_notification_method(method), "{method}");
+                    }
+                    "notification" => {
+                        assert!(is_mcp_notification_method(method), "{method}");
+                        assert!(!is_mcp_request_method(method), "{method}");
+                    }
+                    other => panic!("unknown methodKinds kind {other}"),
+                }
+            }
+        }
     }
 
     #[test]
@@ -2001,5 +2306,100 @@ mod tests {
         assert_eq!(with_sc["structuredContent"]["score"], 1);
         let n = normalize_tool_result(&with_sc);
         assert_eq!(n["structuredContent"]["score"], 1);
+    }
+
+    #[test]
+    fn wave12_request_param_envelopes_and_method_kind() {
+        assert!(is_mcp_request_method(methods::TOOLS_CALL));
+        assert!(is_mcp_request_method(methods::INITIALIZE));
+        assert!(is_mcp_request_method(methods::PING));
+        assert!(!is_mcp_request_method(methods::TOOLS_LIST_CHANGED));
+        assert!(is_mcp_notification_method(methods::TOOLS_LIST_CHANGED));
+        assert!(is_mcp_notification_method(methods::INITIALIZED));
+        assert!(!is_mcp_notification_method(methods::TOOLS_CALL));
+        assert!(!is_mcp_request_method("not/a/method"));
+        assert!(!is_mcp_notification_method("not/a/method"));
+
+        let caps = client_capabilities(Some(true), true, true);
+        assert_eq!(caps["roots"]["listChanged"], true);
+        assert!(caps.get("sampling").is_some());
+        assert!(caps.get("elicitation").is_some());
+
+        let init = initialize_params(
+            LATEST_PROTOCOL_VERSION,
+            "test-client",
+            "1.0.0",
+            caps,
+        );
+        assert_eq!(init["protocolVersion"], LATEST_PROTOCOL_VERSION);
+        assert_eq!(init["clientInfo"]["name"], "test-client");
+        assert_eq!(init["clientInfo"]["version"], "1.0.0");
+
+        let info = implementation_info("svc", "0.2.0");
+        assert_eq!(info["name"], "svc");
+        assert_eq!(info["version"], "0.2.0");
+
+        let lp = list_params(Some("c1".into()));
+        assert_eq!(lp["cursor"], "c1");
+        let lp_empty = list_params(None);
+        assert!(lp_empty.as_object().is_some_and(|m| m.is_empty()));
+
+        let call = tools_call_params("ping", Some(serde_json::json!({"x": 1})));
+        assert_eq!(call["name"], "ping");
+        assert_eq!(call["arguments"]["x"], 1);
+
+        let read = resources_read_params("file:///a");
+        assert_eq!(read["uri"], "file:///a");
+        assert_eq!(
+            resources_subscribe_params("file:///a")["uri"],
+            "file:///a"
+        );
+        assert_eq!(
+            resources_unsubscribe_params("file:///a")["uri"],
+            "file:///a"
+        );
+
+        let mut args = std::collections::BTreeMap::new();
+        args.insert("who".into(), "Ada".into());
+        let get = prompts_get_params("greet", Some(args));
+        assert_eq!(get["name"], "greet");
+        assert_eq!(get["arguments"]["who"], "Ada");
+
+        let logp = logging_set_level_params("warning");
+        assert_eq!(logp["level"], "warning");
+
+        let comp = completion_complete_params(
+            "ref/prompt",
+            Some("greet".into()),
+            None,
+            "who",
+            "A",
+        );
+        assert_eq!(comp["ref"]["type"], "ref/prompt");
+        assert_eq!(comp["ref"]["name"], "greet");
+        assert_eq!(comp["argument"]["name"], "who");
+        assert_eq!(comp["argument"]["value"], "A");
+
+        let pp = progress_params(serde_json::json!("t"), 0.5, Some(1.0), Some("half".into()));
+        assert_eq!(pp["progressToken"], "t");
+        assert_eq!(pp["progress"], 0.5);
+        assert_eq!(pp["total"], 1.0);
+        assert_eq!(pp["message"], "half");
+
+        let sm = sampling_message("user", text_content("hi"));
+        assert_eq!(sm["role"], "user");
+        assert_eq!(sm["content"]["type"], "text");
+        assert_eq!(sm["content"]["text"], "hi");
+
+        let t = text_content("x");
+        assert!(t.is_text());
+        assert!(!t.is_image());
+        let img = image_content("AA", "image/png");
+        assert!(img.is_image());
+        assert!(!img.is_audio());
+        let aud = audio_content("BB", "audio/wav");
+        assert!(aud.is_audio());
+        let emb = embedded_resource_content("file:///x", None, Some("z".into()));
+        assert!(emb.is_resource());
     }
 }

@@ -18,7 +18,7 @@
     }
   ],
   "reauditRef": "rej-010",
-  "verificationRef": "verification/FLEET-ENTERPRISE-WAVE11-honesty.json",
+  "verificationRef": "verification/FLEET-ENTERPRISE-WAVE12-honesty.json",
   "inventorySource": [
     "mcp-tools",
     "manual"
@@ -124,7 +124,7 @@
         "status": "missing",
         "staleReason": "Pure residual on disk with golden fixture regression; SHA-bound TS oracle harness for full differential_green still missing \u2014 NOT authority_rust/ts_deleted"
       },
-      "notes": "BW1 pure residual: cursor paginate + expanded golden fixture (WAVE11 page-size edges). TS pagination remains consumer API. No authority_rust/ts_deleted."
+      "notes": "BW1 pure residual: cursor paginate + expanded golden fixture (WAVE12 clamp/public cursor + page edges). TS pagination remains consumer API. No authority_rust/ts_deleted."
     },
     {
       "id": "api/jsonrpc-protocol",
@@ -141,7 +141,7 @@
       },
       "tsSurface": "src/protocol/jsonrpc.ts",
       "rustSurface": "crates/mcp-jsonrpc/**; crates/mcp-jsonrpc/fixtures/jsonrpc_golden.json",
-      "notes": "Honest: crates/mcp-jsonrpc pure parse/construct/guards + standard error constructors + expanded golden (WAVE11). NO authority_rust/ts_deleted. TS protocol remains package surface.",
+      "notes": "Honest: crates/mcp-jsonrpc pure parse/construct/guards + standard error constructors + server-error range + message extractors + error-with-data (WAVE12). NO authority_rust/ts_deleted. TS protocol remains package surface.",
       "parityTest": "cargo test -p mcp-jsonrpc pure_residual_jsonrpc_golden_fixture"
     },
     {
@@ -154,9 +154,9 @@
       "parityTest": "cargo test -p mcp-protocol pure_residual_protocol_golden_fixture",
       "proof": {
         "status": "missing",
-        "staleReason": "Pure residual version negotiate + content/tool/list helpers + notification_to_jsonrpc + normalize_tool_result + protocol descriptors + resource wire + sampling/elicitation envelopes + golden; full MCP method dispatch remains TS; differential_green not claimed"
+        "staleReason": "Pure residual version negotiate + content/tool/list helpers + notification_to_jsonrpc + normalize_tool_result + protocol descriptors + resource wire + sampling/elicitation envelopes + request param envelopes + golden; full MCP method dispatch remains TS; differential_green not claimed"
       },
-      "notes": "WAVE11 pure residual deepen: protocol_resource/template/prompt, resource contents wire (type+blob), is_mcp_method catalog, sampling/elicitation pure envelopes, server_capabilities, structuredContent normalize. Handler dispatch + transport remain TS. No authority_rust/ts_deleted."
+      "notes": "WAVE12 pure residual deepen: initialize/tools_call/resources/prompts/list/logging/completion/progress param envelopes, client_capabilities, is_mcp_request/notification_method, content kind guards. Handler dispatch + transport remain TS. No authority_rust/ts_deleted."
     },
     {
       "id": "api/http-auth",
@@ -275,6 +275,38 @@
         "sole_rust_production_authority"
       ],
       "notes": "WAVE11 adversarial residual: pure protocol helpers deepened only. rust_impl x3 pure residual; ts_only x13 product path. prod_audit_fail until true sole authority."
+    },
+    "honesty_2026_07_15_wave12": {
+      "at": "2026-07-15T12:45:00Z",
+      "liveHead": "origin/main",
+      "cratesOnMain": [
+        "mcp-pagination",
+        "mcp-protocol",
+        "mcp-jsonrpc"
+      ],
+      "pureResidualDeepen": [
+        "initialize_params",
+        "client_capabilities",
+        "tools_call_params",
+        "resources_read_subscribe_unsubscribe_params",
+        "prompts_get_params",
+        "list_params",
+        "logging_set_level_params",
+        "completion_complete_params",
+        "progress_params",
+        "is_mcp_request_notification_method",
+        "jsonrpc_server_error_range_message_extractors",
+        "pagination_clamp_public_cursor",
+        "expanded golden fixtures"
+      ],
+      "notClaims": [
+        "authority_rust",
+        "ts_deleted",
+        "differential_green",
+        "product_effect_live",
+        "sole_rust_production_authority"
+      ],
+      "notes": "WAVE12 adversarial residual: pure protocol helpers deepened only. rust_impl x3 pure residual; ts_only x13 product path. prod_audit_fail until true sole authority."
     }
   },
   "promotionFreeze": {
