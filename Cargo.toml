@@ -4,6 +4,12 @@ members = [
   "crates/mcp-pagination",
   "crates/mcp-protocol",
   "crates/mcp-jsonrpc",
+  "crates/mcp-http-auth",
+  "crates/mcp-builders",
+  "crates/mcp-stdio",
+  "crates/mcp-app",
+  "crates/mcp-clients",
+  "crates/mcp-notifications",
 ]
 
 [workspace.package]

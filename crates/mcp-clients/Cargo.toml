@@ -1,0 +1,18 @@
+[package]
+name = "mcp-clients"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Sampling + elicitation client product kernels (parity with src/sampling + src/elicitation)"
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+mcp-protocol = { path = "../mcp-protocol" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

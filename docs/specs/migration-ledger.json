@@ -58,59 +58,113 @@
       "id": "transport/stdio",
       "domain": "transport",
       "weight": 4,
-      "state": "ts_only",
+      "state": "rust_impl",
       "tsSurface": "src/transports/stdio.ts, src/app/stdio.ts",
-      "notes": "Legacy stdio transport; deprecated in favor of createMcpApp + serve."
+      "notes": "WAVE4 product: NDJSON line buffer, server request id minting, response classification, pending registry. Async stdin loop remains app-layer. TS read-only oracle. No authority_rust/ts_deleted.",
+      "rustSurface": "crates/mcp-stdio/src/lib.rs",
+      "parityTest": "cargo test -p mcp-stdio --lib",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "api/mcp-app",
       "domain": "sdk-api",
       "weight": 5,
-      "state": "ts_only",
-      "tsSurface": "src/app/app.ts"
+      "state": "rust_impl",
+      "tsSurface": "src/app/app.ts",
+      "rustSurface": "crates/mcp-app/src/lib.rs",
+      "parityTest": "cargo test -p mcp-app --lib",
+      "notes": "WAVE4 product: createMcpApp/createServer state builders, capability styles, identity defaults, conformance catalog. Handler dispatch + fetch adapter remain app-layer. TS read-only oracle.",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "api/tool-builder",
       "domain": "sdk-api",
       "weight": 4,
-      "state": "ts_only",
-      "tsSurface": "src/builders/tool.ts"
+      "state": "rust_impl",
+      "tsSurface": "src/builders/tool.ts",
+      "rustSurface": "crates/mcp-builders/src/lib.rs#tool",
+      "parityTest": "cargo test -p mcp-builders --lib",
+      "notes": "WAVE4 product: ToolBuilder/ToolDefinitionMeta + content helpers + normalize_result + to_protocol. Vex schema validate + async handler execution remain app-layer.",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "api/resource-builder",
       "domain": "sdk-api",
       "weight": 3,
-      "state": "ts_only",
-      "tsSurface": "src/builders/resource.ts"
+      "state": "rust_impl",
+      "tsSurface": "src/builders/resource.ts",
+      "rustSurface": "crates/mcp-builders/src/lib.rs#resource",
+      "parityTest": "cargo test -p mcp-builders --lib",
+      "notes": "WAVE4 product: Resource/Template builders, matches_template/extract_params, resourceText/Blob. Handler I/O remains app-layer.",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "api/prompt-builder",
       "domain": "sdk-api",
       "weight": 3,
-      "state": "ts_only",
-      "tsSurface": "src/builders/prompt.ts"
+      "state": "rust_impl",
+      "tsSurface": "src/builders/prompt.ts",
+      "rustSurface": "crates/mcp-builders/src/lib.rs#prompt",
+      "parityTest": "cargo test -p mcp-builders --lib",
+      "notes": "WAVE4 product: PromptBuilder, args, messages/user/assistant/interpolate. Schema extractObjectFields remains app-layer.",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "api/sampling-client",
       "domain": "sdk-api",
       "weight": 3,
-      "state": "ts_only",
-      "tsSurface": "src/sampling/client.ts"
+      "state": "rust_impl",
+      "tsSurface": "src/sampling/client.ts",
+      "rustSurface": "crates/mcp-clients/src/lib.rs#sampling",
+      "parityTest": "cargo test -p mcp-clients --lib",
+      "notes": "WAVE4 product: sampling method/params/result pure client kernels. Transport send injection remains app-layer.",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "api/elicitation-client",
       "domain": "sdk-api",
       "weight": 3,
-      "state": "ts_only",
-      "tsSurface": "src/elicitation/client.ts"
+      "state": "rust_impl",
+      "tsSurface": "src/elicitation/client.ts",
+      "rustSurface": "crates/mcp-clients/src/lib.rs#elicitation",
+      "parityTest": "cargo test -p mcp-clients --lib",
+      "notes": "WAVE4 product: elicitation schema/params/result pure client kernels. Transport send injection remains app-layer.",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "api/notifications",
       "domain": "sdk-api",
       "weight": 3,
-      "state": "ts_only",
+      "state": "rust_impl",
       "tsSurface": "src/notifications/",
-      "notes": "Product emitter + types remain TS. Pure notification constructors + notification_to_jsonrpc live under api/mcp-protocol pure residual (mcp-protocol crate) \u2014 not claimed as notifications rust_impl / authority_rust."
+      "notes": "WAVE4 product: helpers + RecordingEmitter + emit_with + to_jsonrpc. Transport notify send remains app-layer.",
+      "rustSurface": "crates/mcp-notifications/src/lib.rs; crates/mcp-protocol (notification_to_jsonrpc)",
+      "parityTest": "cargo test -p mcp-notifications --lib",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "api/pagination",
@@ -124,7 +178,7 @@
         "status": "missing",
         "staleReason": "Pure residual on disk with golden fixture regression; SHA-bound TS oracle harness for full differential_green still missing \u2014 NOT authority_rust/ts_deleted"
       },
-      "notes": "BW1 pure residual: cursor paginate + expanded golden fixture. TS pagination remains consumer API. No authority_rust/ts_deleted. WAVE16 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted)."
+      "notes": "BW1 pure residual: cursor paginate + expanded golden fixture. TS pagination remains consumer API. No authority_rust/ts_deleted. WAVE16 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted). WAVE4: retained rust_impl pure residual; product list wiring uses mcp-app pagination meta."
     },
     {
       "id": "api/jsonrpc-protocol",
@@ -156,44 +210,63 @@
         "status": "missing",
         "staleReason": "Pure residual version negotiate + content/tool/list helpers + notification_to_jsonrpc + normalize_tool_result + protocol descriptors + resource wire + sampling/elicitation envelopes + request param envelopes + golden; full MCP method dispatch remains TS; differential_green not claimed"
       },
-      "notes": "WAVE16 pure residual deepen: domain method catalogs, content type/text extractors, tool_result_all_text, params/list/uri/initialize extractors. Handler dispatch + transport remain TS. No authority_rust/ts_deleted. WAVE16 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted)."
+      "notes": "WAVE16 pure residual deepen: domain method catalogs, content type/text extractors, tool_result_all_text, params/list/uri/initialize extractors. Handler dispatch + transport remain TS. No authority_rust/ts_deleted. WAVE16 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted). WAVE4: retained rust_impl; product builders/clients/notifications consume protocol helpers."
     },
     {
       "id": "api/http-auth",
       "domain": "transport",
       "weight": 3,
-      "state": "ts_only",
-      "tsSurface": "src/transports/auth.ts"
+      "state": "rust_impl",
+      "tsSurface": "src/transports/auth.ts",
+      "rustSurface": "crates/mcp-http-auth/src/lib.rs",
+      "parityTest": "cargo test -p mcp-http-auth --lib",
+      "notes": "WAVE4 product: verify_api_key (SHA-256 + CT eq), header read, unauthorized body, authorize_request gate. Custom authenticate hook remains transport binding.",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "api/legacy-create-server",
       "domain": "sdk-api",
       "weight": 3,
-      "state": "ts_only",
+      "state": "rust_impl",
       "tsSurface": "src/server/server.ts",
-      "notes": "Deprecated createServer API; consumers (coderag) still use during migration."
+      "notes": "WAVE4 product: legacy createServer capability style (listChanged flags) + state builder. Runtime start/stop transport remains app-layer.",
+      "rustSurface": "crates/mcp-app/src/lib.rs#create_server_state",
+      "parityTest": "cargo test -p mcp-app --lib",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "delivery/conformance-examples",
       "domain": "delivery",
       "weight": 3,
-      "state": "ts_only",
+      "state": "rust_impl",
       "tsSurface": "examples/conformance-server.ts",
-      "notes": "Conformance support exists; npm readback release proof gap per PROJECT.md."
+      "notes": "WAVE4 product: conformance tool/resource/prompt catalog + metadata app config. Full Bun example server remains TS oracle.",
+      "rustSurface": "crates/mcp-app/src/lib.rs#conformance_app_config",
+      "parityTest": "cargo test -p mcp-app conformance_catalog_and_config",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE4 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     }
   ],
   "summary": {
     "total": 16,
-    "ts_only": 13,
+    "ts_only": 2,
     "contracted": 0,
-    "rust_impl": 3,
+    "rust_impl": 14,
     "parity_proven": 0,
     "authority_rust": 0,
     "ts_deleted": 0,
     "completion_progress": 0.0,
     "authority_progress": 0.0,
     "weighted_progress": 0.0,
-    "proof_missing": 3,
+    "proof_missing": 14,
     "honesty_2026_07_15": {
       "at": "2026-07-15T05:46:03Z",
       "liveHead": "origin/main",
@@ -362,8 +435,8 @@
       ],
       "notes": "WAVE15 pure residual deepen only. rust_impl x3 pure residual; ts_only x13 product path. prod_audit_fail. Full package remains TypeScript product authority."
     },
-    "lastMutation": "WAVE17-PURE-RESIDUAL-2026-07-15",
-    "updatedAt": "2026-07-15T17:40:00Z",
+    "lastMutation": "WAVE4-PRODUCT-SURFACES-2026-07-15",
+    "updatedAt": "2026-07-15T18:00:00Z",
     "honesty_2026_07_15_wave17": {
       "at": "2026-07-15T17:40:00Z",
       "liveHead": "origin/main",
@@ -389,6 +462,46 @@
         "sole_rust_production_authority"
       ],
       "notes": "WAVE17 pure residual deepen only. rust_impl\u00d73 pure residual; ts_only\u00d713 product path. prod_audit_fail until true sole authority."
+    },
+    "honesty_2026_07_15_wave4_product": {
+      "at": "2026-07-15T18:00:00Z",
+      "liveHead": "origin/main",
+      "cratesOnMain": [
+        "mcp-pagination",
+        "mcp-protocol",
+        "mcp-jsonrpc",
+        "mcp-http-auth",
+        "mcp-builders",
+        "mcp-stdio",
+        "mcp-app",
+        "mcp-clients",
+        "mcp-notifications"
+      ],
+      "productSurfacesRustImpl": [
+        "transport/stdio",
+        "api/mcp-app",
+        "api/tool-builder",
+        "api/resource-builder",
+        "api/prompt-builder",
+        "api/sampling-client",
+        "api/elicitation-client",
+        "api/notifications",
+        "api/http-auth",
+        "api/legacy-create-server",
+        "delivery/conformance-examples"
+      ],
+      "retainedTsOnly": [
+        "transport/streamable-http",
+        "transport/session-guard-helpers"
+      ],
+      "notClaims": [
+        "authority_rust",
+        "ts_deleted",
+        "differential_green",
+        "product_effect_live",
+        "sole_rust_production_authority"
+      ],
+      "notes": "WAVE4 product kernels: 6 new crates covering 11 former ts_only product surfaces \u2192 rust_impl. streamable-http + session-guard remain ts_only. TS package is read-only oracle; no ts_deleted. prod_audit_fail until differential_green + sole authority."
     }
   },
   "promotionFreeze": {
