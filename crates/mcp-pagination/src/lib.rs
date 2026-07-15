@@ -394,7 +394,6 @@ pub fn is_valid_page_size(page_size: usize, max_page_size: usize) -> bool {
 }
 
 
-
 // --- WAVE20 pure residual ---
 
 /// Offset for the next page after this window, or None if last page.
@@ -436,6 +435,52 @@ pub fn has_previous_page(offset: usize, total_len: usize) -> bool {
 #[must_use]
 pub fn previous_offset(offset: usize, page_size: usize) -> usize {
     offset.saturating_sub(page_size)
+}
+
+// --- WAVE21 pure residual ---
+
+/// True when a page starting at `offset` with `page_size` has a following page.
+#[must_use]
+pub fn has_more_pages(offset: usize, page_size: usize, total_len: usize) -> bool {
+    page_size > 0 && offset.saturating_add(page_size) < total_len
+}
+
+/// Number of items that would be returned for the given window (clamped).
+#[must_use]
+pub fn page_slice_len(offset: usize, page_size: usize, total_len: usize) -> usize {
+    let (start, end) = page_window(offset, page_size, total_len);
+    end.saturating_sub(start)
+}
+
+/// Encode then decode a cursor; true when round-trip preserves offset + page_size.
+#[must_use]
+pub fn cursor_roundtrip_ok(offset: usize, page_size: usize) -> bool {
+    let encoded = encode_cursor(&CursorData { offset, page_size });
+    match decode_cursor(&encoded) {
+        Some(d) => d.offset == offset && d.page_size == page_size,
+        None => false,
+    }
+}
+
+/// True when pagination of `total_len` items with defaults yields a next cursor.
+#[must_use]
+pub fn default_page_has_next(total_len: usize) -> bool {
+    has_more_pages(0, DEFAULT_PAGE_SIZE, total_len)
+}
+
+/// Offset after `pages` full pages of `page_size` (saturating).
+#[must_use]
+pub fn offset_after_pages(pages: usize, page_size: usize) -> usize {
+    pages.saturating_mul(page_size)
+}
+
+/// Whether the given optional cursor is usable (present, non-empty after trim, decodable).
+#[must_use]
+pub fn cursor_is_usable(cursor: Option<&str>) -> bool {
+    match normalize_cursor_option(cursor) {
+        Some(c) => is_valid_page_cursor(c),
+        None => false,
+    }
 }
 
 #[cfg(test)]
@@ -999,5 +1044,39 @@ mod tests {
         assert_eq!(previous_offset(50, 50), 0);
         assert_eq!(previous_offset(10, 50), 0);
         assert_eq!(previous_offset(120, 50), 70);
+    }
+
+    #[test]
+    fn wave21_page_clamp_cursor_usable() {
+        assert_eq!(clamp_page_size(0, 100), 1);
+        assert_eq!(clamp_page_size(50, 100), 50);
+        assert_eq!(clamp_page_size(200, 100), 100);
+        assert_eq!(clamp_page_size(5, 0), 0);
+
+        assert!(has_more_pages(0, 50, 120));
+        assert!(!has_more_pages(100, 50, 120));
+        assert!(!has_more_pages(0, 0, 120));
+
+        assert_eq!(page_slice_len(0, 50, 120), 50);
+        assert_eq!(page_slice_len(100, 50, 120), 20);
+        assert_eq!(page_slice_len(200, 50, 120), 0);
+
+        assert!(cursor_roundtrip_ok(0, 50));
+        assert!(cursor_roundtrip_ok(100, 25));
+        assert!(cursor_roundtrip_ok(0, 0)); // zero page_size still encodes/decodes
+
+        assert!(default_page_has_next(120));
+        assert!(!default_page_has_next(10));
+        assert_eq!(offset_after_pages(2, 50), 100);
+        assert_eq!(offset_after_pages(0, 50), 0);
+
+        let cur = encode_cursor(&CursorData {
+            offset: 10,
+            page_size: 20,
+        });
+        assert!(cursor_is_usable(Some(&cur)));
+        assert!(!cursor_is_usable(None));
+        assert!(!cursor_is_usable(Some("   ")));
+        assert!(!cursor_is_usable(Some("not-base64-json!!!")));
     }
 }

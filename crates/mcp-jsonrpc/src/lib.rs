@@ -776,6 +776,92 @@ pub fn error_message_of_message(msg: &JsonRpcMessage) -> Option<&str> {
     }
 }
 
+// --- WAVE21 pure residual (handler dual-oracle jsonrpc helpers) ---
+
+/// True when message is a success response whose id equals `id`.
+#[must_use]
+pub fn is_success_for_id(msg: &JsonRpcMessage, id: &RequestId) -> bool {
+    match msg {
+        JsonRpcMessage::Success(s) => &s.id == id,
+        _ => false,
+    }
+}
+
+/// True when message is an error response whose id equals `id` (null id never matches).
+#[must_use]
+pub fn is_error_for_id(msg: &JsonRpcMessage, id: &RequestId) -> bool {
+    match msg {
+        JsonRpcMessage::Error(e) => e.id.as_ref() == Some(id),
+        _ => false,
+    }
+}
+
+/// Error code from an error response message, if any (alias of `error_code_of_message`).
+#[must_use]
+pub fn response_error_code(msg: &JsonRpcMessage) -> Option<i64> {
+    error_code_of_message(msg)
+}
+
+/// Error message text from an error response, if any (alias of `error_message_of_message`).
+#[must_use]
+pub fn response_error_message(msg: &JsonRpcMessage) -> Option<&str> {
+    error_message_of_message(msg)
+}
+
+/// True when request/notification params is missing or is an empty object.
+#[must_use]
+pub fn params_absent_or_empty(msg: &JsonRpcMessage) -> bool {
+    match msg {
+        JsonRpcMessage::Request(r) => match &r.params {
+            None => true,
+            Some(Value::Object(m)) => m.is_empty(),
+            Some(Value::Null) => true,
+            _ => false,
+        },
+        JsonRpcMessage::Notification(n) => match &n.params {
+            None => true,
+            Some(Value::Object(m)) => m.is_empty(),
+            Some(Value::Null) => true,
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
+/// Serialize a batch of messages as a JSON array (order preserved).
+#[must_use]
+pub fn stringify_batch(messages: &[JsonRpcMessage]) -> String {
+    let values: Vec<Value> = messages
+        .iter()
+        .map(|m| serde_json::to_value(m).unwrap_or(Value::Null))
+        .collect();
+    serde_json::to_string(&values).unwrap_or_else(|_| "[]".into())
+}
+
+/// Number of messages in a successfully parsed batch payload; None if input is not a batch array.
+#[must_use]
+pub fn batch_payload_message_count(input: &str) -> Option<usize> {
+    parse_batch_messages(input).ok().map(|v| v.len())
+}
+
+/// True when parse result is a request with the given method (exact match).
+#[must_use]
+pub fn is_request_method(msg: &JsonRpcMessage, method: &str) -> bool {
+    matches!(msg, JsonRpcMessage::Request(r) if r.method == method)
+}
+
+/// True when parse result is a notification with the given method (exact match).
+#[must_use]
+pub fn is_notification_method(msg: &JsonRpcMessage, method: &str) -> bool {
+    matches!(msg, JsonRpcMessage::Notification(n) if n.method == method)
+}
+
+/// Build method-not-found error response message for `id`.
+#[must_use]
+pub fn method_not_found_response(id: RequestId, method: &str) -> JsonRpcMessage {
+    JsonRpcMessage::Error(method_not_found(id, method))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1556,5 +1642,62 @@ mod tests {
             }
             ParseResult::Err(e) => panic!("{e}"),
         }
+    }
+
+    #[test]
+    fn wave21_message_matchers_and_batch() {
+        let id = RequestId::Number(9);
+        let ok = JsonRpcMessage::Success(success(id.clone(), json!({"ok": true})));
+        assert!(is_success_for_id(&ok, &id));
+        assert!(!is_success_for_id(&ok, &RequestId::Number(1)));
+        assert!(!is_error_for_id(&ok, &id));
+
+        let err = JsonRpcMessage::Error(invalid_params(id.clone(), "bad"));
+        assert!(is_error_for_id(&err, &id));
+        assert_eq!(response_error_code(&err), Some(-32602));
+        assert_eq!(response_error_message(&err), Some("bad"));
+        assert!(!is_success_for_id(&err, &id));
+
+        let bare = JsonRpcMessage::Request(request(RequestId::Number(1), "ping", None));
+        assert!(params_absent_or_empty(&bare));
+        let with_empty = JsonRpcMessage::Request(request(
+            RequestId::Number(2),
+            "tools/list",
+            Some(json!({})),
+        ));
+        assert!(params_absent_or_empty(&with_empty));
+        let with_params = JsonRpcMessage::Request(request(
+            RequestId::Number(3),
+            "tools/call",
+            Some(json!({"name": "x"})),
+        ));
+        assert!(!params_absent_or_empty(&with_params));
+
+        let batch_raw = r#"[
+            {"jsonrpc":"2.0","id":1,"method":"ping"},
+            {"jsonrpc":"2.0","method":"notifications/initialized"}
+        ]"#;
+        assert_eq!(batch_payload_message_count(batch_raw), Some(2));
+        assert!(batch_payload_message_count(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#).is_none());
+
+        let msgs = match parse_batch_messages(batch_raw) {
+            Ok(m) => m,
+            Err(e) => panic!("{e}"),
+        };
+        let s = stringify_batch(&msgs);
+        assert!(s.starts_with('['));
+        assert!(s.contains("ping"));
+
+        assert!(is_request_method(&msgs[0], "ping"));
+        assert!(!is_request_method(&msgs[0], "tools/list"));
+        assert!(is_notification_method(&msgs[1], "notifications/initialized"));
+
+        let mnf = method_not_found_response(RequestId::Number(5), "nope");
+        assert!(is_error(&mnf));
+        assert_eq!(response_error_code(&mnf), Some(error_code::METHOD_NOT_FOUND));
+        assert_eq!(
+            response_error_message(&mnf),
+            Some("Method not found: nope")
+        );
     }
 }

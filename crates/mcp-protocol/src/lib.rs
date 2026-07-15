@@ -2500,6 +2500,141 @@ pub fn tool_name_from_call_params(params: &serde_json::Value) -> Option<&str> {
         .filter(|s| !s.is_empty())
 }
 
+// --- WAVE21 pure residual (handler dual-oracle kernels) ---
+
+/// Unknown-tool error result (parity with `handler.ts` handleToolsCall missing tool).
+#[must_use]
+pub fn unknown_tool_error_result(name: &str) -> serde_json::Value {
+    tool_error(format!("Unknown tool: {name}"))
+}
+
+/// Tool handler exception result (parity with `handler.ts` catch path).
+#[must_use]
+pub fn tool_handler_error_result(error: impl std::fmt::Display) -> serde_json::Value {
+    tool_error(format!("Tool error: {error}"))
+}
+
+/// Unknown method error message string (parity with `handler.ts` default switch).
+#[must_use]
+pub fn unknown_method_error_message(method: &str) -> String {
+    format!("Unknown method: {method}")
+}
+
+/// True when client capabilities advertise sampling (object present).
+#[must_use]
+pub fn client_has_sampling(capabilities: &serde_json::Value) -> bool {
+    capabilities
+        .get("sampling")
+        .is_some_and(|v| !v.is_null())
+}
+
+/// True when client capabilities advertise elicitation (object present).
+#[must_use]
+pub fn client_has_elicitation(capabilities: &serde_json::Value) -> bool {
+    capabilities
+        .get("elicitation")
+        .is_some_and(|v| !v.is_null())
+}
+
+/// Count of resources in a resources/list result body.
+#[must_use]
+pub fn resource_count_from_list(result: &serde_json::Value) -> usize {
+    list_result_len(result, "resources")
+}
+
+/// Count of prompts in a prompts/list result body.
+#[must_use]
+pub fn prompt_count_from_list(result: &serde_json::Value) -> usize {
+    list_result_len(result, "prompts")
+}
+
+/// True when initialize result carries non-empty instructions.
+#[must_use]
+pub fn initialize_has_instructions(result: &serde_json::Value) -> bool {
+    result
+        .get("instructions")
+        .and_then(|v| v.as_str())
+        .is_some_and(|s| !s.is_empty())
+}
+
+/// Progress notification params wire object (parity with handler progress helper).
+#[must_use]
+pub fn progress_notification_params(
+    progress_token: serde_json::Value,
+    progress: f64,
+    total: Option<f64>,
+    message: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("progressToken".into(), progress_token);
+    map.insert("progress".into(), serde_json::json!(progress));
+    if let Some(t) = total {
+        map.insert("total".into(), serde_json::json!(t));
+    }
+    if let Some(m) = message {
+        map.insert("message".into(), serde_json::Value::String(m));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Log notification params wire object (parity with handler log helper / notifications/message).
+#[must_use]
+pub fn log_notification_params(
+    level: impl Into<String>,
+    data: serde_json::Value,
+    logger: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("level".into(), serde_json::Value::String(level.into()));
+    map.insert("data".into(), data);
+    if let Some(l) = logger {
+        map.insert("logger".into(), serde_json::Value::String(l));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Methods accepted by the TS `handleRequest` switch (server product handler surface).
+#[must_use]
+pub fn is_handler_request_method(method: &str) -> bool {
+    matches!(
+        method,
+        methods::INITIALIZE
+            | methods::PING
+            | methods::TOOLS_LIST
+            | methods::TOOLS_CALL
+            | methods::RESOURCES_LIST
+            | methods::RESOURCES_TEMPLATES_LIST
+            | methods::RESOURCES_READ
+            | methods::RESOURCES_SUBSCRIBE
+            | methods::RESOURCES_UNSUBSCRIBE
+            | methods::PROMPTS_LIST
+            | methods::PROMPTS_GET
+            | methods::LOGGING_SET_LEVEL
+            | methods::COMPLETION_COMPLETE
+    )
+}
+
+/// First content text from a tool error result when `isError` is true.
+#[must_use]
+pub fn tool_error_message(result: &serde_json::Value) -> Option<&str> {
+    if !is_tool_error_result(result) {
+        return None;
+    }
+    tool_result_first_text(result)
+}
+
+/// Empty success body used by ping / subscribe / unsubscribe handlers.
+#[must_use]
+pub fn empty_object_result() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// True when a tools/list result is empty (no tools array or empty array).
+#[must_use]
+pub fn tools_list_is_empty(result: &serde_json::Value) -> bool {
+    tool_count_from_list(result) == 0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4386,6 +4521,87 @@ mod tests {
         let call = serde_json::json!({"name":"echo","arguments":{"x":1}});
         assert_eq!(tool_name_from_call_params(&call), Some("echo"));
         assert!(tool_name_from_call_params(&serde_json::json!({})).is_none());
+    }
+
+    #[test]
+    fn wave21_handler_pure_kernels() {
+        let unk = unknown_tool_error_result("missing");
+        assert_eq!(unk["isError"], true);
+        assert_eq!(unk["content"][0]["text"], "Unknown tool: missing");
+        assert_eq!(tool_error_message(&unk), Some("Unknown tool: missing"));
+
+        let herr = tool_handler_error_result("boom");
+        assert_eq!(herr["isError"], true);
+        assert_eq!(herr["content"][0]["text"], "Tool error: boom");
+
+        assert_eq!(
+            unknown_method_error_message("nope/x"),
+            "Unknown method: nope/x"
+        );
+
+        let caps_both = serde_json::json!({"sampling": {}, "elicitation": {}});
+        assert!(client_has_sampling(&caps_both));
+        assert!(client_has_elicitation(&caps_both));
+        assert!(!client_has_sampling(&serde_json::json!({})));
+        assert!(!client_has_elicitation(&serde_json::json!({"sampling": null})));
+
+        let tools = tools_list_result(
+            &[Tool {
+                name: "a".into(),
+                title: None,
+                description: None,
+                input_schema: serde_json::json!({"type": "object"}),
+                output_schema: None,
+                annotations: None,
+            }],
+            None,
+        );
+        assert_eq!(tool_count_from_list(&tools), 1);
+        assert!(!tools_list_is_empty(&tools));
+        assert!(tools_list_is_empty(&serde_json::json!({"tools": []})));
+
+        let res_list = serde_json::json!({"resources": [{"uri": "file:///a"}, {"uri": "file:///b"}]});
+        assert_eq!(resource_count_from_list(&res_list), 2);
+        let prompts = serde_json::json!({"prompts": [{"name": "p"}]});
+        assert_eq!(prompt_count_from_list(&prompts), 1);
+
+        let init = serde_json::json!({
+            "protocolVersion": "2025-03-26",
+            "serverInfo": {"name": "s", "version": "1"},
+            "capabilities": {},
+            "instructions": "use carefully"
+        });
+        assert!(initialize_has_instructions(&init));
+        assert!(!initialize_has_instructions(&serde_json::json!({
+            "protocolVersion": "2025-03-26",
+            "serverInfo": {"name": "s", "version": "1"},
+            "capabilities": {}
+        })));
+
+        let progress = progress_notification_params(
+            serde_json::json!("tok"),
+            0.5,
+            Some(1.0),
+            Some("halfway".into()),
+        );
+        assert_eq!(progress["progressToken"], "tok");
+        assert_eq!(progress["progress"], 0.5);
+        assert_eq!(progress["total"], 1.0);
+        assert_eq!(progress["message"], "halfway");
+
+        let logp = log_notification_params("info", serde_json::json!({"ok": true}), Some("app".into()));
+        assert_eq!(logp["level"], "info");
+        assert_eq!(logp["logger"], "app");
+        assert_eq!(logp["data"]["ok"], true);
+
+        assert!(is_handler_request_method(methods::INITIALIZE));
+        assert!(is_handler_request_method(methods::TOOLS_CALL));
+        assert!(is_handler_request_method(methods::COMPLETION_COMPLETE));
+        assert!(!is_handler_request_method(methods::SAMPLING_CREATE_MESSAGE));
+        assert!(!is_handler_request_method(methods::INITIALIZED));
+
+        assert_eq!(empty_object_result(), serde_json::json!({}));
+        assert_eq!(ping_result(), empty_object_result());
     }
 
 }
