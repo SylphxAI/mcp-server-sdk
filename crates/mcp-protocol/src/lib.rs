@@ -1274,6 +1274,237 @@ pub fn sampling_message(role: impl Into<String>, content: Content) -> serde_json
     })
 }
 
+// ============================================================================
+// WAVE13 pure residual deepen (params meta, domains, sampling prefs, log entry)
+// ============================================================================
+
+/// `notifications/cancelled` params envelope (parity with `CancelledNotificationParams`).
+#[must_use]
+pub fn cancelled_params(
+    request_id: serde_json::Value,
+    reason: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("requestId".into(), request_id);
+    if let Some(r) = reason {
+        map.insert("reason".into(), serde_json::Value::String(r));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// `tools/call` params with optional `_meta.progressToken` (parity with ToolsCallParams._meta).
+#[must_use]
+pub fn tools_call_params_with_progress(
+    name: impl Into<String>,
+    arguments: Option<serde_json::Value>,
+    progress_token: Option<serde_json::Value>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("name".into(), serde_json::Value::String(name.into()));
+    if let Some(args) = arguments {
+        map.insert("arguments".into(), args);
+    }
+    if let Some(tok) = progress_token {
+        map.insert(
+            "_meta".into(),
+            serde_json::json!({ "progressToken": tok }),
+        );
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Model hint object (parity with `ModelHint`).
+#[must_use]
+pub fn model_hint(name: Option<String>) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    if let Some(n) = name {
+        map.insert("name".into(), serde_json::Value::String(n));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Model preferences object (parity with `ModelPreferences`) — pure data only.
+#[must_use]
+pub fn model_preferences(
+    cost_priority: Option<f64>,
+    speed_priority: Option<f64>,
+    intelligence_priority: Option<f64>,
+    hints: Option<&[serde_json::Value]>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    if let Some(h) = hints {
+        map.insert("hints".into(), serde_json::Value::Array(h.to_vec()));
+    }
+    if let Some(c) = cost_priority {
+        if let Some(num) = serde_json::Number::from_f64(c) {
+            map.insert("costPriority".into(), serde_json::Value::Number(num));
+        }
+    }
+    if let Some(s) = speed_priority {
+        if let Some(num) = serde_json::Number::from_f64(s) {
+            map.insert("speedPriority".into(), serde_json::Value::Number(num));
+        }
+    }
+    if let Some(i) = intelligence_priority {
+        if let Some(num) = serde_json::Number::from_f64(i) {
+            map.insert("intelligencePriority".into(), serde_json::Value::Number(num));
+        }
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Sampling `includeContext` enum values (parity with SamplingCreateParams.includeContext).
+pub const INCLUDE_CONTEXTS: &[&str] = &["none", "thisServer", "allServers"];
+
+/// True when `ctx` is a recognized sampling includeContext value.
+#[must_use]
+pub fn is_valid_include_context(ctx: &str) -> bool {
+    INCLUDE_CONTEXTS.contains(&ctx)
+}
+
+/// Canonical sampling stopReason values (spec examples; freeform strings also allowed on wire).
+pub const CANONICAL_STOP_REASONS: &[&str] = &["endTurn", "stopSequence", "maxTokens"];
+
+/// True when `reason` is a canonical sampling stopReason.
+#[must_use]
+pub fn is_canonical_stop_reason(reason: &str) -> bool {
+    CANONICAL_STOP_REASONS.contains(&reason)
+}
+
+/// Content annotations builder (parity with `ContentAnnotations`).
+#[must_use]
+pub fn content_annotations(
+    audience: Option<Vec<String>>,
+    priority: Option<f64>,
+) -> ContentAnnotations {
+    ContentAnnotations { audience, priority }
+}
+
+/// Log entry object (parity with `LogEntry`) — pure data, no emit.
+#[must_use]
+pub fn log_entry(
+    level: impl Into<String>,
+    data: Option<serde_json::Value>,
+    logger: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("level".into(), serde_json::Value::String(level.into()));
+    if let Some(l) = logger {
+        map.insert("logger".into(), serde_json::Value::String(l));
+    }
+    if let Some(d) = data {
+        map.insert("data".into(), d);
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Empty client capabilities object.
+#[must_use]
+pub fn empty_client_capabilities() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// Resource content free function wrapping an [`EmbeddedResource`].
+#[must_use]
+pub fn resource_content(resource: EmbeddedResource) -> Content {
+    Content::Resource {
+        resource,
+        annotations: None,
+    }
+}
+
+/// Lifecycle MCP methods (`initialize`, `notifications/initialized`, `ping`).
+pub const LIFECYCLE_METHODS: &[&str] = &[
+    methods::INITIALIZE,
+    methods::INITIALIZED,
+    methods::PING,
+];
+
+/// True when `method` is a lifecycle method.
+#[must_use]
+pub fn is_lifecycle_method(method: &str) -> bool {
+    LIFECYCLE_METHODS.contains(&method)
+}
+
+/// Coarse domain for a known MCP method string (pure residual classifier).
+///
+/// Returns one of: `lifecycle`, `resources`, `prompts`, `tools`, `logging`,
+/// `completion`, `sampling`, `elicitation`, `progress`, `cancellation`,
+/// `roots`, or `unknown`.
+#[must_use]
+pub fn method_domain(method: &str) -> &'static str {
+    if !is_mcp_method(method) {
+        return "unknown";
+    }
+    if is_lifecycle_method(method) {
+        return "lifecycle";
+    }
+    if method.starts_with("resources/") || method.starts_with("notifications/resources/") {
+        return "resources";
+    }
+    if method.starts_with("prompts/") || method.starts_with("notifications/prompts/") {
+        return "prompts";
+    }
+    if method.starts_with("tools/") || method.starts_with("notifications/tools/") {
+        return "tools";
+    }
+    if method == methods::LOGGING_SET_LEVEL || method == methods::LOG_MESSAGE {
+        return "logging";
+    }
+    if method == methods::COMPLETION_COMPLETE {
+        return "completion";
+    }
+    if method == methods::SAMPLING_CREATE_MESSAGE {
+        return "sampling";
+    }
+    if method == methods::ELICITATION_CREATE {
+        return "elicitation";
+    }
+    if method == methods::PROGRESS_NOTIFICATION {
+        return "progress";
+    }
+    if method == methods::CANCELLED_NOTIFICATION {
+        return "cancellation";
+    }
+    if method == methods::ROOTS_LIST || method == methods::ROOTS_LIST_CHANGED {
+        return "roots";
+    }
+    "unknown"
+}
+
+/// Sampling create params with optional model preferences + includeContext (pure data).
+#[must_use]
+pub fn sampling_create_params_ext(
+    messages: &[serde_json::Value],
+    max_tokens: u64,
+    system_prompt: Option<String>,
+    temperature: Option<f64>,
+    include_context: Option<String>,
+    model_prefs: Option<serde_json::Value>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert(
+        "messages".into(),
+        serde_json::Value::Array(messages.to_vec()),
+    );
+    map.insert("maxTokens".into(), serde_json::Value::Number(max_tokens.into()));
+    if let Some(sp) = system_prompt {
+        map.insert("systemPrompt".into(), serde_json::Value::String(sp));
+    }
+    if let Some(t) = temperature {
+        if let Some(num) = serde_json::Number::from_f64(t) {
+            map.insert("temperature".into(), serde_json::Value::Number(num));
+        }
+    }
+    if let Some(ic) = include_context {
+        map.insert("includeContext".into(), serde_json::Value::String(ic));
+    }
+    if let Some(mp) = model_prefs {
+        map.insert("modelPreferences".into(), mp);
+    }
+    serde_json::Value::Object(map)
+}
+
 /// Check if a URI matches a template pattern (`{param}` → single path segment).
 #[must_use]
 pub fn matches_template(template: &str, uri: &str) -> bool {
@@ -2036,6 +2267,63 @@ mod tests {
                 }
             }
         }
+
+        // WAVE13: method domains golden
+        if let Some(cases) = doc.get("methodDomains").and_then(|v| v.as_array()) {
+            for case in cases {
+                let method = case["method"].as_str().unwrap_or("");
+                let domain = case["domain"].as_str().unwrap_or("");
+                assert_eq!(method_domain(method), domain, "method {method}");
+            }
+        }
+
+        // WAVE13: includeContext / stopReason catalogs
+        if let Some(vals) = doc.get("includeContexts").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_valid_include_context(s), "includeContext {s}");
+            }
+        }
+        if let Some(vals) = doc.get("canonicalStopReasons").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_canonical_stop_reason(s), "stopReason {s}");
+            }
+        }
+
+        // WAVE13: cancelled + tools_call with progress meta
+        if let Some(cases) = doc.get("requestParamsWave13").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let kind = case["kind"].as_str().unwrap_or("?");
+                match kind {
+                    "cancelled" => {
+                        let p = cancelled_params(
+                            case.get("requestId").cloned().unwrap_or(serde_json::json!(1)),
+                            case.get("reason").and_then(|v| v.as_str()).map(str::to_string),
+                        );
+                        assert_eq!(
+                            p.get("requestId"),
+                            case.get("requestId"),
+                            "case {name}"
+                        );
+                    }
+                    "tools_call_progress" => {
+                        let p = tools_call_params_with_progress(
+                            case["toolName"].as_str().unwrap_or(""),
+                            case.get("arguments").cloned(),
+                            case.get("progressToken").cloned(),
+                        );
+                        assert_eq!(
+                            p["_meta"]["progressToken"],
+                            case.get("progressToken").cloned().unwrap_or(serde_json::Value::Null),
+                            "case {name}"
+                        );
+                    }
+                    other => panic!("unknown requestParamsWave13 kind {other}"),
+                }
+            }
+        }
     }
 
     #[test]
@@ -2402,4 +2690,85 @@ mod tests {
         let emb = embedded_resource_content("file:///x", None, Some("z".into()));
         assert!(emb.is_resource());
     }
+
+
+    #[test]
+    fn wave13_cancelled_meta_domains_and_sampling_prefs() {
+        let c = cancelled_params(serde_json::json!(9), Some("user abort".into()));
+        assert_eq!(c["requestId"], 9);
+        assert_eq!(c["reason"], "user abort");
+        let c2 = cancelled_params(serde_json::json!("r1"), None);
+        assert!(c2.get("reason").is_none());
+
+        let p = tools_call_params_with_progress(
+            "ping",
+            Some(serde_json::json!({"n": 1})),
+            Some(serde_json::json!("tok-1")),
+        );
+        assert_eq!(p["name"], "ping");
+        assert_eq!(p["_meta"]["progressToken"], "tok-1");
+
+        let hint = model_hint(Some("gpt".into()));
+        assert_eq!(hint["name"], "gpt");
+        let prefs = model_preferences(Some(0.2), Some(0.5), Some(0.8), Some(&[hint]));
+        assert_eq!(prefs["costPriority"], 0.2);
+        assert_eq!(prefs["speedPriority"], 0.5);
+        assert_eq!(prefs["intelligencePriority"], 0.8);
+        assert_eq!(prefs["hints"][0]["name"], "gpt");
+
+        assert!(is_valid_include_context("none"));
+        assert!(is_valid_include_context("thisServer"));
+        assert!(is_valid_include_context("allServers"));
+        assert!(!is_valid_include_context("other"));
+
+        assert!(is_canonical_stop_reason("endTurn"));
+        assert!(is_canonical_stop_reason("stopSequence"));
+        assert!(is_canonical_stop_reason("maxTokens"));
+        assert!(!is_canonical_stop_reason("custom"));
+
+        let ann = content_annotations(Some(vec!["user".into()]), Some(0.9));
+        assert_eq!(ann.priority, Some(0.9));
+        let t = Content::text("x").with_annotations(ann);
+        assert!(t.is_text());
+
+        let le = log_entry("info", Some(serde_json::json!({"ok": true})), Some("svc".into()));
+        assert_eq!(le["level"], "info");
+        assert_eq!(le["logger"], "svc");
+
+        assert!(is_lifecycle_method(methods::INITIALIZE));
+        assert!(is_lifecycle_method(methods::PING));
+        assert!(!is_lifecycle_method(methods::TOOLS_CALL));
+
+        assert_eq!(method_domain(methods::INITIALIZE), "lifecycle");
+        assert_eq!(method_domain(methods::TOOLS_CALL), "tools");
+        assert_eq!(method_domain(methods::TOOLS_LIST_CHANGED), "tools");
+        assert_eq!(method_domain(methods::RESOURCES_READ), "resources");
+        assert_eq!(method_domain(methods::PROMPTS_GET), "prompts");
+        assert_eq!(method_domain(methods::LOG_MESSAGE), "logging");
+        assert_eq!(method_domain(methods::COMPLETION_COMPLETE), "completion");
+        assert_eq!(method_domain(methods::SAMPLING_CREATE_MESSAGE), "sampling");
+        assert_eq!(method_domain(methods::ELICITATION_CREATE), "elicitation");
+        assert_eq!(method_domain(methods::PROGRESS_NOTIFICATION), "progress");
+        assert_eq!(method_domain(methods::CANCELLED_NOTIFICATION), "cancellation");
+        assert_eq!(method_domain(methods::ROOTS_LIST), "roots");
+        assert_eq!(method_domain("not/real"), "unknown");
+
+        let ext = sampling_create_params_ext(
+            &[serde_json::json!({"role": "user", "content": {"type": "text", "text": "hi"}})],
+            32,
+            Some("sys".into()),
+            Some(0.7),
+            Some("thisServer".into()),
+            Some(model_preferences(None, Some(1.0), None, None)),
+        );
+        assert_eq!(ext["maxTokens"], 32);
+        assert_eq!(ext["includeContext"], "thisServer");
+        assert_eq!(ext["modelPreferences"]["speedPriority"], 1.0);
+        assert_eq!(ext["systemPrompt"], "sys");
+
+        let rc = resource_content(EmbeddedResource::text_item("file:///a", "body", None));
+        assert!(rc.is_resource());
+        assert_eq!(empty_client_capabilities(), serde_json::json!({}));
+    }
+
 }

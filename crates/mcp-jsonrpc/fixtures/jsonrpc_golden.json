@@ -9,21 +9,112 @@
     "internalError": -32603
   },
   "cases": [
-    {"name": "request", "input": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}", "kind": "request"},
-    {"name": "request_string_id", "input": "{\"jsonrpc\":\"2.0\",\"id\":\"req-1\",\"method\":\"tools/list\",\"params\":{}}", "kind": "request"},
-    {"name": "notification", "input": "{\"jsonrpc\":\"2.0\",\"method\":\"n\"}", "kind": "notification"},
-    {"name": "notification_initialized", "input": "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}", "kind": "notification"},
-    {"name": "success", "input": "{\"jsonrpc\":\"2.0\",\"id\":\"a\",\"result\":true}", "kind": "success"},
-    {"name": "success_object", "input": "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"tools\":[]}}", "kind": "success"},
-    {"name": "error", "input": "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"bad\"}}", "kind": "error"},
-    {"name": "error_method_not_found", "input": "{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}", "kind": "error"},
-    {"name": "error_invalid_params", "input": "{\"jsonrpc\":\"2.0\",\"id\":4,\"error\":{\"code\":-32602,\"message\":\"Invalid params\"}}", "kind": "error"},
-    {"name": "error_server_range", "input": "{\"jsonrpc\":\"2.0\",\"id\":5,\"error\":{\"code\":-32000,\"message\":\"server\"}}", "kind": "error"},
-    {"name": "bad_version", "input": "{\"jsonrpc\":\"1.0\",\"id\":1,\"method\":\"x\"}", "kind": "err_version"},
-    {"name": "non_object", "input": "[]", "kind": "err_object"}
+    {
+      "name": "request",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}",
+      "kind": "request"
+    },
+    {
+      "name": "request_string_id",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":\"req-1\",\"method\":\"tools/list\",\"params\":{}}",
+      "kind": "request"
+    },
+    {
+      "name": "notification",
+      "input": "{\"jsonrpc\":\"2.0\",\"method\":\"n\"}",
+      "kind": "notification"
+    },
+    {
+      "name": "notification_initialized",
+      "input": "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}",
+      "kind": "notification"
+    },
+    {
+      "name": "success",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":\"a\",\"result\":true}",
+      "kind": "success"
+    },
+    {
+      "name": "success_object",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"tools\":[]}}",
+      "kind": "success"
+    },
+    {
+      "name": "error",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"bad\"}}",
+      "kind": "error"
+    },
+    {
+      "name": "error_method_not_found",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}",
+      "kind": "error"
+    },
+    {
+      "name": "error_invalid_params",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":4,\"error\":{\"code\":-32602,\"message\":\"Invalid params\"}}",
+      "kind": "error"
+    },
+    {
+      "name": "error_server_range",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":5,\"error\":{\"code\":-32000,\"message\":\"server\"}}",
+      "kind": "error"
+    },
+    {
+      "name": "bad_version",
+      "input": "{\"jsonrpc\":\"1.0\",\"id\":1,\"method\":\"x\"}",
+      "kind": "err_version"
+    },
+    {
+      "name": "non_object",
+      "input": "[]",
+      "kind": "err_object"
+    },
+    {
+      "name": "request_with_params",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":9,\"method\":\"tools/call\",\"params\":{\"name\":\"ping\"}}",
+      "kind": "request"
+    },
+    {
+      "name": "error_parse",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,\"message\":\"parse\"}}",
+      "kind": "error"
+    }
   ],
   "serverErrorRange": {
     "min": -32099,
     "max": -32000
-  }
+  },
+  "standardErrorNames": {
+    "ParseError": -32700,
+    "InvalidRequest": -32600,
+    "MethodNotFound": -32601,
+    "InvalidParams": -32602,
+    "InternalError": -32603
+  },
+  "applicationErrorCodes": [
+    {
+      "code": -1,
+      "isApplication": true
+    },
+    {
+      "code": 42,
+      "isApplication": true
+    },
+    {
+      "code": -32700,
+      "isApplication": false
+    },
+    {
+      "code": -32000,
+      "isApplication": false
+    },
+    {
+      "code": -32099,
+      "isApplication": false
+    },
+    {
+      "code": -32603,
+      "isApplication": false
+    }
+  ]
 }

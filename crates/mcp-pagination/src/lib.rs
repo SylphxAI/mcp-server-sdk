@@ -72,6 +72,42 @@ pub fn decode_page_cursor(cursor: &str) -> Option<(usize, usize)> {
     decode_cursor(cursor).map(|d| (d.offset, d.page_size))
 }
 
+/// Default page size (parity with TS PaginationOptions default).
+pub const DEFAULT_PAGE_SIZE: usize = 50;
+
+/// Default max page size (parity with TS PaginationOptions default).
+pub const MAX_PAGE_SIZE: usize = 100;
+
+/// Construct pagination options.
+#[must_use]
+pub fn pagination_options(default_page_size: usize, max_page_size: usize) -> PaginationOptions {
+    PaginationOptions {
+        default_page_size,
+        max_page_size,
+    }
+}
+
+/// Pure: whether another page exists after `offset` with `page_size` over `total_len`.
+#[must_use]
+pub fn page_has_more(offset: usize, page_size: usize, total_len: usize) -> bool {
+    offset.saturating_add(page_size) < total_len
+}
+
+/// Pure: next page offset (`offset + page_size`, saturating).
+#[must_use]
+pub fn next_page_offset(offset: usize, page_size: usize) -> usize {
+    offset.saturating_add(page_size)
+}
+
+/// Empty page with no next cursor.
+#[must_use]
+pub fn empty_page<T>() -> PageResult<T> {
+    PageResult {
+        items: Vec::new(),
+        next_cursor: None,
+    }
+}
+
 /// Paginate a slice of items (parity with TS `paginate`).
 #[must_use]
 pub fn paginate<T: Clone>(
@@ -229,6 +265,44 @@ mod tests {
         assert!(page.next_cursor.is_some());
     }
 
+
+    #[test]
+    fn wave13_page_math_and_empty_page() {
+        assert_eq!(DEFAULT_PAGE_SIZE, 50);
+        assert_eq!(MAX_PAGE_SIZE, 100);
+        assert_eq!(PaginationOptions::default().default_page_size, DEFAULT_PAGE_SIZE);
+        assert_eq!(PaginationOptions::default().max_page_size, MAX_PAGE_SIZE);
+
+        assert!(page_has_more(0, 50, 120));
+        assert!(!page_has_more(0, 50, 50));
+        assert!(!page_has_more(0, 50, 10));
+        assert!(!page_has_more(100, 50, 120));
+        assert_eq!(next_page_offset(0, 50), 50);
+        assert_eq!(next_page_offset(usize::MAX - 1, 10), usize::MAX);
+
+        let empty: PageResult<i32> = empty_page();
+        assert!(empty.items.is_empty());
+        assert!(empty.next_cursor.is_none());
+
+        let opts = pagination_options(10, 20);
+        assert_eq!(opts.default_page_size, 10);
+        assert_eq!(opts.max_page_size, 20);
+
+        let items: Vec<i32> = (0..75).collect();
+        let first = paginate(&items, None, PaginationOptions::default());
+        assert!(page_has_more(0, DEFAULT_PAGE_SIZE, items.len()));
+        assert_eq!(first.items.len(), 50);
+        let cursor = match first.next_cursor.as_deref() {
+            Some(c) => c,
+            None => panic!("expected next cursor"),
+        };
+        let (off, _ps) = match decode_page_cursor(cursor) {
+            Some(v) => v,
+            None => panic!("expected decode"),
+        };
+        assert_eq!(off, next_page_offset(0, DEFAULT_PAGE_SIZE));
+    }
+
     /// Load committed golden fixture (TS oracle surface contract) and assert Rust paginate.
     #[test]
     fn pure_residual_pagination_golden_fixture() {
@@ -269,6 +343,37 @@ mod tests {
             }
             let has_next = case["hasNext"].as_bool().unwrap_or(false);
             assert_eq!(page.next_cursor.is_some(), has_next, "case {name} next");
+        }
+        if let Some(math) = doc.get("pageMath").and_then(|v| v.as_array()) {
+            for case in math {
+                let name = case["name"].as_str().unwrap_or("?");
+                let offset = case["offset"].as_u64().unwrap_or(0) as usize;
+                let page_size = case["pageSize"].as_u64().unwrap_or(0) as usize;
+                let total = case["total"].as_u64().unwrap_or(0) as usize;
+                let has_more = case["hasMore"].as_bool().unwrap_or(false);
+                assert_eq!(
+                    page_has_more(offset, page_size, total),
+                    has_more,
+                    "case {name}"
+                );
+                if let Some(next) = case.get("nextOffset").and_then(|v| v.as_u64()) {
+                    assert_eq!(
+                        next_page_offset(offset, page_size),
+                        next as usize,
+                        "case {name} next"
+                    );
+                }
+            }
+        }
+        if let Some(defs) = doc.get("defaults") {
+            assert_eq!(
+                defs["defaultPageSize"].as_u64().unwrap_or(0) as usize,
+                DEFAULT_PAGE_SIZE
+            );
+            assert_eq!(
+                defs["maxPageSize"].as_u64().unwrap_or(0) as usize,
+                MAX_PAGE_SIZE
+            );
         }
     }
 }

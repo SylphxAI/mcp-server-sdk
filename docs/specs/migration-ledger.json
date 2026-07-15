@@ -18,7 +18,7 @@
     }
   ],
   "reauditRef": "rej-010",
-  "verificationRef": "verification/FLEET-ENTERPRISE-WAVE12-honesty.json",
+  "verificationRef": "verification/FLEET-ENTERPRISE-WAVE13-honesty.json",
   "inventorySource": [
     "mcp-tools",
     "manual"
@@ -124,7 +124,7 @@
         "status": "missing",
         "staleReason": "Pure residual on disk with golden fixture regression; SHA-bound TS oracle harness for full differential_green still missing \u2014 NOT authority_rust/ts_deleted"
       },
-      "notes": "BW1 pure residual: cursor paginate + expanded golden fixture (WAVE12 clamp/public cursor + page edges). TS pagination remains consumer API. No authority_rust/ts_deleted."
+      "notes": "BW1 pure residual: cursor paginate + expanded golden fixture (WAVE12 clamp/public cursor + page edges). TS pagination remains consumer API. No authority_rust/ts_deleted. WAVE13 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted)."
     },
     {
       "id": "api/jsonrpc-protocol",
@@ -141,7 +141,7 @@
       },
       "tsSurface": "src/protocol/jsonrpc.ts",
       "rustSurface": "crates/mcp-jsonrpc/**; crates/mcp-jsonrpc/fixtures/jsonrpc_golden.json",
-      "notes": "Honest: crates/mcp-jsonrpc pure parse/construct/guards + standard error constructors + server-error range + message extractors + error-with-data (WAVE12). NO authority_rust/ts_deleted. TS protocol remains package surface.",
+      "notes": "Honest: crates/mcp-jsonrpc pure parse/construct/guards + standard error constructors + server-error range + message extractors + error-with-data (WAVE12). NO authority_rust/ts_deleted. TS protocol remains package surface. WAVE13 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted).",
       "parityTest": "cargo test -p mcp-jsonrpc pure_residual_jsonrpc_golden_fixture"
     },
     {
@@ -156,7 +156,7 @@
         "status": "missing",
         "staleReason": "Pure residual version negotiate + content/tool/list helpers + notification_to_jsonrpc + normalize_tool_result + protocol descriptors + resource wire + sampling/elicitation envelopes + request param envelopes + golden; full MCP method dispatch remains TS; differential_green not claimed"
       },
-      "notes": "WAVE12 pure residual deepen: initialize/tools_call/resources/prompts/list/logging/completion/progress param envelopes, client_capabilities, is_mcp_request/notification_method, content kind guards. Handler dispatch + transport remain TS. No authority_rust/ts_deleted."
+      "notes": "WAVE12 pure residual deepen: initialize/tools_call/resources/prompts/list/logging/completion/progress param envelopes, client_capabilities, is_mcp_request/notification_method, content kind guards. Handler dispatch + transport remain TS. No authority_rust/ts_deleted. WAVE13 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted)."
     },
     {
       "id": "api/http-auth",

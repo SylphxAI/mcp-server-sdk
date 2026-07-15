@@ -2,15 +2,37 @@
   "schema": "mcp-protocol-golden/v1",
   "source": "src/protocol/mcp.ts; src/notifications/emitter.ts; src/builders/tool.ts; src/builders/resource.ts; src/builders/prompt.ts",
   "latestProtocolVersion": "2025-03-26",
-  "supportedProtocolVersions": ["2025-03-26", "2024-11-05"],
+  "supportedProtocolVersions": [
+    "2025-03-26",
+    "2024-11-05"
+  ],
   "negotiate": [
-    { "client": "2024-11-05", "expected": "2024-11-05" },
-    { "client": "2025-03-26", "expected": "2025-03-26" },
-    { "client": null, "expected": "2025-03-26" },
-    { "client": "nope", "expected": "2025-03-26" }
+    {
+      "client": "2024-11-05",
+      "expected": "2024-11-05"
+    },
+    {
+      "client": "2025-03-26",
+      "expected": "2025-03-26"
+    },
+    {
+      "client": null,
+      "expected": "2025-03-26"
+    },
+    {
+      "client": "nope",
+      "expected": "2025-03-26"
+    }
   ],
   "logLevels": [
-    "debug", "info", "notice", "warning", "error", "critical", "alert", "emergency"
+    "debug",
+    "info",
+    "notice",
+    "warning",
+    "error",
+    "critical",
+    "alert",
+    "emergency"
   ],
   "mcpMethods": [
     "initialize",
@@ -79,7 +101,9 @@
       "name": "log",
       "notificationType": "log",
       "level": "info",
-      "data": { "ok": true },
+      "data": {
+        "ok": true
+      },
       "logger": "app",
       "expectedMethod": "notifications/message",
       "expectParams": true
@@ -96,35 +120,63 @@
   "normalizeToolResult": [
     {
       "name": "full_result",
-      "input": { "content": [{ "type": "text", "text": "a" }], "isError": false },
+      "input": {
+        "content": [
+          {
+            "type": "text",
+            "text": "a"
+          }
+        ],
+        "isError": false
+      },
       "expectedContentLen": 1
     },
     {
       "name": "array_of_content",
       "input": [
-        { "type": "text", "text": "a" },
-        { "type": "text", "text": "b" }
+        {
+          "type": "text",
+          "text": "a"
+        },
+        {
+          "type": "text",
+          "text": "b"
+        }
       ],
       "expectedContentLen": 2
     },
     {
       "name": "single_content",
-      "input": { "type": "text", "text": "solo" },
+      "input": {
+        "type": "text",
+        "text": "solo"
+      },
       "expectedContentLen": 1
     },
     {
       "name": "empty_content_array",
-      "input": { "content": [] },
+      "input": {
+        "content": []
+      },
       "expectedContentLen": 0
     },
     {
       "name": "preserves_structured_content",
       "input": {
-        "content": [{ "type": "text", "text": "x" }],
-        "structuredContent": { "k": 1 }
+        "content": [
+          {
+            "type": "text",
+            "text": "x"
+          }
+        ],
+        "structuredContent": {
+          "k": 1
+        }
       },
       "expectedContentLen": 1,
-      "expectedStructuredContent": { "k": 1 }
+      "expectedStructuredContent": {
+        "k": 1
+      }
     }
   ],
   "protocolDescriptors": [
@@ -148,7 +200,12 @@
       "kind": "prompt",
       "name": "greet",
       "description": "say hi",
-      "arguments": [{ "name": "who", "required": true }]
+      "arguments": [
+        {
+          "name": "who",
+          "required": true
+        }
+      ]
     }
   ],
   "resourceContents": [
@@ -167,7 +224,11 @@
       "expectedType": "resource"
     }
   ],
-  "elicitationActions": ["accept", "decline", "cancel"],
+  "elicitationActions": [
+    "accept",
+    "decline",
+    "cancel"
+  ],
   "samplingCreate": {
     "maxTokens": 64,
     "messageCount": 1,
@@ -181,13 +242,17 @@
       "protocolVersion": "2025-03-26",
       "clientName": "fixture-client",
       "clientVersion": "0.1.0",
-      "capabilities": { "sampling": {} }
+      "capabilities": {
+        "sampling": {}
+      }
     },
     {
       "name": "tools_call_ping",
       "kind": "tools_call",
       "toolName": "ping",
-      "arguments": { "n": 1 }
+      "arguments": {
+        "n": 1
+      }
     },
     {
       "name": "resources_read_file",
@@ -214,11 +279,142 @@
     }
   ],
   "methodKinds": [
-    { "method": "initialize", "kind": "request" },
-    { "method": "tools/call", "kind": "request" },
-    { "method": "ping", "kind": "request" },
-    { "method": "notifications/initialized", "kind": "notification" },
-    { "method": "notifications/tools/list_changed", "kind": "notification" },
-    { "method": "notifications/progress", "kind": "notification" }
+    {
+      "method": "initialize",
+      "kind": "request"
+    },
+    {
+      "method": "tools/call",
+      "kind": "request"
+    },
+    {
+      "method": "ping",
+      "kind": "request"
+    },
+    {
+      "method": "notifications/initialized",
+      "kind": "notification"
+    },
+    {
+      "method": "notifications/tools/list_changed",
+      "kind": "notification"
+    },
+    {
+      "method": "notifications/progress",
+      "kind": "notification"
+    },
+    {
+      "method": "resources/subscribe",
+      "kind": "request"
+    },
+    {
+      "method": "notifications/cancelled",
+      "kind": "notification"
+    }
+  ],
+  "methodDomains": [
+    {
+      "method": "initialize",
+      "domain": "lifecycle"
+    },
+    {
+      "method": "notifications/initialized",
+      "domain": "lifecycle"
+    },
+    {
+      "method": "ping",
+      "domain": "lifecycle"
+    },
+    {
+      "method": "tools/call",
+      "domain": "tools"
+    },
+    {
+      "method": "tools/list",
+      "domain": "tools"
+    },
+    {
+      "method": "notifications/tools/list_changed",
+      "domain": "tools"
+    },
+    {
+      "method": "resources/read",
+      "domain": "resources"
+    },
+    {
+      "method": "notifications/resources/updated",
+      "domain": "resources"
+    },
+    {
+      "method": "prompts/get",
+      "domain": "prompts"
+    },
+    {
+      "method": "logging/setLevel",
+      "domain": "logging"
+    },
+    {
+      "method": "notifications/message",
+      "domain": "logging"
+    },
+    {
+      "method": "completion/complete",
+      "domain": "completion"
+    },
+    {
+      "method": "sampling/createMessage",
+      "domain": "sampling"
+    },
+    {
+      "method": "elicitation/create",
+      "domain": "elicitation"
+    },
+    {
+      "method": "notifications/progress",
+      "domain": "progress"
+    },
+    {
+      "method": "notifications/cancelled",
+      "domain": "cancellation"
+    },
+    {
+      "method": "roots/list",
+      "domain": "roots"
+    },
+    {
+      "method": "notifications/roots/list_changed",
+      "domain": "roots"
+    },
+    {
+      "method": "not/a/method",
+      "domain": "unknown"
+    }
+  ],
+  "includeContexts": [
+    "none",
+    "thisServer",
+    "allServers"
+  ],
+  "canonicalStopReasons": [
+    "endTurn",
+    "stopSequence",
+    "maxTokens"
+  ],
+  "requestParamsWave13": [
+    {
+      "name": "cancelled_with_reason",
+      "kind": "cancelled",
+      "requestId": 7,
+      "reason": "client cancelled"
+    },
+    {
+      "name": "tools_call_with_progress_token",
+      "kind": "tools_call_progress",
+      "toolName": "analyze",
+      "arguments": {
+        "path": "/a"
+      },
+      "progressToken": "prog-1"
+    }
   ]
 }

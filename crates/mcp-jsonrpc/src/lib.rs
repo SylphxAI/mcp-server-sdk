@@ -232,6 +232,85 @@ pub fn message_id(msg: &JsonRpcMessage) -> Option<&RequestId> {
     }
 }
 
+/// Extract params from request/notification messages; `None` for responses or absent params.
+#[must_use]
+pub fn message_params(msg: &JsonRpcMessage) -> Option<&Value> {
+    match msg {
+        JsonRpcMessage::Request(r) => r.params.as_ref(),
+        JsonRpcMessage::Notification(n) => n.params.as_ref(),
+        JsonRpcMessage::Success(_) | JsonRpcMessage::Error(_) => None,
+    }
+}
+
+/// Standard error code → short name (parity with `ErrorCode` keys).
+#[must_use]
+pub fn standard_error_name(code: i64) -> Option<&'static str> {
+    match code {
+        error_code::PARSE_ERROR => Some("ParseError"),
+        error_code::INVALID_REQUEST => Some("InvalidRequest"),
+        error_code::METHOD_NOT_FOUND => Some("MethodNotFound"),
+        error_code::INVALID_PARAMS => Some("InvalidParams"),
+        error_code::INTERNAL_ERROR => Some("InternalError"),
+        _ => None,
+    }
+}
+
+/// ErrorCode name → numeric code.
+#[must_use]
+pub fn error_code_from_name(name: &str) -> Option<i64> {
+    match name {
+        "ParseError" | "parseError" => Some(error_code::PARSE_ERROR),
+        "InvalidRequest" | "invalidRequest" => Some(error_code::INVALID_REQUEST),
+        "MethodNotFound" | "methodNotFound" => Some(error_code::METHOD_NOT_FOUND),
+        "InvalidParams" | "invalidParams" => Some(error_code::INVALID_PARAMS),
+        "InternalError" | "internalError" => Some(error_code::INTERNAL_ERROR),
+        _ => None,
+    }
+}
+
+/// True when `code` is neither a standard JSON-RPC error nor the reserved server-error range.
+///
+/// Application-defined codes live outside both ranges (JSON-RPC 2.0 §5.1).
+#[must_use]
+pub fn is_application_error_code(code: i64) -> bool {
+    !is_standard_error_code(code) && !is_server_error_code(code)
+}
+
+/// Convenience: parse error with optional structured `data`.
+#[must_use]
+pub fn parse_error_with_data(
+    id: Option<RequestId>,
+    message: impl Into<String>,
+    data: Option<Value>,
+) -> JsonRpcError {
+    error_response(id, error_code::PARSE_ERROR, message, data)
+}
+
+/// Convenience: invalid request with optional structured `data`.
+#[must_use]
+pub fn invalid_request_with_data(
+    id: Option<RequestId>,
+    message: impl Into<String>,
+    data: Option<Value>,
+) -> JsonRpcError {
+    error_response(id, error_code::INVALID_REQUEST, message, data)
+}
+
+/// Convenience: method not found with optional structured `data`.
+#[must_use]
+pub fn method_not_found_with_data(
+    id: RequestId,
+    method: impl Into<String>,
+    data: Option<Value>,
+) -> JsonRpcError {
+    error_response(
+        Some(id),
+        error_code::METHOD_NOT_FOUND,
+        format!("Method not found: {}", method.into()),
+        data,
+    )
+}
+
 /// Type guard: message is a request (`id` + `method`).
 #[must_use]
 pub fn is_request(msg: &JsonRpcMessage) -> bool {
@@ -514,6 +593,28 @@ mod tests {
             assert!(!is_server_error_code(min - 1));
             assert!(!is_server_error_code(max + 1));
         }
+        if let Some(names) = doc.get("standardErrorNames") {
+            assert!(names.is_object(), "standardErrorNames object");
+            for (key, code_key) in [
+                ("ParseError", "parseError"),
+                ("InvalidRequest", "invalidRequest"),
+                ("MethodNotFound", "methodNotFound"),
+                ("InvalidParams", "invalidParams"),
+                ("InternalError", "internalError"),
+            ] {
+                let code = doc["standardErrorCodes"][code_key].as_i64().unwrap_or(0);
+                assert_eq!(standard_error_name(code), Some(key));
+                assert_eq!(error_code_from_name(key), Some(code));
+                assert_eq!(names[key].as_i64(), Some(code), "name map {key}");
+            }
+        }
+        if let Some(cases) = doc.get("applicationErrorCodes").and_then(|v| v.as_array()) {
+            for case in cases {
+                let code = case["code"].as_i64().unwrap_or(0);
+                let is_app = case["isApplication"].as_bool().unwrap_or(false);
+                assert_eq!(is_application_error_code(code), is_app, "code {code}");
+            }
+        }
         let cases = match doc["cases"].as_array() {
             Some(a) => a,
             None => panic!("cases"),
@@ -567,4 +668,46 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn wave13_error_names_application_range_and_params() {
+        assert_eq!(standard_error_name(error_code::PARSE_ERROR), Some("ParseError"));
+        assert_eq!(standard_error_name(error_code::METHOD_NOT_FOUND), Some("MethodNotFound"));
+        assert_eq!(standard_error_name(-32000), None);
+        assert_eq!(error_code_from_name("InvalidParams"), Some(error_code::INVALID_PARAMS));
+        assert_eq!(error_code_from_name("invalidParams"), Some(error_code::INVALID_PARAMS));
+        assert_eq!(error_code_from_name("nope"), None);
+
+        assert!(is_application_error_code(-1));
+        assert!(is_application_error_code(42));
+        assert!(!is_application_error_code(error_code::INTERNAL_ERROR));
+        assert!(!is_application_error_code(-32050));
+
+        let e = parse_error_with_data(None, "bad", Some(json!({"offset": 3})));
+        assert_eq!(e.error.code, error_code::PARSE_ERROR);
+        assert_eq!(e.error.data, Some(json!({"offset": 3})));
+
+        let e = invalid_request_with_data(Some(RequestId::Number(1)), "no method", None);
+        assert_eq!(e.error.code, error_code::INVALID_REQUEST);
+
+        let e = method_not_found_with_data(
+            RequestId::String("a".into()),
+            "tools/unknown",
+            Some(json!({"hint": "tools/list"})),
+        );
+        assert_eq!(e.error.code, error_code::METHOD_NOT_FOUND);
+        assert!(e.error.message.contains("tools/unknown"));
+        assert_eq!(e.error.data, Some(json!({"hint": "tools/list"})));
+
+        let req = request(RequestId::Number(1), "tools/call", Some(json!({"name": "ping"})));
+        let msg = JsonRpcMessage::Request(req);
+        assert_eq!(message_params(&msg), Some(&json!({"name": "ping"})));
+        let n = notification("notifications/initialized", None);
+        let msg = JsonRpcMessage::Notification(n);
+        assert!(message_params(&msg).is_none());
+        let ok = success(RequestId::Number(2), json!(true));
+        let msg = JsonRpcMessage::Success(ok);
+        assert!(message_params(&msg).is_none());
+    }
+
 }

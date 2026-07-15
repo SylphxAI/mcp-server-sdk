@@ -6,7 +6,10 @@
       "name": "first_page_default",
       "itemCount": 120,
       "cursor": null,
-      "options": { "defaultPageSize": 50, "maxPageSize": 100 },
+      "options": {
+        "defaultPageSize": 50,
+        "maxPageSize": 100
+      },
       "expectedLen": 50,
       "expectedFirst": 0,
       "hasNext": true
@@ -15,7 +18,10 @@
       "name": "small_list_no_next",
       "itemCount": 10,
       "cursor": null,
-      "options": { "defaultPageSize": 50, "maxPageSize": 100 },
+      "options": {
+        "defaultPageSize": 50,
+        "maxPageSize": 100
+      },
       "expectedLen": 10,
       "expectedFirst": 0,
       "hasNext": false
@@ -24,7 +30,10 @@
       "name": "empty",
       "itemCount": 0,
       "cursor": null,
-      "options": { "defaultPageSize": 50, "maxPageSize": 100 },
+      "options": {
+        "defaultPageSize": 50,
+        "maxPageSize": 100
+      },
       "expectedLen": 0,
       "hasNext": false
     },
@@ -32,7 +41,10 @@
       "name": "exact_page_boundary_no_next",
       "itemCount": 50,
       "cursor": null,
-      "options": { "defaultPageSize": 50, "maxPageSize": 100 },
+      "options": {
+        "defaultPageSize": 50,
+        "maxPageSize": 100
+      },
       "expectedLen": 50,
       "expectedFirst": 0,
       "hasNext": false
@@ -41,7 +53,10 @@
       "name": "custom_small_page",
       "itemCount": 25,
       "cursor": null,
-      "options": { "defaultPageSize": 10, "maxPageSize": 100 },
+      "options": {
+        "defaultPageSize": 10,
+        "maxPageSize": 100
+      },
       "expectedLen": 10,
       "expectedFirst": 0,
       "hasNext": true
@@ -50,7 +65,10 @@
       "name": "bad_cursor_falls_back_to_start",
       "itemCount": 5,
       "cursor": "!!!not-a-cursor!!!",
-      "options": { "defaultPageSize": 50, "maxPageSize": 100 },
+      "options": {
+        "defaultPageSize": 50,
+        "maxPageSize": 100
+      },
       "expectedLen": 5,
       "expectedFirst": 0,
       "hasNext": false
@@ -59,7 +77,10 @@
       "name": "single_item_page",
       "itemCount": 3,
       "cursor": null,
-      "options": { "defaultPageSize": 1, "maxPageSize": 100 },
+      "options": {
+        "defaultPageSize": 1,
+        "maxPageSize": 100
+      },
       "expectedLen": 1,
       "expectedFirst": 0,
       "hasNext": true
@@ -68,7 +89,10 @@
       "name": "page_size_one_exact_end",
       "itemCount": 1,
       "cursor": null,
-      "options": { "defaultPageSize": 1, "maxPageSize": 10 },
+      "options": {
+        "defaultPageSize": 1,
+        "maxPageSize": 10
+      },
       "expectedLen": 1,
       "expectedFirst": 0,
       "hasNext": false
@@ -77,7 +101,10 @@
       "name": "default_page_equals_max",
       "itemCount": 30,
       "cursor": null,
-      "options": { "defaultPageSize": 20, "maxPageSize": 20 },
+      "options": {
+        "defaultPageSize": 20,
+        "maxPageSize": 20
+      },
       "expectedLen": 20,
       "expectedFirst": 0,
       "hasNext": true
@@ -86,10 +113,71 @@
       "name": "tiny_max_page",
       "itemCount": 5,
       "cursor": null,
-      "options": { "defaultPageSize": 2, "maxPageSize": 2 },
+      "options": {
+        "defaultPageSize": 2,
+        "maxPageSize": 2
+      },
       "expectedLen": 2,
       "expectedFirst": 0,
       "hasNext": true
+    },
+    {
+      "name": "page_math_second",
+      "itemCount": 75,
+      "cursor": null,
+      "options": {
+        "defaultPageSize": 50,
+        "maxPageSize": 100
+      },
+      "expectedLen": 50,
+      "expectedFirst": 0,
+      "hasNext": true
+    }
+  ],
+  "defaults": {
+    "defaultPageSize": 50,
+    "maxPageSize": 100
+  },
+  "pageMath": [
+    {
+      "name": "mid_list",
+      "offset": 0,
+      "pageSize": 50,
+      "total": 120,
+      "hasMore": true,
+      "nextOffset": 50
+    },
+    {
+      "name": "exact_end",
+      "offset": 0,
+      "pageSize": 50,
+      "total": 50,
+      "hasMore": false,
+      "nextOffset": 50
+    },
+    {
+      "name": "past_end",
+      "offset": 100,
+      "pageSize": 50,
+      "total": 120,
+      "hasMore": false,
+      "nextOffset": 150
+    },
+    {
+      "name": "empty",
+      "offset": 0,
+      "pageSize": 10,
+      "total": 0,
+      "hasMore": false,
+      "nextOffset": 10
+    },
+    {
+      "name": "small_page",
+      "offset": 2,
+      "pageSize": 1,
+      "total": 5,
+      "hasMore": true,
+      "nextOffset": 3
     }
   ]
 }
