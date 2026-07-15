@@ -18,7 +18,7 @@
     }
   ],
   "reauditRef": "rej-010",
-  "verificationRef": "verification/FLEET-ENTERPRISE-WAVE15-honesty.json",
+  "verificationRef": "verification/FLEET-ENTERPRISE-WAVE16-honesty.json",
   "inventorySource": [
     "mcp-tools",
     "manual"
@@ -124,7 +124,7 @@
         "status": "missing",
         "staleReason": "Pure residual on disk with golden fixture regression; SHA-bound TS oracle harness for full differential_green still missing \u2014 NOT authority_rust/ts_deleted"
       },
-      "notes": "BW1 pure residual: cursor paginate + expanded golden fixture. TS pagination remains consumer API. No authority_rust/ts_deleted. WAVE15 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted)."
+      "notes": "BW1 pure residual: cursor paginate + expanded golden fixture. TS pagination remains consumer API. No authority_rust/ts_deleted. WAVE16 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted)."
     },
     {
       "id": "api/jsonrpc-protocol",
@@ -141,7 +141,7 @@
       },
       "tsSurface": "src/protocol/jsonrpc.ts",
       "rustSurface": "crates/mcp-jsonrpc/**; crates/mcp-jsonrpc/fixtures/jsonrpc_golden.json",
-      "notes": "Honest: crates/mcp-jsonrpc pure parse/construct/guards + standard error constructors + server-error range + message extractors + error-with-data + WAVE15 kinds/classifiers. NO authority_rust/ts_deleted. TS protocol remains package surface. WAVE15 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted).",
+      "notes": "Honest: crates/mcp-jsonrpc pure parse/construct/guards + WAVE16 error_body/parse_message_value/is_batch_payload/server_error_response/message_has_* flags. NO authority_rust/ts_deleted. TS protocol remains package surface. WAVE16 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted).",
       "parityTest": "cargo test -p mcp-jsonrpc pure_residual_jsonrpc_golden_fixture"
     },
     {
@@ -156,7 +156,7 @@
         "status": "missing",
         "staleReason": "Pure residual version negotiate + content/tool/list helpers + notification_to_jsonrpc + normalize_tool_result + protocol descriptors + resource wire + sampling/elicitation envelopes + request param envelopes + golden; full MCP method dispatch remains TS; differential_green not claimed"
       },
-      "notes": "WAVE15 pure residual deepen: method_direction + c2s/notification catalogs, list cursor extractors, priority clamp, completion_argument, tool_result_first_text, is_file_uri. Handler dispatch + transport remain TS. No authority_rust/ts_deleted. WAVE15 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted)."
+      "notes": "WAVE16 pure residual deepen: domain method catalogs, content type/text extractors, tool_result_all_text, params/list/uri/initialize extractors. Handler dispatch + transport remain TS. No authority_rust/ts_deleted. WAVE16 pure residual deepen (prod_audit_fail; no authority_rust/ts_deleted)."
     },
     {
       "id": "api/http-auth",
@@ -216,7 +216,7 @@
         "differential_green",
         "product_effect_live"
       ],
-      "notes": "Demoted transport streamable-http + session-guard from false rust_impl (phantom crates). Retained pure residual rust_impl for pagination/jsonrpc/mcp-protocol with golden regressions. Full package remains TypeScript product authority."
+      "notes": "Demoted transport streamable-http + session-guard from false rust_impl (phantom crates). Retained pure residual rust_impl for pagination/jsonrpc/mcp-protocol with golden regressions (WAVE16 deepen). Full package remains TypeScript product authority."
     },
     "honesty_2026_07_15_wave10": {
       "at": "2026-07-15T12:00:00Z",

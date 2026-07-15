@@ -415,6 +415,100 @@ pub fn request_id_kind(id: Option<&RequestId>) -> &'static str {
     }
 }
 
+// ============================================================================
+// WAVE16 pure residual constructors + extractors
+// ============================================================================
+
+/// Construct a JSON-RPC error body (parity with wire `error` object).
+#[must_use]
+pub fn error_body(
+    code: i64,
+    message: impl Into<String>,
+    data: Option<Value>,
+) -> JsonRpcErrorBody {
+    JsonRpcErrorBody {
+        code,
+        message: message.into(),
+        data,
+    }
+}
+
+/// True when `version` is the JSON-RPC 2.0 version literal.
+#[must_use]
+pub fn is_valid_jsonrpc_version(version: &str) -> bool {
+    version == JSONRPC_VERSION
+}
+
+/// True when a JSON value is a valid request id (string or number only).
+#[must_use]
+pub fn is_valid_request_id_value(v: &Value) -> bool {
+    request_id_from_value(v).is_some()
+}
+
+/// True when the message is a success response carrying a `result`.
+#[must_use]
+pub fn message_has_result(msg: &JsonRpcMessage) -> bool {
+    message_result(msg).is_some()
+}
+
+/// True when the message is an error response carrying an `error` body.
+#[must_use]
+pub fn message_has_error(msg: &JsonRpcMessage) -> bool {
+    message_error(msg).is_some()
+}
+
+/// Convenience: server-error-range response (`code` must be in `[-32099, -32000]`).
+///
+/// When `code` is outside the reserved server-error range, falls back to
+/// [`error_code::INTERNAL_ERROR`] so callers never emit a misclassified wire code
+/// from this pure residual helper.
+#[must_use]
+pub fn server_error_response(
+    id: Option<RequestId>,
+    code: i64,
+    message: impl Into<String>,
+    data: Option<Value>,
+) -> JsonRpcError {
+    let code = if is_server_error_code(code) {
+        code
+    } else {
+        error_code::INTERNAL_ERROR
+    };
+    error_response(id, code, message, data)
+}
+
+/// Parse a JSON-RPC message from a pre-decoded [`Value`] (object only).
+///
+/// Parity with the object branch of TS `parseMessage` after JSON.parse.
+#[must_use]
+pub fn parse_message_value(data: Value) -> ParseResult {
+    if !data.is_object() {
+        return ParseResult::Err("Message must be an object".into());
+    }
+    let version = data.get("jsonrpc").and_then(|v| v.as_str());
+    if version != Some(JSONRPC_VERSION) {
+        return ParseResult::Err(format!(
+            "Invalid jsonrpc version: {}",
+            version.unwrap_or("null")
+        ));
+    }
+    match serde_json::from_value::<JsonRpcMessage>(data) {
+        Ok(msg) => ParseResult::Ok(msg),
+        Err(e) => ParseResult::Err(format!("JSON parse error: {e}")),
+    }
+}
+
+/// True when `input` is a JSON array (JSON-RPC batch shape). Pure residual detector only —
+/// batch dispatch remains product/transport authority (TS).
+#[must_use]
+pub fn is_batch_payload(input: &str) -> bool {
+    let trimmed = input.trim_start();
+    if !trimmed.starts_with('[') {
+        return false;
+    }
+    matches!(serde_json::from_str::<Value>(input), Ok(Value::Array(_)))
+}
+
 /// Type guard: message is a request (`id` + `method`).
 #[must_use]
 pub fn is_request(msg: &JsonRpcMessage) -> bool {
@@ -854,6 +948,76 @@ mod tests {
                 },
             }
         }
+        // WAVE16: version, request-id validity, batch detector, flags, server-error helper
+        if let Some(v) = doc.get("jsonrpcVersion").and_then(|v| v.as_str()) {
+            assert!(is_valid_jsonrpc_version(v));
+            assert_eq!(v, JSONRPC_VERSION);
+        }
+        if let Some(cases) = doc.get("validRequestIdValues").and_then(|v| v.as_array()) {
+            for case in cases {
+                let val = case.get("value").cloned().unwrap_or(Value::Null);
+                let valid = case["valid"].as_bool().unwrap_or(false);
+                assert_eq!(
+                    is_valid_request_id_value(&val),
+                    valid,
+                    "request id value {val}"
+                );
+            }
+        }
+        if let Some(cases) = doc.get("batchPayloads").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let input = case["input"].as_str().unwrap_or("");
+                let expected = case["isBatch"].as_bool().unwrap_or(false);
+                assert_eq!(is_batch_payload(input), expected, "batch {name}");
+            }
+        }
+        if let Some(cases) = doc.get("serverErrorResponses").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let code = case["code"].as_i64().unwrap_or(0);
+                let expected = case["expectedCode"].as_i64().unwrap_or(0);
+                let e = server_error_response(Some(RequestId::Number(1)), code, "x", None);
+                assert_eq!(e.error.code, expected, "server err {name}");
+            }
+        }
+        if let Some(cases) = doc.get("messageHasFlags").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let input = case["input"].as_str().unwrap_or("");
+                match parse_message(input) {
+                    ParseResult::Ok(msg) => {
+                        assert_eq!(
+                            message_has_result(&msg),
+                            case["hasResult"].as_bool().unwrap_or(false),
+                            "hasResult {name}"
+                        );
+                        assert_eq!(
+                            message_has_error(&msg),
+                            case["hasError"].as_bool().unwrap_or(false),
+                            "hasError {name}"
+                        );
+                        // parse_message_value round-trip for object inputs
+                        if let Ok(val) = serde_json::from_str::<Value>(input) {
+                            match parse_message_value(val) {
+                                ParseResult::Ok(m2) => {
+                                    assert_eq!(message_kind(&m2), message_kind(&msg), "{name}");
+                                }
+                                ParseResult::Err(e) => panic!("{name} value parse: {e}"),
+                            }
+                        }
+                    }
+                    ParseResult::Err(e) => panic!("{name}: {e}"),
+                }
+            }
+        }
+        // error_body constructor smoke via golden internalError code
+        if let Some(codes) = doc.get("standardErrorCodes") {
+            let code = codes["internalError"].as_i64().unwrap_or(0);
+            let body = error_body(code, "boom", None);
+            assert_eq!(body.code, code);
+            assert_eq!(body.message, "boom");
+        }
     }
 
     #[test]
@@ -989,6 +1153,70 @@ mod tests {
             Some(error_code::INVALID_PARAMS)
         );
         assert_eq!(message_error_message(&msg), Some("bad field"));
+    }
+
+    #[test]
+    fn wave16_error_body_parse_value_batch_and_server_error() {
+        assert!(is_valid_jsonrpc_version(JSONRPC_VERSION));
+        assert!(!is_valid_jsonrpc_version("1.0"));
+        assert!(!is_valid_jsonrpc_version(""));
+
+        let body = error_body(error_code::INVALID_PARAMS, "bad", Some(json!({"f": 1})));
+        assert_eq!(body.code, error_code::INVALID_PARAMS);
+        assert_eq!(body.message, "bad");
+        assert_eq!(body.data, Some(json!({"f": 1})));
+
+        assert!(is_valid_request_id_value(&json!(1)));
+        assert!(is_valid_request_id_value(&json!("a")));
+        assert!(!is_valid_request_id_value(&json!(true)));
+        assert!(!is_valid_request_id_value(&json!(null)));
+
+        let ok = success(RequestId::Number(1), json!({"ok": true}));
+        let msg = JsonRpcMessage::Success(ok);
+        assert!(message_has_result(&msg));
+        assert!(!message_has_error(&msg));
+
+        let err = invalid_params(RequestId::Number(2), "x");
+        let msg = JsonRpcMessage::Error(err);
+        assert!(!message_has_result(&msg));
+        assert!(message_has_error(&msg));
+
+        let e = server_error_response(
+            Some(RequestId::Number(9)),
+            -32050,
+            "busy",
+            Some(json!({"retry": true})),
+        );
+        assert_eq!(e.error.code, -32050);
+        assert!(is_server_error_code(e.error.code));
+        assert_eq!(e.error.data, Some(json!({"retry": true})));
+
+        // Out-of-range code falls back to internal error
+        let e = server_error_response(None, -1, "nope", None);
+        assert_eq!(e.error.code, error_code::INTERNAL_ERROR);
+
+        let val = json!({"jsonrpc":"2.0","id":1,"method":"ping"});
+        match parse_message_value(val) {
+            ParseResult::Ok(msg) => {
+                assert!(is_request(&msg));
+                assert_eq!(message_method(&msg), Some("ping"));
+            }
+            ParseResult::Err(e) => panic!("{e}"),
+        }
+        match parse_message_value(json!([])) {
+            ParseResult::Err(e) => assert!(e.to_lowercase().contains("object")),
+            ParseResult::Ok(_) => panic!("expected err"),
+        }
+        match parse_message_value(json!({"jsonrpc":"1.0","id":1,"method":"x"})) {
+            ParseResult::Err(e) => assert!(e.contains("version")),
+            ParseResult::Ok(_) => panic!("expected err"),
+        }
+
+        assert!(is_batch_payload(r#"[{"jsonrpc":"2.0","id":1,"method":"ping"}]"#));
+        assert!(is_batch_payload("  [1,2,3]"));
+        assert!(!is_batch_payload(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#));
+        assert!(!is_batch_payload("not-json"));
+        assert!(!is_batch_payload(""));
     }
 
 }

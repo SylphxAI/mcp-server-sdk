@@ -219,5 +219,73 @@
       "value": null,
       "kind": "none"
     }
+  ],
+  "jsonrpcVersion": "2.0",
+  "validRequestIdValues": [
+    {
+      "value": 1,
+      "valid": true
+    },
+    {
+      "value": "a",
+      "valid": true
+    },
+    {
+      "value": true,
+      "valid": false
+    },
+    {
+      "value": null,
+      "valid": false
+    }
+  ],
+  "batchPayloads": [
+    {
+      "name": "batch_array",
+      "input": "[{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}]",
+      "isBatch": true
+    },
+    {
+      "name": "single_object",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}",
+      "isBatch": false
+    },
+    {
+      "name": "not_json",
+      "input": "nope",
+      "isBatch": false
+    }
+  ],
+  "serverErrorResponses": [
+    {
+      "name": "in_range",
+      "code": -32050,
+      "expectedCode": -32050
+    },
+    {
+      "name": "out_of_range_fallback",
+      "code": -1,
+      "expectedCode": -32603
+    }
+  ],
+  "messageHasFlags": [
+    {
+      "name": "success",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":true}",
+      "hasResult": true,
+      "hasError": false
+    },
+    {
+      "name": "error",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":1,\"error\":{\"code\":-32602,\"message\":\"bad\"}}",
+      "hasResult": false,
+      "hasError": true
+    },
+    {
+      "name": "request",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}",
+      "hasResult": false,
+      "hasError": false
+    }
   ]
 }

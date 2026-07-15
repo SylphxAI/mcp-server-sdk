@@ -1793,6 +1793,186 @@ pub fn is_file_uri(uri: &str) -> bool {
     uri.starts_with("file://")
 }
 
+// ============================================================================
+// WAVE16 pure residual catalogs + extractors
+// ============================================================================
+
+/// Resource-domain MCP methods (requests + notifications).
+pub const RESOURCES_METHODS: &[&str] = &[
+    methods::RESOURCES_LIST,
+    methods::RESOURCES_TEMPLATES_LIST,
+    methods::RESOURCES_READ,
+    methods::RESOURCES_SUBSCRIBE,
+    methods::RESOURCES_UNSUBSCRIBE,
+    methods::RESOURCES_UPDATED,
+    methods::RESOURCES_LIST_CHANGED,
+];
+
+/// Tools-domain MCP methods (requests + notifications).
+pub const TOOLS_METHODS: &[&str] = &[
+    methods::TOOLS_LIST,
+    methods::TOOLS_CALL,
+    methods::TOOLS_LIST_CHANGED,
+];
+
+/// Prompts-domain MCP methods (requests + notifications).
+pub const PROMPTS_METHODS: &[&str] = &[
+    methods::PROMPTS_LIST,
+    methods::PROMPTS_GET,
+    methods::PROMPTS_LIST_CHANGED,
+];
+
+/// True when `method` is a resources-domain MCP method.
+#[must_use]
+pub fn is_resources_method(method: &str) -> bool {
+    RESOURCES_METHODS.contains(&method)
+}
+
+/// True when `method` is a tools-domain MCP method.
+#[must_use]
+pub fn is_tools_method(method: &str) -> bool {
+    TOOLS_METHODS.contains(&method)
+}
+
+/// True when `method` is a prompts-domain MCP method.
+#[must_use]
+pub fn is_prompts_method(method: &str) -> bool {
+    PROMPTS_METHODS.contains(&method)
+}
+
+/// Content type discriminator string (`text` | `image` | `audio` | `resource`).
+#[must_use]
+pub fn content_type_str(content: &Content) -> &'static str {
+    match content {
+        Content::Text { .. } => "text",
+        Content::Image { .. } => "image",
+        Content::Audio { .. } => "audio",
+        Content::Resource { .. } => "resource",
+    }
+}
+
+/// Text body from a [`Content::Text`] item; `None` for other variants.
+#[must_use]
+pub fn content_text_body(content: &Content) -> Option<&str> {
+    match content {
+        Content::Text { text, .. } => Some(text.as_str()),
+        _ => None,
+    }
+}
+
+/// Number of items in a tools/call result `content` array (`0` when missing).
+#[must_use]
+pub fn tool_result_content_len(result: &serde_json::Value) -> usize {
+    result
+        .get("content")
+        .and_then(|c| c.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0)
+}
+
+/// Concatenate all `type: "text"` content bodies from a tools/call result.
+///
+/// Returns `None` when no text items are present. Bodies are joined with no separator
+/// (parity with a pure residual text extraction; product formatting stays TS).
+#[must_use]
+pub fn tool_result_all_text(result: &serde_json::Value) -> Option<String> {
+    let arr = result.get("content").and_then(|c| c.as_array())?;
+    let mut out = String::new();
+    let mut any = false;
+    for item in arr {
+        if item.get("type").and_then(|t| t.as_str()) == Some("text") {
+            if let Some(t) = item.get("text").and_then(|t| t.as_str()) {
+                out.push_str(t);
+                any = true;
+            }
+        }
+    }
+    if any {
+        Some(out)
+    } else {
+        None
+    }
+}
+
+/// Extract `name` from a `tools/call` params object.
+#[must_use]
+pub fn tools_call_name(params: &serde_json::Value) -> Option<&str> {
+    params.get("name").and_then(|v| v.as_str())
+}
+
+/// Extract `uri` from resource-oriented params (`resources/read|subscribe|unsubscribe`).
+#[must_use]
+pub fn params_uri(params: &serde_json::Value) -> Option<&str> {
+    params.get("uri").and_then(|v| v.as_str())
+}
+
+/// Extract a list-result array by key (`tools` | `resources` | `prompts` | …).
+#[must_use]
+pub fn list_result_array<'a>(
+    result: &'a serde_json::Value,
+    key: &str,
+) -> Option<&'a Vec<serde_json::Value>> {
+    result.get(key).and_then(|v| v.as_array())
+}
+
+/// Length of a list-result array by key (`0` when missing or non-array).
+#[must_use]
+pub fn list_result_len(result: &serde_json::Value, key: &str) -> usize {
+    list_result_array(result, key).map(|a| a.len()).unwrap_or(0)
+}
+
+/// URI scheme before the first `:` (e.g. `file`, `https`); `None` when absent.
+#[must_use]
+pub fn uri_scheme(uri: &str) -> Option<&str> {
+    let idx = uri.find(':')?;
+    let scheme = &uri[..idx];
+    if scheme.is_empty() {
+        return None;
+    }
+    // RFC 3986 scheme: ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+    if !scheme
+        .chars()
+        .enumerate()
+        .all(|(i, c)| {
+            if i == 0 {
+                c.is_ascii_alphabetic()
+            } else {
+                c.is_ascii_alphanumeric() || c == '+' || c == '-' || c == '.'
+            }
+        })
+    {
+        return None;
+    }
+    Some(scheme)
+}
+
+/// True when the URI scheme is `http` or `https` (case-sensitive per MCP examples).
+#[must_use]
+pub fn is_http_or_https_uri(uri: &str) -> bool {
+    matches!(uri_scheme(uri), Some("http") | Some("https"))
+}
+
+/// Build a `_meta` object carrying `progressToken` (pure residual).
+#[must_use]
+pub fn meta_with_progress_token(progress_token: serde_json::Value) -> serde_json::Value {
+    serde_json::json!({ "progressToken": progress_token })
+}
+
+/// Extract `protocolVersion` from an `initialize` result body.
+#[must_use]
+pub fn initialize_result_protocol_version(result: &serde_json::Value) -> Option<&str> {
+    result.get("protocolVersion").and_then(|v| v.as_str())
+}
+
+/// Extract `serverInfo.name` from an `initialize` result body.
+#[must_use]
+pub fn initialize_result_server_name(result: &serde_json::Value) -> Option<&str> {
+    result
+        .get("serverInfo")
+        .and_then(|s| s.get("name"))
+        .and_then(|v| v.as_str())
+}
+
 /// Check if a URI matches a template pattern (`{param}` → single path segment).
 #[must_use]
 pub fn matches_template(template: &str, uri: &str) -> bool {
@@ -2784,6 +2964,121 @@ mod tests {
                 assert_eq!(is_file_uri(uri), expected, "file uri {uri}");
             }
         }
+        // WAVE16: domain catalogs + content/uri/list extractors
+        if let Some(vals) = doc.get("resourcesMethods").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_resources_method(s), "resources {s}");
+                assert!(RESOURCES_METHODS.contains(&s), "resources catalog {s}");
+            }
+        }
+        if let Some(vals) = doc.get("toolsMethods").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_tools_method(s), "tools {s}");
+            }
+        }
+        if let Some(vals) = doc.get("promptsMethods").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_prompts_method(s), "prompts {s}");
+            }
+        }
+        if let Some(cases) = doc.get("uriSchemes").and_then(|v| v.as_array()) {
+            for case in cases {
+                let uri = case["uri"].as_str().unwrap_or("");
+                let expected = case.get("scheme").and_then(|v| v.as_str());
+                assert_eq!(uri_scheme(uri), expected, "scheme {uri}");
+                let http = case["isHttpOrHttps"].as_bool().unwrap_or(false);
+                assert_eq!(is_http_or_https_uri(uri), http, "http(s) {uri}");
+            }
+        }
+        if let Some(cases) = doc.get("contentTypeStr").and_then(|v| v.as_array()) {
+            for case in cases {
+                let kind = case["kind"].as_str().unwrap_or("");
+                let expected = case["type"].as_str().unwrap_or("");
+                let c = match kind {
+                    "text" => Content::text("x"),
+                    "image" => Content::image("AA", "image/png"),
+                    "audio" => Content::audio("BB", "audio/wav"),
+                    "resource" => embedded_resource_content("file:///x", None, Some("t".into())),
+                    other => panic!("unknown content kind {other}"),
+                };
+                assert_eq!(content_type_str(&c), expected, "content type {kind}");
+                let has_text = case["hasTextBody"].as_bool().unwrap_or(false);
+                assert_eq!(content_text_body(&c).is_some(), has_text, "text body {kind}");
+            }
+        }
+        if let Some(cases) = doc.get("toolResultAllText").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let result = case
+                    .get("result")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!({}));
+                let len = case["contentLen"].as_u64().unwrap_or(0) as usize;
+                assert_eq!(tool_result_content_len(&result), len, "len {name}");
+                let got = tool_result_all_text(&result);
+                if let Some(t) = case.get("expectedText").and_then(|v| v.as_str()) {
+                    assert_eq!(got.as_deref(), Some(t), "all text {name}");
+                } else {
+                    assert!(got.is_none(), "all text none {name}");
+                }
+            }
+        }
+        if let Some(cases) = doc.get("paramsExtract").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let params = case
+                    .get("params")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!({}));
+                if let Some(tn) = case.get("toolName").and_then(|v| v.as_str()) {
+                    assert_eq!(tools_call_name(&params), Some(tn), "tool name {name}");
+                } else {
+                    assert!(tools_call_name(&params).is_none(), "tool name none {name}");
+                }
+                if let Some(u) = case.get("uri").and_then(|v| v.as_str()) {
+                    assert_eq!(params_uri(&params), Some(u), "uri {name}");
+                } else {
+                    assert!(params_uri(&params).is_none(), "uri none {name}");
+                }
+            }
+        }
+        if let Some(cases) = doc.get("listResultLen").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let result = case
+                    .get("result")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!({}));
+                let key = case["key"].as_str().unwrap_or("tools");
+                let len = case["len"].as_u64().unwrap_or(0) as usize;
+                assert_eq!(list_result_len(&result, key), len, "list len {name}");
+            }
+        }
+        if let Some(case) = doc.get("initializeExtract") {
+            let init = initialize_result(
+                case["protocolVersion"].as_str().unwrap_or(""),
+                case["serverName"].as_str().unwrap_or(""),
+                case["serverVersion"].as_str().unwrap_or(""),
+                empty_server_capabilities(),
+                None,
+            );
+            assert_eq!(
+                initialize_result_protocol_version(&init),
+                case["protocolVersion"].as_str()
+            );
+            assert_eq!(
+                initialize_result_server_name(&init),
+                case["serverName"].as_str()
+            );
+            let meta = meta_with_progress_token(serde_json::json!("tok"));
+            assert_eq!(
+                progress_token_from_meta(&meta),
+                Some(&serde_json::json!("tok"))
+            );
+        }
     }
 
     #[test]
@@ -3381,6 +3676,113 @@ mod tests {
         assert!(is_file_uri("file://localhost/tmp"));
         assert!(!is_file_uri("https://example.com"));
         assert!(!is_file_uri(""));
+    }
+
+    #[test]
+    fn wave16_domain_catalogs_content_uri_and_extractors() {
+        assert!(is_resources_method(methods::RESOURCES_READ));
+        assert!(is_resources_method(methods::RESOURCES_LIST_CHANGED));
+        assert!(!is_resources_method(methods::TOOLS_CALL));
+        assert!(is_tools_method(methods::TOOLS_CALL));
+        assert!(is_tools_method(methods::TOOLS_LIST_CHANGED));
+        assert!(!is_tools_method(methods::PROMPTS_GET));
+        assert!(is_prompts_method(methods::PROMPTS_LIST));
+        assert!(is_prompts_method(methods::PROMPTS_LIST_CHANGED));
+        assert!(!is_prompts_method(methods::PING));
+        assert_eq!(RESOURCES_METHODS.len(), 7);
+        assert_eq!(TOOLS_METHODS.len(), 3);
+        assert_eq!(PROMPTS_METHODS.len(), 3);
+        for m in RESOURCES_METHODS {
+            assert_eq!(method_domain(m), "resources", "{m}");
+        }
+        for m in TOOLS_METHODS {
+            assert_eq!(method_domain(m), "tools", "{m}");
+        }
+        for m in PROMPTS_METHODS {
+            assert_eq!(method_domain(m), "prompts", "{m}");
+        }
+
+        let text = Content::text("hello");
+        assert_eq!(content_type_str(&text), "text");
+        assert_eq!(content_text_body(&text), Some("hello"));
+        let img = Content::image("AA", "image/png");
+        assert_eq!(content_type_str(&img), "image");
+        assert!(content_text_body(&img).is_none());
+        let aud = Content::audio("BB", "audio/wav");
+        assert_eq!(content_type_str(&aud), "audio");
+        let res = embedded_resource_content("file:///x", None, Some("body".into()));
+        assert_eq!(content_type_str(&res), "resource");
+
+        let multi = serde_json::json!({
+            "content": [
+                {"type": "text", "text": "a"},
+                {"type": "image", "data": "AA", "mimeType": "image/png"},
+                {"type": "text", "text": "b"}
+            ],
+            "isError": false
+        });
+        assert_eq!(tool_result_content_len(&multi), 3);
+        assert_eq!(tool_result_all_text(&multi).as_deref(), Some("ab"));
+        assert_eq!(
+            tool_result_first_text(&multi),
+            Some("a")
+        );
+        assert_eq!(tool_result_content_len(&serde_json::json!({})), 0);
+        assert!(tool_result_all_text(&serde_json::json!({"content": []})).is_none());
+
+        let call = tools_call_params("ping", Some(serde_json::json!({})));
+        assert_eq!(tools_call_name(&call), Some("ping"));
+        assert!(tools_call_name(&serde_json::json!({})).is_none());
+
+        let read = resources_read_params("file:///tmp/a");
+        assert_eq!(params_uri(&read), Some("file:///tmp/a"));
+        assert!(params_uri(&serde_json::json!({})).is_none());
+
+        let list = tools_list_result(
+            &[Tool {
+                name: "a".into(),
+                title: None,
+                description: None,
+                input_schema: serde_json::json!({"type": "object"}),
+                output_schema: None,
+                annotations: None,
+            }],
+            Some("c1".into()),
+        );
+        assert_eq!(list_result_len(&list, "tools"), 1);
+        assert!(list_result_array(&list, "tools").is_some());
+        assert_eq!(list_result_len(&list, "resources"), 0);
+
+        assert_eq!(uri_scheme("file:///tmp"), Some("file"));
+        assert_eq!(uri_scheme("https://example.com/x"), Some("https"));
+        assert_eq!(uri_scheme("http://localhost"), Some("http"));
+        assert!(uri_scheme("noscheme").is_none());
+        assert!(uri_scheme(":bad").is_none());
+        assert!(is_http_or_https_uri("https://example.com"));
+        assert!(is_http_or_https_uri("http://example.com"));
+        assert!(!is_http_or_https_uri("file:///tmp"));
+        assert!(!is_http_or_https_uri("ftp://x"));
+
+        let meta = meta_with_progress_token(serde_json::json!(42));
+        assert_eq!(meta["progressToken"], 42);
+        assert_eq!(
+            progress_token_from_meta(&meta),
+            Some(&serde_json::json!(42))
+        );
+
+        let init = initialize_result(
+            LATEST_PROTOCOL_VERSION,
+            "demo",
+            "1.0.0",
+            empty_server_capabilities(),
+            None,
+        );
+        assert_eq!(
+            initialize_result_protocol_version(&init),
+            Some(LATEST_PROTOCOL_VERSION)
+        );
+        assert_eq!(initialize_result_server_name(&init), Some("demo"));
+        assert!(initialize_result_server_name(&serde_json::json!({})).is_none());
     }
 
 }

@@ -662,5 +662,170 @@
       "uri": "",
       "isFile": false
     }
-  ]
+  ],
+  "resourcesMethods": [
+    "resources/list",
+    "resources/templates/list",
+    "resources/read",
+    "resources/subscribe",
+    "resources/unsubscribe",
+    "notifications/resources/updated",
+    "notifications/resources/list_changed"
+  ],
+  "toolsMethods": [
+    "tools/list",
+    "tools/call",
+    "notifications/tools/list_changed"
+  ],
+  "promptsMethods": [
+    "prompts/list",
+    "prompts/get",
+    "notifications/prompts/list_changed"
+  ],
+  "uriSchemes": [
+    {
+      "uri": "file:///tmp",
+      "scheme": "file",
+      "isHttpOrHttps": false
+    },
+    {
+      "uri": "https://example.com/x",
+      "scheme": "https",
+      "isHttpOrHttps": true
+    },
+    {
+      "uri": "http://localhost",
+      "scheme": "http",
+      "isHttpOrHttps": true
+    },
+    {
+      "uri": "noscheme",
+      "scheme": null,
+      "isHttpOrHttps": false
+    }
+  ],
+  "contentTypeStr": [
+    {
+      "kind": "text",
+      "type": "text",
+      "hasTextBody": true
+    },
+    {
+      "kind": "image",
+      "type": "image",
+      "hasTextBody": false
+    },
+    {
+      "kind": "audio",
+      "type": "audio",
+      "hasTextBody": false
+    },
+    {
+      "kind": "resource",
+      "type": "resource",
+      "hasTextBody": false
+    }
+  ],
+  "toolResultAllText": [
+    {
+      "name": "two_text",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "a"
+          },
+          {
+            "type": "image",
+            "data": "AA",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "b"
+          }
+        ],
+        "isError": false
+      },
+      "expectedText": "ab",
+      "contentLen": 3
+    },
+    {
+      "name": "no_text",
+      "result": {
+        "content": [
+          {
+            "type": "image",
+            "data": "AA",
+            "mimeType": "image/png"
+          }
+        ],
+        "isError": false
+      },
+      "expectedText": null,
+      "contentLen": 1
+    },
+    {
+      "name": "empty",
+      "result": {
+        "content": [],
+        "isError": false
+      },
+      "expectedText": null,
+      "contentLen": 0
+    }
+  ],
+  "paramsExtract": [
+    {
+      "name": "tools_call",
+      "params": {
+        "name": "ping",
+        "arguments": {}
+      },
+      "toolName": "ping",
+      "uri": null
+    },
+    {
+      "name": "resources_read",
+      "params": {
+        "uri": "file:///a"
+      },
+      "toolName": null,
+      "uri": "file:///a"
+    }
+  ],
+  "listResultLen": [
+    {
+      "name": "tools_one",
+      "result": {
+        "tools": [
+          {
+            "name": "a"
+          }
+        ],
+        "nextCursor": "c"
+      },
+      "key": "tools",
+      "len": 1
+    },
+    {
+      "name": "tools_empty",
+      "result": {
+        "tools": []
+      },
+      "key": "tools",
+      "len": 0
+    },
+    {
+      "name": "missing",
+      "result": {},
+      "key": "tools",
+      "len": 0
+    }
+  ],
+  "initializeExtract": {
+    "protocolVersion": "2025-03-26",
+    "serverName": "demo",
+    "serverVersion": "1.0.0"
+  }
 }

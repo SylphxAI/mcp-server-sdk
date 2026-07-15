@@ -173,6 +173,66 @@ pub fn next_page_cursor(offset: usize, page_size: usize, total_len: usize) -> Op
     }
 }
 
+// ============================================================================
+// WAVE16 pure residual page index math
+// ============================================================================
+
+/// Zero-based page index for `offset` at `page_size` (`0` when `page_size` is 0).
+#[must_use]
+pub fn page_index(offset: usize, page_size: usize) -> usize {
+    if page_size == 0 {
+        return 0;
+    }
+    offset / page_size
+}
+
+/// Offset of the first item on zero-based `page` at `page_size`.
+#[must_use]
+pub fn offset_for_page(page: usize, page_size: usize) -> usize {
+    page.saturating_mul(page_size)
+}
+
+/// True when `offset` is at the start of the collection.
+#[must_use]
+pub fn is_first_page(offset: usize) -> bool {
+    offset == 0
+}
+
+/// True when no further page exists after this window (`!page_has_more`).
+#[must_use]
+pub fn is_last_page(offset: usize, page_size: usize, total_len: usize) -> bool {
+    !page_has_more(offset, page_size, total_len)
+}
+
+/// Pages still remaining **after** the current page window (not including current).
+///
+/// `0` when on/after the last page or when `page_size` is 0.
+#[must_use]
+pub fn pages_remaining(offset: usize, page_size: usize, total_len: usize) -> usize {
+    if page_size == 0 {
+        return 0;
+    }
+    let end = page_end(offset, page_size, total_len);
+    if end >= total_len {
+        return 0;
+    }
+    pages_needed(total_len.saturating_sub(end), page_size)
+}
+
+/// Item count on the final page (`0` when empty or `page_size` is 0).
+#[must_use]
+pub fn items_on_last_page(total_len: usize, page_size: usize) -> usize {
+    if page_size == 0 || total_len == 0 {
+        return 0;
+    }
+    let rem = total_len % page_size;
+    if rem == 0 {
+        page_size
+    } else {
+        rem
+    }
+}
+
 /// Paginate a slice of items (parity with TS `paginate`).
 #[must_use]
 pub fn paginate<T: Clone>(
@@ -431,6 +491,45 @@ mod tests {
         );
     }
 
+    #[test]
+    fn wave16_page_index_remaining_and_last_page() {
+        assert_eq!(page_index(0, 50), 0);
+        assert_eq!(page_index(50, 50), 1);
+        assert_eq!(page_index(100, 50), 2);
+        assert_eq!(page_index(49, 50), 0);
+        assert_eq!(page_index(10, 0), 0);
+
+        assert_eq!(offset_for_page(0, 50), 0);
+        assert_eq!(offset_for_page(2, 50), 100);
+        assert_eq!(offset_for_page(3, 0), 0);
+
+        assert!(is_first_page(0));
+        assert!(!is_first_page(1));
+
+        assert!(!is_last_page(0, 50, 120));
+        assert!(is_last_page(100, 50, 120));
+        assert!(is_last_page(0, 50, 10));
+        assert!(is_last_page(0, 50, 0));
+
+        assert_eq!(pages_remaining(0, 50, 120), 2);
+        assert_eq!(pages_remaining(50, 50, 120), 1);
+        assert_eq!(pages_remaining(100, 50, 120), 0);
+        assert_eq!(pages_remaining(0, 50, 50), 0);
+        assert_eq!(pages_remaining(0, 0, 120), 0);
+
+        assert_eq!(items_on_last_page(120, 50), 20);
+        assert_eq!(items_on_last_page(100, 50), 50);
+        assert_eq!(items_on_last_page(0, 50), 0);
+        assert_eq!(items_on_last_page(10, 0), 0);
+        assert_eq!(items_on_last_page(1, 50), 1);
+
+        // Round-trip with page_index / offset_for_page
+        for page in 0..3 {
+            let off = offset_for_page(page, 50);
+            assert_eq!(page_index(off, 50), page);
+        }
+    }
+
     /// Load committed golden fixture (TS oracle surface contract) and assert Rust paginate.
     #[test]
     fn pure_residual_pagination_golden_fixture() {
@@ -593,6 +692,64 @@ mod tests {
                         assert_eq!(ps, page_size, "case {name} pageSize");
                     }
                 }
+            }
+        }
+        // WAVE16: page index / remaining / last-page math
+        if let Some(cases) = doc.get("pageIndex").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let offset = case["offset"].as_u64().unwrap_or(0) as usize;
+                let page_size = case["pageSize"].as_u64().unwrap_or(0) as usize;
+                let expected = case["pageIndex"].as_u64().unwrap_or(0) as usize;
+                assert_eq!(page_index(offset, page_size), expected, "page_index {name}");
+                if let Some(first) = case.get("isFirst").and_then(|v| v.as_bool()) {
+                    assert_eq!(is_first_page(offset), first, "is_first {name}");
+                }
+            }
+        }
+        if let Some(cases) = doc.get("offsetForPage").and_then(|v| v.as_array()) {
+            for case in cases {
+                let page = case["page"].as_u64().unwrap_or(0) as usize;
+                let page_size = case["pageSize"].as_u64().unwrap_or(0) as usize;
+                let expected = case["offset"].as_u64().unwrap_or(0) as usize;
+                assert_eq!(
+                    offset_for_page(page, page_size),
+                    expected,
+                    "offset_for_page {page}"
+                );
+            }
+        }
+        if let Some(cases) = doc.get("pagesRemaining").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let offset = case["offset"].as_u64().unwrap_or(0) as usize;
+                let page_size = case["pageSize"].as_u64().unwrap_or(0) as usize;
+                let total = case["total"].as_u64().unwrap_or(0) as usize;
+                let remaining = case["remaining"].as_u64().unwrap_or(0) as usize;
+                assert_eq!(
+                    pages_remaining(offset, page_size, total),
+                    remaining,
+                    "pages_remaining {name}"
+                );
+                if let Some(last) = case.get("isLast").and_then(|v| v.as_bool()) {
+                    assert_eq!(
+                        is_last_page(offset, page_size, total),
+                        last,
+                        "is_last {name}"
+                    );
+                }
+            }
+        }
+        if let Some(cases) = doc.get("itemsOnLastPage").and_then(|v| v.as_array()) {
+            for case in cases {
+                let total = case["total"].as_u64().unwrap_or(0) as usize;
+                let page_size = case["pageSize"].as_u64().unwrap_or(0) as usize;
+                let expected = case["expected"].as_u64().unwrap_or(0) as usize;
+                assert_eq!(
+                    items_on_last_page(total, page_size),
+                    expected,
+                    "items_on_last_page {total}/{page_size}"
+                );
             }
         }
     }

@@ -299,5 +299,113 @@
       "total": 10,
       "hasNext": false
     }
+  ],
+  "pageIndex": [
+    {
+      "name": "first",
+      "offset": 0,
+      "pageSize": 50,
+      "pageIndex": 0,
+      "isFirst": true
+    },
+    {
+      "name": "second",
+      "offset": 50,
+      "pageSize": 50,
+      "pageIndex": 1,
+      "isFirst": false
+    },
+    {
+      "name": "mid_page",
+      "offset": 49,
+      "pageSize": 50,
+      "pageIndex": 0,
+      "isFirst": false
+    },
+    {
+      "name": "zero_size",
+      "offset": 10,
+      "pageSize": 0,
+      "pageIndex": 0,
+      "isFirst": false
+    }
+  ],
+  "offsetForPage": [
+    {
+      "page": 0,
+      "pageSize": 50,
+      "offset": 0
+    },
+    {
+      "page": 2,
+      "pageSize": 50,
+      "offset": 100
+    },
+    {
+      "page": 3,
+      "pageSize": 0,
+      "offset": 0
+    }
+  ],
+  "pagesRemaining": [
+    {
+      "name": "start_120",
+      "offset": 0,
+      "pageSize": 50,
+      "total": 120,
+      "remaining": 2,
+      "isLast": false
+    },
+    {
+      "name": "mid_120",
+      "offset": 50,
+      "pageSize": 50,
+      "total": 120,
+      "remaining": 1,
+      "isLast": false
+    },
+    {
+      "name": "last_120",
+      "offset": 100,
+      "pageSize": 50,
+      "total": 120,
+      "remaining": 0,
+      "isLast": true
+    },
+    {
+      "name": "exact",
+      "offset": 0,
+      "pageSize": 50,
+      "total": 50,
+      "remaining": 0,
+      "isLast": true
+    }
+  ],
+  "itemsOnLastPage": [
+    {
+      "total": 120,
+      "pageSize": 50,
+      "expected": 20
+    },
+    {
+      "total": 100,
+      "pageSize": 50,
+      "expected": 50
+    },
+    {
+      "total": 0,
+      "pageSize": 50,
+      "expected": 0
+    },
+    {
+      "total": 10,
+      "pageSize": 0,
+      "expected": 0
+    },
+    {
+      "total": 1,
+      "pageSize": 50,
+      "expected": 1
+    }
   ]
 }
