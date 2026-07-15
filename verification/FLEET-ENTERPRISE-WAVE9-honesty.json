@@ -1,0 +1,28 @@
+{
+  "schema": "honesty-map/v1",
+  "wave": "FLEET-ENTERPRISE-WAVE9",
+  "receipt": "FLEET-ENTERPRISE-WAVE9",
+  "at": "2026-07-15T05:46:00Z",
+  "repo": "SylphxAI/mcp-server-sdk",
+  "defaultBranch": "main",
+  "liveHeadHonesty": "origin/main has pure residual crates/mcp-{pagination,protocol,jsonrpc} only; full package product surface remains TypeScript; phantom mcp-streamable-http / mcp-serve-bridge / differential scripts NOT on main",
+  "cratesOnMain": ["mcp-pagination", "mcp-protocol", "mcp-jsonrpc"],
+  "pureResidual": true,
+  "product_effect_live": false,
+  "authority_rust": false,
+  "ts_deleted": false,
+  "differential_green": false,
+  "notClaims": [
+    "authority_rust",
+    "ts_deleted",
+    "differential_green",
+    "product_effect_live",
+    "sole_rust_library_for_all_caps"
+  ],
+  "defectsFixed": [
+    "clippy: orphan must_use + unwrap_used in mcp-protocol tests",
+    "incomplete differential: demote phantom transport rust_impl; wire golden fixtures for pure crates",
+    "packaging: CI cargo test/clippy for workspace pure residual"
+  ],
+  "residualTs": "entire @sylphx/mcp-server-sdk package (src/**, examples/**) — intentional legacy TypeScript product authority per PROJECT.md / ADR-38"
+}

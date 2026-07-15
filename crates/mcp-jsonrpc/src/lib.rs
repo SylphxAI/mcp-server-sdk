@@ -304,9 +304,52 @@ mod tests {
         let n = notification("notifications/initialized", None);
         let msg = JsonRpcMessage::Notification(n);
         assert!(is_notification(&msg));
-        let err = error_response(Some(RequestId::Number(1)), error_code::METHOD_NOT_FOUND, "nope", None);
+        let err = error_response(
+            Some(RequestId::Number(1)),
+            error_code::METHOD_NOT_FOUND,
+            "nope",
+            None,
+        );
         let msg = JsonRpcMessage::Error(err);
         assert!(is_error(&msg));
         assert!(!is_success(&msg));
+    }
+
+    /// Load committed golden fixture and assert parse/kind parity (pure residual differential).
+    #[test]
+    fn pure_residual_jsonrpc_golden_fixture() {
+        let raw = include_str!("../fixtures/jsonrpc_golden.json");
+        let doc: serde_json::Value = match serde_json::from_str(raw) {
+            Ok(v) => v,
+            Err(e) => panic!("jsonrpc_golden.json: {e}"),
+        };
+        let cases = match doc["cases"].as_array() {
+            Some(a) => a,
+            None => panic!("cases"),
+        };
+        for case in cases {
+            let name = case["name"].as_str().unwrap_or("?");
+            let input = match case["input"].as_str() {
+                Some(s) => s,
+                None => panic!("input for {name}"),
+            };
+            let kind = match case["kind"].as_str() {
+                Some(s) => s,
+                None => panic!("kind for {name}"),
+            };
+            match parse_message(input) {
+                ParseResult::Ok(msg) => match kind {
+                    "request" => assert!(is_request(&msg), "{name}"),
+                    "notification" => assert!(is_notification(&msg), "{name}"),
+                    "success" => assert!(is_success(&msg), "{name}"),
+                    "error" => assert!(is_error(&msg), "{name}"),
+                    other => panic!("unexpected kind {other} for ok parse in {name}"),
+                },
+                ParseResult::Err(e) => match kind {
+                    "err_version" => assert!(e.contains("version") || e.contains("Invalid"), "{name}: {e}"),
+                    other => panic!("unexpected err for kind {other} in {name}: {e}"),
+                },
+            }
+        }
     }
 }

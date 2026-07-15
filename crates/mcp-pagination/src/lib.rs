@@ -176,7 +176,53 @@ mod tests {
     fn bulk_decode_cursor_rejects_garbage() {
         assert!(decode_cursor("!!!not-base64!!!").is_none());
         assert!(decode_cursor("").is_none());
-        let good = encode_cursor(&CursorData { offset: 0, page_size: 10 });
+        let good = encode_cursor(&CursorData {
+            offset: 0,
+            page_size: 10,
+        });
         assert!(decode_cursor(&good).is_some());
+    }
+
+    /// Load committed golden fixture (TS oracle surface contract) and assert Rust paginate.
+    #[test]
+    fn pure_residual_pagination_golden_fixture() {
+        let raw = include_str!("../fixtures/pagination_golden.json");
+        let doc: serde_json::Value = match serde_json::from_str(raw) {
+            Ok(v) => v,
+            Err(e) => panic!("pagination_golden.json: {e}"),
+        };
+        assert_eq!(doc["schema"], "mcp-pagination-golden/v1");
+        let cases = match doc["cases"].as_array() {
+            Some(a) => a,
+            None => panic!("cases"),
+        };
+        for case in cases {
+            let name = case["name"].as_str().unwrap_or("?");
+            let item_count = case["itemCount"].as_u64().unwrap_or(0) as usize;
+            let items: Vec<i32> = (0..item_count as i32).collect();
+            let cursor = case.get("cursor").and_then(|v| {
+                if v.is_null() {
+                    None
+                } else {
+                    v.as_str()
+                }
+            });
+            let opts = PaginationOptions {
+                default_page_size: case["options"]["defaultPageSize"]
+                    .as_u64()
+                    .unwrap_or(50) as usize,
+                max_page_size: case["options"]["maxPageSize"].as_u64().unwrap_or(100) as usize,
+            };
+            let page = paginate(&items, cursor, opts);
+            let expected_len = case["expectedLen"].as_u64().unwrap_or(0) as usize;
+            assert_eq!(page.items.len(), expected_len, "case {name} len");
+            if let Some(first) = case.get("expectedFirst").and_then(|v| v.as_i64()) {
+                if !page.items.is_empty() {
+                    assert_eq!(i64::from(page.items[0]), first, "case {name} first");
+                }
+            }
+            let has_next = case["hasNext"].as_bool().unwrap_or(false);
+            assert_eq!(page.next_cursor.is_some(), has_next, "case {name} next");
+        }
     }
 }

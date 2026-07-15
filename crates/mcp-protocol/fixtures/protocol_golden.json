@@ -1,0 +1,12 @@
+{
+  "schema": "mcp-protocol-golden/v1",
+  "source": "src/protocol/mcp.ts",
+  "latestProtocolVersion": "2025-03-26",
+  "supportedProtocolVersions": ["2025-03-26", "2024-11-05"],
+  "negotiate": [
+    { "client": "2024-11-05", "expected": "2024-11-05" },
+    { "client": "2025-03-26", "expected": "2025-03-26" },
+    { "client": null, "expected": "2025-03-26" },
+    { "client": "nope", "expected": "2025-03-26" }
+  ]
+}

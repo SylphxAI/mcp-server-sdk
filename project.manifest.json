@@ -19,12 +19,14 @@
 		"source": [
 			"src/",
 			"examples/",
+			"crates/",
 			"package.json",
+			"Cargo.toml",
 			"tsconfig.json",
 			"build.config.ts",
 			"bunup.config.ts"
 		],
-		"tests": ["src/", "examples/conformance-server.ts"],
+		"tests": ["src/", "examples/conformance-server.ts", "crates/"],
 		"runbooks": ["README.md", "PROJECT.md", "SECURITY.md", "progress.md"]
 	},
 	"surfaces": [
@@ -62,7 +64,7 @@
 			"type": "workflow",
 			"name": "CI",
 			"path": ".github/workflows/ci.yml",
-			"description": "ADR-29 admission, GroundAtlas package dogfood, lint, typecheck, test, build, and secret hygiene."
+			"description": "ADR-29 admission, GroundAtlas package dogfood, lint, typecheck, test, build, cargo pure residual, and secret hygiene."
 		},
 		{
 			"type": "workflow",
@@ -97,6 +99,16 @@
 			"name": "build",
 			"command": "bun run build",
 			"purpose": "Build package artifacts."
+		},
+		{
+			"name": "cargo:test",
+			"command": "cargo test --workspace",
+			"purpose": "Run pure residual Rust crate unit and golden fixture tests."
+		},
+		{
+			"name": "cargo:clippy",
+			"command": "cargo clippy --workspace --all-targets -- -D warnings",
+			"purpose": "Lint pure residual Rust crates with deny-warnings."
 		},
 		{
 			"name": "groundatlas:fleet",

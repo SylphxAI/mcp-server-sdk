@@ -170,10 +170,6 @@ pub fn tools_list_result(tools: &[Tool], next_cursor: Option<String>) -> serde_j
     serde_json::Value::Object(map)
 }
 
-
-/// tools/call error result envelope (parity with `toolError`).
-#[must_use]
-
 /// resources/list result envelope (cursor-aware).
 #[must_use]
 pub fn resources_list_result(
@@ -220,6 +216,8 @@ pub fn is_tool_error_result(body: &serde_json::Value) -> bool {
     body.get("isError").and_then(|v| v.as_bool()).unwrap_or(false)
 }
 
+/// tools/call error result envelope (parity with `toolError`).
+#[must_use]
 pub fn tool_error(message: impl Into<String>) -> serde_json::Value {
     serde_json::json!({
         "content": [{ "type": "text", "text": message.into() }],
@@ -616,6 +614,13 @@ pub fn prompt_result(description: impl Into<String>, msgs: &[PromptMessage]) -> 
 mod tests {
     use super::*;
 
+    fn array_len(v: &serde_json::Value, key: &str) -> usize {
+        v.get(key)
+            .and_then(|x| x.as_array())
+            .map(|a| a.len())
+            .unwrap_or(usize::MAX)
+    }
+
     #[test]
     fn supported_versions() {
         assert!(is_supported_protocol_version("2025-03-26"));
@@ -640,7 +645,10 @@ mod tests {
     fn text_content_roundtrip() {
         let c = Content::text("hello");
         assert!(c.is_text());
-        let v = serde_json::to_value(&c).unwrap();
+        let v = match serde_json::to_value(&c) {
+            Ok(v) => v,
+            Err(e) => panic!("serialize: {e}"),
+        };
         assert_eq!(v["type"], "text");
         assert_eq!(v["text"], "hello");
     }
@@ -682,19 +690,24 @@ mod tests {
         assert!(matches!(c, Notification::Cancelled { .. }));
     }
 
-
     #[test]
     fn template_match_and_extract() {
         // {param} matches a single path segment (TS [^/]+)
         assert!(matches_template("file:///{path}", "file:///tmp"));
         assert!(!matches_template("file:///{path}", "file:///tmp/a"));
-        let p = extract_params("file:///{bucket}/{key}", "file:///b1/obj").unwrap();
+        let p = match extract_params("file:///{bucket}/{key}", "file:///b1/obj") {
+            Some(p) => p,
+            None => panic!("expected params"),
+        };
         assert_eq!(p.get("bucket").map(String::as_str), Some("b1"));
         assert_eq!(p.get("key").map(String::as_str), Some("obj"));
         assert!(extract_params("file:///{bucket}/{key}", "file:///b1/obj/extra").is_none());
         assert!(matches_template("static", "static"));
         assert!(!matches_template("static", "static2"));
-        let p2 = extract_params("/users/{id}/files/{name}", "/users/42/files/a.txt").unwrap();
+        let p2 = match extract_params("/users/{id}/files/{name}", "/users/42/files/a.txt") {
+            Some(p) => p,
+            None => panic!("expected params"),
+        };
         assert_eq!(p2.get("id").map(String::as_str), Some("42"));
         assert_eq!(p2.get("name").map(String::as_str), Some("a.txt"));
     }
@@ -716,7 +729,7 @@ mod tests {
         assert_eq!(a.role, "assistant");
         let body = prompt_result("desc", &[u, a]);
         assert_eq!(body["description"], "desc");
-        assert_eq!(body["messages"].as_array().unwrap().len(), 2);
+        assert_eq!(array_len(&body, "messages"), 2);
         assert_eq!(methods::TOOLS_CALL, "tools/call");
         assert_eq!(methods::INITIALIZE, "initialize");
     }
@@ -739,7 +752,7 @@ mod tests {
         assert_eq!(rt.text.as_deref(), Some("hello"));
         assert_eq!(rt.mime_type.as_deref(), Some("text/plain"));
         let rr = resources_read_result(&[rt]);
-        assert_eq!(rr["contents"].as_array().unwrap().len(), 1);
+        assert_eq!(array_len(&rr, "contents"), 1);
         let blob = resource_blob("file:///b", "AAAA", "image/png");
         assert_eq!(blob["contents"][0]["blob"], "AAAA");
         let contents = [
@@ -749,7 +762,7 @@ mod tests {
         ];
         let body = tool_content_result(&contents, false);
         assert_eq!(body["isError"], false);
-        assert_eq!(body["content"].as_array().unwrap().len(), 3);
+        assert_eq!(array_len(&body, "content"), 3);
     }
 
     #[test]
@@ -775,23 +788,28 @@ mod tests {
             &[serde_json::json!({"uri": "file:///a", "name": "a"})],
             Some("c1".into()),
         );
-        assert_eq!(rr["resources"].as_array().unwrap().len(), 1);
+        assert_eq!(array_len(&rr, "resources"), 1);
         assert_eq!(rr["nextCursor"], "c1");
         let pr = prompts_list_result(&[], None);
-        assert_eq!(pr["prompts"].as_array().unwrap().len(), 0);
+        assert_eq!(array_len(&pr, "prompts"), 0);
         assert!(pr.get("nextCursor").is_none());
         let empty = empty_tool_result();
         assert_eq!(empty["isError"], false);
-        assert_eq!(empty["content"].as_array().unwrap().len(), 0);
+        assert_eq!(array_len(&empty, "content"), 0);
         assert!(!is_tool_error_result(&empty));
         assert!(is_tool_error_result(&tool_error("boom")));
     }
 
-
     #[test]
     fn bulk_template_multi_segment_and_reject_extra() {
-        assert!(!matches_template("/users/{id}/posts/{pid}", "/users/1/posts/2/extra"));
-        let p = extract_params("/users/{id}/posts/{pid}", "/users/1/posts/2").expect("params");
+        assert!(!matches_template(
+            "/users/{id}/posts/{pid}",
+            "/users/1/posts/2/extra"
+        ));
+        let p = match extract_params("/users/{id}/posts/{pid}", "/users/1/posts/2") {
+            Some(p) => p,
+            None => panic!("expected params"),
+        };
         assert_eq!(p.get("id").map(String::as_str), Some("1"));
         assert_eq!(p.get("pid").map(String::as_str), Some("2"));
         assert!(extract_params("/users/{id}", "/users/a/b").is_none());
@@ -810,7 +828,12 @@ mod tests {
     fn bulk_notifications_cancelled_and_progress() {
         let n = cancelled(serde_json::json!(1), Some("stop".into()));
         assert!(matches!(n, Notification::Cancelled { .. }));
-        let p = progress_notification(serde_json::json!("t1"), 1.0, Some(10.0), Some("working".into()));
+        let p = progress_notification(
+            serde_json::json!("t1"),
+            1.0,
+            Some(10.0),
+            Some("working".into()),
+        );
         assert!(matches!(p, Notification::Progress { .. }));
         assert!(!is_tool_error_result(&empty_tool_result()));
         assert!(is_tool_error_result(&tool_text_result("x", true)));
@@ -820,8 +843,47 @@ mod tests {
     #[test]
     fn bulk_list_results_without_cursor_omit_next() {
         let tools = tools_list_result(&[], None);
-        assert!(tools.get("nextCursor").is_none() || tools.get("nextCursor").unwrap().is_null());
+        let next = tools.get("nextCursor");
+        assert!(next.is_none() || next.is_some_and(|v| v.is_null()));
         let tools2 = tools_list_result(&[], Some("c".into()));
         assert_eq!(tools2.get("nextCursor").and_then(|v| v.as_str()), Some("c"));
+    }
+
+    /// SHA-bound pure residual golden: protocol version + tool error envelope.
+    #[test]
+    fn pure_residual_protocol_golden_fixture() {
+        let raw = include_str!("../fixtures/protocol_golden.json");
+        let doc: serde_json::Value = match serde_json::from_str(raw) {
+            Ok(v) => v,
+            Err(e) => panic!("protocol_golden.json: {e}"),
+        };
+        assert_eq!(doc["schema"], "mcp-protocol-golden/v1");
+        assert_eq!(doc["latestProtocolVersion"], LATEST_PROTOCOL_VERSION);
+        let supported = match doc["supportedProtocolVersions"].as_array() {
+            Some(a) => a,
+            None => panic!("supportedProtocolVersions"),
+        };
+        for v in supported {
+            let s = match v.as_str() {
+                Some(s) => s,
+                None => panic!("version not string"),
+            };
+            assert!(is_supported_protocol_version(s));
+        }
+        for case in match doc["negotiate"].as_array() {
+            Some(a) => a,
+            None => panic!("negotiate"),
+        } {
+            let client = case.get("client").and_then(|v| v.as_str());
+            let expected = match case["expected"].as_str() {
+                Some(s) => s,
+                None => panic!("expected"),
+            };
+            assert_eq!(negotiate_protocol_version(client), expected);
+        }
+        let err = tool_error("fixture-boom");
+        assert!(is_tool_error_result(&err));
+        assert_eq!(err["content"][0]["text"], "fixture-boom");
+        assert!(!is_tool_error_result(&empty_tool_result()));
     }
 }
