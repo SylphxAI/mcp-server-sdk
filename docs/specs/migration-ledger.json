@@ -18,7 +18,7 @@
     }
   ],
   "reauditRef": "rej-010",
-  "verificationRef": "verification/FLEET-ENTERPRISE-WAVE16-honesty.json",
+  "verificationRef": "verification/FLEET-ENTERPRISE-WAVE5-PRODUCT-honesty.json",
   "inventorySource": [
     "mcp-tools",
     "manual"
@@ -42,17 +42,29 @@
       "id": "transport/streamable-http",
       "domain": "transport",
       "weight": 5,
-      "state": "ts_only",
+      "state": "rust_impl",
       "tsSurface": "src/transports/http.ts; src/app/serve.ts; src/app/http.ts; fixtures/streamable-http/**; src/transports/http.contract.test.ts",
-      "notes": "Honest live main: TS gust streamable HTTP is product path. Pure residual Rust crates (mcp-pagination/mcp-protocol/mcp-jsonrpc) do not cover transport. NO ts_deleted / authority_rust / differential_green claim."
+      "notes": "WAVE5 product: HttpConfig/route classify, health, auth gate, SSE framing, initialize dispatch, golden fixture runner, AsyncStreamableHttpService. TCP/gust bind + full tool dispatch remain app-layer. TS read-only oracle. No authority_rust/ts_deleted/differential_green.",
+      "rustSurface": "crates/mcp-streamable-http/src/lib.rs",
+      "parityTest": "cargo test -p mcp-streamable-http --lib",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE5 product kernels unit-green + golden fixtures; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "transport/session-guard-helpers",
       "domain": "transport",
       "weight": 2,
-      "state": "ts_only",
+      "state": "rust_impl",
       "tsSurface": "src/transports/http.ts; src/app/serve.ts; src/app/http.ts; fixtures/streamable-http/**; src/transports/http.contract.test.ts",
-      "notes": "Honest live main: TS gust streamable HTTP is product path. Pure residual Rust crates (mcp-pagination/mcp-protocol/mcp-jsonrpc) do not cover transport. NO ts_deleted / authority_rust / differential_green claim."
+      "notes": "WAVE5 product: SessionStore, guard_session_id, session-not-found body/status, pending allocate/take, Mcp-Session-Id helpers. Wired into mcp-streamable-http. TS read-only oracle. No authority_rust/ts_deleted.",
+      "rustSurface": "crates/mcp-session-guard/src/lib.rs",
+      "parityTest": "cargo test -p mcp-session-guard --lib",
+      "proof": {
+        "status": "missing",
+        "staleReason": "WAVE5 product kernels unit-green; differential_green / authority_rust / ts_deleted not claimed \u2014 TS package surface remains oracle"
+      }
     },
     {
       "id": "transport/stdio",
@@ -257,16 +269,16 @@
   ],
   "summary": {
     "total": 16,
-    "ts_only": 2,
+    "ts_only": 0,
     "contracted": 0,
-    "rust_impl": 14,
+    "rust_impl": 16,
     "parity_proven": 0,
     "authority_rust": 0,
     "ts_deleted": 0,
     "completion_progress": 0.0,
     "authority_progress": 0.0,
     "weighted_progress": 0.0,
-    "proof_missing": 14,
+    "proof_missing": 16,
     "honesty_2026_07_15": {
       "at": "2026-07-15T05:46:03Z",
       "liveHead": "origin/main",
@@ -502,6 +514,28 @@
         "sole_rust_production_authority"
       ],
       "notes": "WAVE4 product kernels: 6 new crates covering 11 former ts_only product surfaces \u2192 rust_impl. streamable-http + session-guard remain ts_only. TS package is read-only oracle; no ts_deleted. prod_audit_fail until differential_green + sole authority."
+    },
+    "honesty_2026_07_15_wave5_product": {
+      "at": "2026-07-15T17:47:59Z",
+      "liveHead": "origin/main",
+      "newCrates": [
+        "mcp-session-guard",
+        "mcp-streamable-http"
+      ],
+      "productSurfaces": [
+        "transport/streamable-http",
+        "transport/session-guard-helpers"
+      ],
+      "rust_impl": 16,
+      "ts_only": 0,
+      "notClaims": [
+        "authority_rust",
+        "ts_deleted",
+        "differential_green",
+        "sole_rust",
+        "prod_audit_pass"
+      ],
+      "notes": "WAVE5 closed remaining ts_only caps with real product crates + async serve handle. Golden fixtures/streamable-http/* exercised in-process. No TCP listen binary; no dual-oracle differential harness on main."
     }
   },
   "promotionFreeze": {

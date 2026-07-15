@@ -1,0 +1,23 @@
+[package]
+name = "mcp-streamable-http"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "MCP Streamable HTTP transport product kernels (parity with serve/http/fetch adapters)"
+
+[lints]
+workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+mcp-app = { path = "../mcp-app" }
+mcp-http-auth = { path = "../mcp-http-auth" }
+mcp-jsonrpc = { path = "../mcp-jsonrpc" }
+mcp-protocol = { path = "../mcp-protocol" }
+mcp-session-guard = { path = "../mcp-session-guard" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt", "macros", "sync", "time"] }

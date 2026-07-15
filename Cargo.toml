@@ -10,6 +10,8 @@ members = [
   "crates/mcp-app",
   "crates/mcp-clients",
   "crates/mcp-notifications",
+  "crates/mcp-session-guard",
+  "crates/mcp-streamable-http",
 ]
 
 [workspace.package]
