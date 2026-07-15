@@ -360,6 +360,61 @@ pub fn request_id_from_value(v: &Value) -> Option<RequestId> {
     None
 }
 
+// ============================================================================
+// WAVE15 pure residual classifiers + extractors
+// ============================================================================
+
+/// Classify an error code: `standard`, `server`, or `application` (JSON-RPC 2.0 §5.1).
+#[must_use]
+pub fn error_code_kind(code: i64) -> &'static str {
+    if is_standard_error_code(code) {
+        "standard"
+    } else if is_server_error_code(code) {
+        "server"
+    } else {
+        "application"
+    }
+}
+
+/// Classify a parsed message: `request`, `notification`, `success`, or `error`.
+#[must_use]
+pub fn message_kind(msg: &JsonRpcMessage) -> &'static str {
+    match msg {
+        JsonRpcMessage::Request(_) => "request",
+        JsonRpcMessage::Notification(_) => "notification",
+        JsonRpcMessage::Success(_) => "success",
+        JsonRpcMessage::Error(_) => "error",
+    }
+}
+
+/// Extract numeric error code from an error response; `None` otherwise.
+#[must_use]
+pub fn message_error_code(msg: &JsonRpcMessage) -> Option<i64> {
+    message_error(msg).map(|e| e.code)
+}
+
+/// Extract error message string from an error response; `None` otherwise.
+#[must_use]
+pub fn message_error_message(msg: &JsonRpcMessage) -> Option<&str> {
+    message_error(msg).map(|e| e.message.as_str())
+}
+
+/// True when a request/notification carries a `params` field.
+#[must_use]
+pub fn has_params(msg: &JsonRpcMessage) -> bool {
+    message_params(msg).is_some()
+}
+
+/// Request id discriminant: `number`, `string`, or `none` (notification / null-id error).
+#[must_use]
+pub fn request_id_kind(id: Option<&RequestId>) -> &'static str {
+    match id {
+        Some(RequestId::Number(_)) => "number",
+        Some(RequestId::String(_)) => "string",
+        None => "none",
+    }
+}
+
 /// Type guard: message is a request (`id` + `method`).
 #[must_use]
 pub fn is_request(msg: &JsonRpcMessage) -> bool {
@@ -676,6 +731,55 @@ mod tests {
                 assert_eq!(request_id_to_value(&id), v, "{name}");
             }
         }
+        if let Some(cases) = doc.get("errorCodeKinds").and_then(|v| v.as_array()) {
+            for case in cases {
+                let code = case["code"].as_i64().unwrap_or(0);
+                let kind = case["kind"].as_str().unwrap_or("");
+                assert_eq!(error_code_kind(code), kind, "code {code}");
+            }
+        }
+        if let Some(cases) = doc.get("messageKinds").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let input = case["input"].as_str().unwrap_or("");
+                let expected = case["kind"].as_str().unwrap_or("");
+                match parse_message(input) {
+                    ParseResult::Ok(msg) => {
+                        assert_eq!(message_kind(&msg), expected, "{name}");
+                        if let Some(has) = case.get("hasParams").and_then(|v| v.as_bool()) {
+                            assert_eq!(has_params(&msg), has, "{name} hasParams");
+                        }
+                        if let Some(code) = case.get("errorCode").and_then(|v| v.as_i64()) {
+                            assert_eq!(message_error_code(&msg), Some(code), "{name} code");
+                        }
+                        if let Some(msg_text) = case.get("errorMessage").and_then(|v| v.as_str()) {
+                            assert_eq!(
+                                message_error_message(&msg),
+                                Some(msg_text),
+                                "{name} message"
+                            );
+                        }
+                    }
+                    ParseResult::Err(e) => panic!("{name}: {e}"),
+                }
+            }
+        }
+        if let Some(cases) = doc.get("requestIdKinds").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let kind = case["kind"].as_str().unwrap_or("");
+                if case.get("value").is_some() && !case["value"].is_null() {
+                    let v = case.get("value").cloned().unwrap_or(Value::Null);
+                    let id = match request_id_from_value(&v) {
+                        Some(id) => id,
+                        None => panic!("expected id for {name}"),
+                    };
+                    assert_eq!(request_id_kind(Some(&id)), kind, "{name}");
+                } else {
+                    assert_eq!(request_id_kind(None), kind, "{name}");
+                }
+            }
+        }
         if let Some(names) = doc.get("standardErrorNames") {
             assert!(names.is_object(), "standardErrorNames object");
             for (key, code_key) in [
@@ -843,6 +947,48 @@ mod tests {
         );
         assert!(request_id_from_value(&json!(true)).is_none());
         assert!(request_id_from_value(&json!(null)).is_none());
+    }
+
+    #[test]
+    fn wave15_kinds_error_extractors_and_params() {
+        assert_eq!(error_code_kind(error_code::PARSE_ERROR), "standard");
+        assert_eq!(error_code_kind(error_code::INTERNAL_ERROR), "standard");
+        assert_eq!(error_code_kind(-32050), "server");
+        assert_eq!(error_code_kind(error_code::SERVER_ERROR_MIN), "server");
+        assert_eq!(error_code_kind(-1), "application");
+        assert_eq!(error_code_kind(42), "application");
+
+        let req = request(
+            RequestId::Number(1),
+            "tools/call",
+            Some(json!({"name": "ping"})),
+        );
+        let msg = JsonRpcMessage::Request(req);
+        assert_eq!(message_kind(&msg), "request");
+        assert!(has_params(&msg));
+        assert_eq!(request_id_kind(message_id(&msg)), "number");
+
+        let n = notification("notifications/initialized", None);
+        let msg = JsonRpcMessage::Notification(n);
+        assert_eq!(message_kind(&msg), "notification");
+        assert!(!has_params(&msg));
+        assert_eq!(request_id_kind(message_id(&msg)), "none");
+
+        let ok = success(RequestId::String("a".into()), json!(true));
+        let msg = JsonRpcMessage::Success(ok);
+        assert_eq!(message_kind(&msg), "success");
+        assert_eq!(request_id_kind(message_id(&msg)), "string");
+        assert!(message_error_code(&msg).is_none());
+        assert!(message_error_message(&msg).is_none());
+
+        let err = invalid_params(RequestId::Number(3), "bad field");
+        let msg = JsonRpcMessage::Error(err);
+        assert_eq!(message_kind(&msg), "error");
+        assert_eq!(
+            message_error_code(&msg),
+            Some(error_code::INVALID_PARAMS)
+        );
+        assert_eq!(message_error_message(&msg), Some("bad field"));
     }
 
 }

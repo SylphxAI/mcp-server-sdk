@@ -504,5 +504,163 @@
   ],
   "rootsListChangedWire": {
     "expectedMethod": "notifications/roots/list_changed"
-  }
+  },
+  "methodDirections": [
+    {
+      "method": "tools/call",
+      "direction": "client_to_server"
+    },
+    {
+      "method": "initialize",
+      "direction": "client_to_server"
+    },
+    {
+      "method": "sampling/createMessage",
+      "direction": "server_to_client"
+    },
+    {
+      "method": "elicitation/create",
+      "direction": "server_to_client"
+    },
+    {
+      "method": "notifications/tools/list_changed",
+      "direction": "notification"
+    },
+    {
+      "method": "notifications/progress",
+      "direction": "notification"
+    },
+    {
+      "method": "not-a-method",
+      "direction": "unknown"
+    }
+  ],
+  "clientToServerRequestMethods": [
+    "initialize",
+    "ping",
+    "tools/list",
+    "tools/call",
+    "resources/list",
+    "prompts/get",
+    "completion/complete",
+    "roots/list"
+  ],
+  "notificationMethods": [
+    "notifications/initialized",
+    "notifications/resources/updated",
+    "notifications/resources/list_changed",
+    "notifications/prompts/list_changed",
+    "notifications/tools/list_changed",
+    "notifications/message",
+    "notifications/progress",
+    "notifications/cancelled",
+    "notifications/roots/list_changed"
+  ],
+  "listNextCursor": [
+    {
+      "name": "with_cursor",
+      "result": {
+        "tools": [],
+        "nextCursor": "abc"
+      },
+      "hasNext": true,
+      "cursor": "abc"
+    },
+    {
+      "name": "without",
+      "result": {
+        "tools": []
+      },
+      "hasNext": false
+    },
+    {
+      "name": "empty_string",
+      "result": {
+        "nextCursor": ""
+      },
+      "hasNext": false,
+      "cursor": ""
+    }
+  ],
+  "priorityClamp": [
+    {
+      "name": "mid",
+      "raw": 0.5,
+      "valid": true,
+      "clamped": 0.5
+    },
+    {
+      "name": "low",
+      "raw": 0.0,
+      "valid": true,
+      "clamped": 0.0
+    },
+    {
+      "name": "high",
+      "raw": 1.0,
+      "valid": true,
+      "clamped": 1.0
+    },
+    {
+      "name": "below",
+      "raw": -0.5,
+      "valid": false,
+      "clamped": 0.0
+    },
+    {
+      "name": "above",
+      "raw": 1.5,
+      "valid": false,
+      "clamped": 1.0
+    }
+  ],
+  "completionArgument": {
+    "name": "prefix",
+    "value": "hel"
+  },
+  "toolResultFirstText": [
+    {
+      "name": "text",
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "hi"
+          }
+        ],
+        "isError": false
+      },
+      "expected": "hi"
+    },
+    {
+      "name": "image",
+      "result": {
+        "content": [
+          {
+            "type": "image",
+            "data": "AA",
+            "mimeType": "image/png"
+          }
+        ]
+      }
+    },
+    {
+      "name": "empty",
+      "result": {}
+    }
+  ],
+  "fileUris": [
+    {
+      "uri": "file:///tmp",
+      "isFile": true
+    },
+    {
+      "uri": "https://x",
+      "isFile": false
+    },
+    {
+      "uri": "",
+      "isFile": false
+    }
+  ]
 }

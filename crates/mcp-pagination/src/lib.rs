@@ -126,6 +126,53 @@ pub fn items_remaining(offset: usize, total_len: usize) -> usize {
     total_len.saturating_sub(offset)
 }
 
+// ============================================================================
+// WAVE15 pure residual page math
+// ============================================================================
+
+/// Number of items in the page slice (`page_end - clamp_offset`).
+#[must_use]
+pub fn page_item_count(offset: usize, page_size: usize, total_len: usize) -> usize {
+    let start = clamp_offset(offset, total_len);
+    page_end(offset, page_size, total_len).saturating_sub(start)
+}
+
+/// Ceiling pages needed to cover `total_len` at `page_size` (`0` when page_size is 0).
+#[must_use]
+pub fn pages_needed(total_len: usize, page_size: usize) -> usize {
+    if page_size == 0 {
+        return 0;
+    }
+    if total_len == 0 {
+        return 0;
+    }
+    total_len.div_ceil(page_size)
+}
+
+/// Clamp `offset` into `[0, total_len]`.
+#[must_use]
+pub fn clamp_offset(offset: usize, total_len: usize) -> usize {
+    offset.min(total_len)
+}
+
+/// Inclusive-start exclusive-end bounds for a page slice: `(start, end)`.
+#[must_use]
+pub fn page_bounds(offset: usize, page_size: usize, total_len: usize) -> (usize, usize) {
+    let start = clamp_offset(offset, total_len);
+    let end = page_end(offset, page_size, total_len);
+    (start, end)
+}
+
+/// Encode the next-page cursor when another page exists; `None` at end.
+#[must_use]
+pub fn next_page_cursor(offset: usize, page_size: usize, total_len: usize) -> Option<String> {
+    if page_has_more(offset, page_size, total_len) {
+        Some(encode_page_cursor(next_page_offset(offset, page_size), page_size))
+    } else {
+        None
+    }
+}
+
 /// Paginate a slice of items (parity with TS `paginate`).
 #[must_use]
 pub fn paginate<T: Clone>(
@@ -346,6 +393,44 @@ mod tests {
         );
     }
 
+    #[test]
+    fn wave15_page_item_count_bounds_and_next_cursor() {
+        assert_eq!(page_item_count(0, 50, 120), 50);
+        assert_eq!(page_item_count(100, 50, 120), 20);
+        assert_eq!(page_item_count(200, 50, 120), 0);
+        assert_eq!(page_item_count(0, 50, 10), 10);
+
+        assert_eq!(pages_needed(120, 50), 3);
+        assert_eq!(pages_needed(100, 50), 2);
+        assert_eq!(pages_needed(0, 50), 0);
+        assert_eq!(pages_needed(10, 0), 0);
+        assert_eq!(pages_needed(1, 50), 1);
+
+        assert_eq!(clamp_offset(0, 10), 0);
+        assert_eq!(clamp_offset(5, 10), 5);
+        assert_eq!(clamp_offset(99, 10), 10);
+
+        assert_eq!(page_bounds(0, 50, 120), (0, 50));
+        assert_eq!(page_bounds(100, 50, 120), (100, 120));
+        assert_eq!(page_bounds(200, 50, 120), (120, 120));
+
+        let next = match next_page_cursor(0, 50, 120) {
+            Some(c) => c,
+            None => panic!("expected next cursor"),
+        };
+        assert_eq!(decode_page_cursor(&next), Some((50, 50)));
+        assert!(next_page_cursor(100, 50, 120).is_none());
+        assert!(next_page_cursor(0, 50, 10).is_none());
+
+        // Align with paginate next_cursor
+        let items: Vec<i32> = (0..120).collect();
+        let page = paginate(&items, None, PaginationOptions::default());
+        assert_eq!(
+            page.next_cursor.as_deref(),
+            next_page_cursor(0, DEFAULT_PAGE_SIZE, items.len()).as_deref()
+        );
+    }
+
     /// Load committed golden fixture (TS oracle surface contract) and assert Rust paginate.
     #[test]
     fn pure_residual_pagination_golden_fixture() {
@@ -450,6 +535,63 @@ mod tests {
                     let page_size = case["encode"]["pageSize"].as_u64().unwrap_or(0) as usize;
                     let c = encode_page_cursor(offset, page_size);
                     assert_eq!(is_valid_page_cursor(&c), expected, "case {name}");
+                }
+            }
+        }
+        if let Some(cases) = doc.get("pageItemCount").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let offset = case["offset"].as_u64().unwrap_or(0) as usize;
+                let page_size = case["pageSize"].as_u64().unwrap_or(0) as usize;
+                let total = case["total"].as_u64().unwrap_or(0) as usize;
+                let expected = case["expectedCount"].as_u64().unwrap_or(0) as usize;
+                assert_eq!(
+                    page_item_count(offset, page_size, total),
+                    expected,
+                    "case {name}"
+                );
+                if let Some(pages) = case.get("pagesNeeded").and_then(|v| v.as_u64()) {
+                    assert_eq!(
+                        pages_needed(total, page_size),
+                        pages as usize,
+                        "case {name} pages"
+                    );
+                }
+                if let Some(bounds) = case.get("bounds").and_then(|v| v.as_array()) {
+                    if bounds.len() == 2 {
+                        let start = bounds[0].as_u64().unwrap_or(0) as usize;
+                        let end = bounds[1].as_u64().unwrap_or(0) as usize;
+                        assert_eq!(
+                            page_bounds(offset, page_size, total),
+                            (start, end),
+                            "case {name} bounds"
+                        );
+                    }
+                }
+            }
+        }
+        if let Some(cases) = doc.get("nextPageCursor").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let offset = case["offset"].as_u64().unwrap_or(0) as usize;
+                let page_size = case["pageSize"].as_u64().unwrap_or(0) as usize;
+                let total = case["total"].as_u64().unwrap_or(0) as usize;
+                let has = case["hasNext"].as_bool().unwrap_or(false);
+                let got = next_page_cursor(offset, page_size, total);
+                assert_eq!(got.is_some(), has, "case {name}");
+                if has {
+                    if let Some(exp_off) = case.get("nextOffset").and_then(|v| v.as_u64()) {
+                        let c = match got.as_deref() {
+                            Some(c) => c,
+                            None => panic!("expected cursor {name}"),
+                        };
+                        let (off, ps) = match decode_page_cursor(c) {
+                            Some(v) => v,
+                            None => panic!("decode {name}"),
+                        };
+                        assert_eq!(off, exp_off as usize, "case {name} nextOffset");
+                        assert_eq!(ps, page_size, "case {name} pageSize");
+                    }
                 }
             }
         }

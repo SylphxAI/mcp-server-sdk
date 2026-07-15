@@ -1666,6 +1666,133 @@ pub fn is_list_changed_notification(method: &str) -> bool {
     )
 }
 
+// ============================================================================
+// WAVE15 pure residual catalogs + extractors
+// ============================================================================
+
+/// Client→server request methods (MCP request methods excluding server→client).
+pub const CLIENT_TO_SERVER_REQUEST_METHODS: &[&str] = &[
+    methods::INITIALIZE,
+    methods::PING,
+    methods::RESOURCES_LIST,
+    methods::RESOURCES_TEMPLATES_LIST,
+    methods::RESOURCES_READ,
+    methods::RESOURCES_SUBSCRIBE,
+    methods::RESOURCES_UNSUBSCRIBE,
+    methods::PROMPTS_LIST,
+    methods::PROMPTS_GET,
+    methods::TOOLS_LIST,
+    methods::TOOLS_CALL,
+    methods::LOGGING_SET_LEVEL,
+    methods::COMPLETION_COMPLETE,
+    methods::ROOTS_LIST,
+];
+
+/// True when `method` is a client-initiated MCP request (not server→client, not notification).
+#[must_use]
+pub fn is_client_to_server_request_method(method: &str) -> bool {
+    CLIENT_TO_SERVER_REQUEST_METHODS.contains(&method)
+}
+
+/// Known MCP notification method strings (parity with `notifications/*` in Method catalog).
+pub const NOTIFICATION_METHODS: &[&str] = &[
+    methods::INITIALIZED,
+    methods::RESOURCES_UPDATED,
+    methods::RESOURCES_LIST_CHANGED,
+    methods::PROMPTS_LIST_CHANGED,
+    methods::TOOLS_LIST_CHANGED,
+    methods::LOG_MESSAGE,
+    methods::PROGRESS_NOTIFICATION,
+    methods::CANCELLED_NOTIFICATION,
+    methods::ROOTS_LIST_CHANGED,
+];
+
+/// Message direction for a known MCP method string (pure residual classifier).
+///
+/// Returns one of: `client_to_server`, `server_to_client`, `notification`, or `unknown`.
+#[must_use]
+pub fn method_direction(method: &str) -> &'static str {
+    if is_server_to_client_method(method) {
+        return "server_to_client";
+    }
+    if is_mcp_notification_method(method) {
+        return "notification";
+    }
+    if is_client_to_server_request_method(method) {
+        return "client_to_server";
+    }
+    "unknown"
+}
+
+/// Extract `progressToken` from a bare `_meta` object (pure residual).
+#[must_use]
+pub fn progress_token_from_meta(meta: &serde_json::Value) -> Option<&serde_json::Value> {
+    meta.get("progressToken")
+}
+
+/// Extract `nextCursor` from a list-result body (tools/resources/prompts list shapes).
+#[must_use]
+pub fn list_next_cursor(result: &serde_json::Value) -> Option<&str> {
+    result.get("nextCursor").and_then(|v| v.as_str())
+}
+
+/// True when a list-result body has a non-empty `nextCursor` string.
+#[must_use]
+pub fn list_has_next_cursor(result: &serde_json::Value) -> bool {
+    list_next_cursor(result).is_some_and(|c| !c.is_empty())
+}
+
+/// ContentAnnotations.priority is defined on `[0.0, 1.0]` (MCP spec).
+#[must_use]
+pub fn is_valid_priority(priority: f64) -> bool {
+    (0.0..=1.0).contains(&priority) && priority.is_finite()
+}
+
+/// Clamp a priority into `[0.0, 1.0]`. Non-finite values become `0.0`.
+#[must_use]
+pub fn clamp_priority(priority: f64) -> f64 {
+    if !priority.is_finite() {
+        return 0.0;
+    }
+    priority.clamp(0.0, 1.0)
+}
+
+/// Completion argument free constructor (parity with `CompletionArgument`).
+#[must_use]
+pub fn completion_argument(
+    name: impl Into<String>,
+    value: impl Into<String>,
+) -> serde_json::Value {
+    serde_json::json!({
+        "name": name.into(),
+        "value": value.into(),
+    })
+}
+
+/// First text body from a tools/call result `content` array (pure residual extractor).
+///
+/// Returns `None` when `content` is missing/empty or the first item is not text.
+#[must_use]
+pub fn tool_result_first_text(result: &serde_json::Value) -> Option<&str> {
+    result
+        .get("content")
+        .and_then(|c| c.as_array())
+        .and_then(|arr| arr.first())
+        .and_then(|item| {
+            if item.get("type").and_then(|t| t.as_str()) == Some("text") {
+                item.get("text").and_then(|t| t.as_str())
+            } else {
+                None
+            }
+        })
+}
+
+/// True when a roots URI uses the `file://` scheme (MCP roots convention).
+#[must_use]
+pub fn is_file_uri(uri: &str) -> bool {
+    uri.starts_with("file://")
+}
+
 /// Check if a URI matches a template pattern (`{param}` → single path segment).
 #[must_use]
 pub fn matches_template(template: &str, uri: &str) -> bool {
@@ -2572,6 +2699,91 @@ mod tests {
             );
             assert!(wire.params.is_none());
         }
+        // WAVE15: method direction + list cursor + priority + completion_argument
+        if let Some(cases) = doc.get("methodDirections").and_then(|v| v.as_array()) {
+            for case in cases {
+                let method = case["method"].as_str().unwrap_or("");
+                let expected = case["direction"].as_str().unwrap_or("");
+                assert_eq!(
+                    method_direction(method),
+                    expected,
+                    "direction {method}"
+                );
+            }
+        }
+        if let Some(vals) = doc
+            .get("clientToServerRequestMethods")
+            .and_then(|v| v.as_array())
+        {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(is_client_to_server_request_method(s), "c2s {s}");
+                assert_eq!(method_direction(s), "client_to_server", "c2s dir {s}");
+            }
+        }
+        if let Some(vals) = doc.get("notificationMethods").and_then(|v| v.as_array()) {
+            for v in vals {
+                let s = v.as_str().unwrap_or("");
+                assert!(NOTIFICATION_METHODS.contains(&s), "notif catalog {s}");
+                assert_eq!(method_direction(s), "notification", "notif dir {s}");
+            }
+        }
+        if let Some(cases) = doc.get("listNextCursor").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let result = case
+                    .get("result")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!({}));
+                let has = case["hasNext"].as_bool().unwrap_or(false);
+                assert_eq!(list_has_next_cursor(&result), has, "list cursor {name}");
+                if let Some(c) = case.get("cursor").and_then(|v| v.as_str()) {
+                    assert_eq!(list_next_cursor(&result), Some(c), "list next {name}");
+                } else {
+                    assert!(list_next_cursor(&result).is_none(), "list next none {name}");
+                }
+            }
+        }
+        if let Some(cases) = doc.get("priorityClamp").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let raw = case["raw"].as_f64().unwrap_or(0.0);
+                let valid = case["valid"].as_bool().unwrap_or(false);
+                let clamped = case["clamped"].as_f64().unwrap_or(0.0);
+                assert_eq!(is_valid_priority(raw), valid, "priority valid {name}");
+                assert!((clamp_priority(raw) - clamped).abs() < 1e-9, "clamp {name}");
+            }
+        }
+        if let Some(case) = doc.get("completionArgument") {
+            let got = completion_argument(
+                case["name"].as_str().unwrap_or(""),
+                case["value"].as_str().unwrap_or(""),
+            );
+            assert_eq!(got["name"], case["name"]);
+            assert_eq!(got["value"], case["value"]);
+        }
+        if let Some(cases) = doc.get("toolResultFirstText").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let result = case
+                    .get("result")
+                    .cloned()
+                    .unwrap_or_else(|| serde_json::json!({}));
+                let got = tool_result_first_text(&result);
+                if let Some(t) = case.get("expected").and_then(|v| v.as_str()) {
+                    assert_eq!(got, Some(t), "first text {name}");
+                } else {
+                    assert!(got.is_none(), "first text none {name}");
+                }
+            }
+        }
+        if let Some(cases) = doc.get("fileUris").and_then(|v| v.as_array()) {
+            for case in cases {
+                let uri = case["uri"].as_str().unwrap_or("");
+                let expected = case["isFile"].as_bool().unwrap_or(false);
+                assert_eq!(is_file_uri(uri), expected, "file uri {uri}");
+            }
+        }
     }
 
     #[test]
@@ -3096,6 +3308,79 @@ mod tests {
         let wire = notification_to_jsonrpc(&roots_list_changed());
         assert_eq!(wire.method, methods::ROOTS_LIST_CHANGED);
         assert!(wire.params.is_none());
+    }
+
+    #[test]
+    fn wave15_direction_list_cursor_priority_and_extractors() {
+        assert!(is_client_to_server_request_method(methods::TOOLS_CALL));
+        assert!(is_client_to_server_request_method(methods::INITIALIZE));
+        assert!(!is_client_to_server_request_method(
+            methods::SAMPLING_CREATE_MESSAGE
+        ));
+        assert!(!is_client_to_server_request_method(
+            methods::TOOLS_LIST_CHANGED
+        ));
+
+        assert_eq!(method_direction(methods::TOOLS_CALL), "client_to_server");
+        assert_eq!(
+            method_direction(methods::SAMPLING_CREATE_MESSAGE),
+            "server_to_client"
+        );
+        assert_eq!(
+            method_direction(methods::TOOLS_LIST_CHANGED),
+            "notification"
+        );
+        assert_eq!(method_direction("nope/method"), "unknown");
+
+        assert_eq!(NOTIFICATION_METHODS.len(), 9);
+        for m in NOTIFICATION_METHODS {
+            assert!(is_mcp_notification_method(m), "{m}");
+        }
+
+        let meta = serde_json::json!({"progressToken": "m-tok"});
+        assert_eq!(
+            progress_token_from_meta(&meta),
+            Some(&serde_json::json!("m-tok"))
+        );
+        assert!(progress_token_from_meta(&serde_json::json!({})).is_none());
+
+        let with_cursor = serde_json::json!({"tools": [], "nextCursor": "abc"});
+        assert_eq!(list_next_cursor(&with_cursor), Some("abc"));
+        assert!(list_has_next_cursor(&with_cursor));
+        let no_cursor = serde_json::json!({"tools": []});
+        assert!(list_next_cursor(&no_cursor).is_none());
+        assert!(!list_has_next_cursor(&no_cursor));
+        let empty_cursor = serde_json::json!({"nextCursor": ""});
+        assert!(!list_has_next_cursor(&empty_cursor));
+
+        assert!(is_valid_priority(0.0));
+        assert!(is_valid_priority(0.5));
+        assert!(is_valid_priority(1.0));
+        assert!(!is_valid_priority(-0.1));
+        assert!(!is_valid_priority(1.1));
+        assert!(!is_valid_priority(f64::NAN));
+        assert_eq!(clamp_priority(-1.0), 0.0);
+        assert_eq!(clamp_priority(2.0), 1.0);
+        assert_eq!(clamp_priority(0.3), 0.3);
+        assert_eq!(clamp_priority(f64::INFINITY), 0.0);
+
+        let arg = completion_argument("prefix", "hel");
+        assert_eq!(arg["name"], "prefix");
+        assert_eq!(arg["value"], "hel");
+
+        let ok = tool_text_result("hello", false);
+        assert_eq!(tool_result_first_text(&ok), Some("hello"));
+        let img = serde_json::json!({
+            "content": [{"type": "image", "data": "AA", "mimeType": "image/png"}],
+            "isError": false
+        });
+        assert!(tool_result_first_text(&img).is_none());
+        assert!(tool_result_first_text(&serde_json::json!({})).is_none());
+
+        assert!(is_file_uri("file:///tmp"));
+        assert!(is_file_uri("file://localhost/tmp"));
+        assert!(!is_file_uri("https://example.com"));
+        assert!(!is_file_uri(""));
     }
 
 }

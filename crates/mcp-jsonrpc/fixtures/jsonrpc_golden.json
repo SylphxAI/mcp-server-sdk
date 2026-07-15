@@ -146,5 +146,78 @@
       "name": "string",
       "value": "req-9"
     }
+  ],
+  "errorCodeKinds": [
+    {
+      "code": -32700,
+      "kind": "standard"
+    },
+    {
+      "code": -32603,
+      "kind": "standard"
+    },
+    {
+      "code": -32099,
+      "kind": "server"
+    },
+    {
+      "code": -32000,
+      "kind": "server"
+    },
+    {
+      "code": -32050,
+      "kind": "server"
+    },
+    {
+      "code": -1,
+      "kind": "application"
+    },
+    {
+      "code": 42,
+      "kind": "application"
+    }
+  ],
+  "messageKinds": [
+    {
+      "name": "req",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\",\"params\":{}}",
+      "kind": "request",
+      "hasParams": true
+    },
+    {
+      "name": "notif",
+      "input": "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}",
+      "kind": "notification",
+      "hasParams": false
+    },
+    {
+      "name": "ok",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":true}",
+      "kind": "success"
+    },
+    {
+      "name": "err",
+      "input": "{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32602,\"message\":\"bad\"}}",
+      "kind": "error",
+      "errorCode": -32602,
+      "errorMessage": "bad"
+    }
+  ],
+  "requestIdKinds": [
+    {
+      "name": "num",
+      "value": 7,
+      "kind": "number"
+    },
+    {
+      "name": "str",
+      "value": "x",
+      "kind": "string"
+    },
+    {
+      "name": "none",
+      "value": null,
+      "kind": "none"
+    }
   ]
 }
