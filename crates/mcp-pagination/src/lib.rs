@@ -393,6 +393,51 @@ pub fn is_valid_page_size(page_size: usize, max_page_size: usize) -> bool {
     page_size > 0 && page_size <= max_page_size
 }
 
+
+
+// --- WAVE20 pure residual ---
+
+/// Offset for the next page after this window, or None if last page.
+/// Dual-oracle of "has more → next offset = end" without encoding a cursor.
+#[must_use]
+pub fn next_offset_after_page(offset: usize, page_size: usize, total_len: usize) -> Option<usize> {
+    let (_start, end) = page_window(offset, page_size, total_len);
+    if end >= total_len {
+        None
+    } else {
+        Some(end)
+    }
+}
+
+/// True when remaining items after offset is zero (empty page / past end).
+#[must_use]
+pub fn is_empty_page(offset: usize, total_len: usize) -> bool {
+    remaining_items(offset, total_len) == 0
+}
+
+/// Inclusive coverage fraction of a page over the collection: items_on_page / total
+/// (0.0 when total is 0).
+#[must_use]
+pub fn page_coverage_ratio(offset: usize, page_size: usize, total_len: usize) -> f64 {
+    if total_len == 0 {
+        return 0.0;
+    }
+    let n = page_item_count(offset, page_size, total_len) as f64;
+    n / (total_len as f64)
+}
+
+/// True when a previous page exists (offset > 0 after clamp).
+#[must_use]
+pub fn has_previous_page(offset: usize, total_len: usize) -> bool {
+    clamp_offset(offset, total_len) > 0
+}
+
+/// Previous page offset stepping back by page_size (saturating at 0).
+#[must_use]
+pub fn previous_offset(offset: usize, page_size: usize) -> usize {
+    offset.saturating_sub(page_size)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -940,4 +985,19 @@ mod tests {
         assert!(!is_valid_page_size(51, 50));
     }
 
+
+    #[test]
+    fn wave20_page_window_helpers() {
+        assert_eq!(next_offset_after_page(0, 50, 120), Some(50));
+        assert_eq!(next_offset_after_page(100, 50, 120), None);
+        assert!(is_empty_page(10, 10));
+        assert!(!is_empty_page(0, 10));
+        assert!((page_coverage_ratio(0, 50, 100) - 0.5).abs() < 1e-12);
+        assert_eq!(page_coverage_ratio(0, 50, 0), 0.0);
+        assert!(has_previous_page(50, 100));
+        assert!(!has_previous_page(0, 100));
+        assert_eq!(previous_offset(50, 50), 0);
+        assert_eq!(previous_offset(10, 50), 0);
+        assert_eq!(previous_offset(120, 50), 70);
+    }
 }

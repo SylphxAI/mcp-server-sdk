@@ -726,6 +726,56 @@ pub fn request_ids_equal(a: &RequestId, b: &RequestId) -> bool {
     a == b
 }
 
+
+// --- WAVE20 pure residual ---
+
+/// Number of messages in a successfully parsed batch (convenience dual-oracle).
+#[must_use]
+pub fn batch_message_count(msgs: &[JsonRpcMessage]) -> usize {
+    msgs.len()
+}
+
+/// First request id in a batch of messages (skips notifications/responses).
+#[must_use]
+pub fn first_request_id_in_batch(msgs: &[JsonRpcMessage]) -> Option<RequestId> {
+    for m in msgs {
+        if let JsonRpcMessage::Request(r) = m {
+            return Some(r.id.clone());
+        }
+    }
+    None
+}
+
+/// True when any message in the batch is a notification.
+#[must_use]
+pub fn batch_has_notification(msgs: &[JsonRpcMessage]) -> bool {
+    msgs.iter().any(is_notification)
+}
+
+/// True when any message in the batch is a request (expects response).
+#[must_use]
+pub fn batch_has_request(msgs: &[JsonRpcMessage]) -> bool {
+    msgs.iter().any(is_request)
+}
+
+/// Extract error code from an error response message.
+#[must_use]
+pub fn error_code_of_message(msg: &JsonRpcMessage) -> Option<i64> {
+    match msg {
+        JsonRpcMessage::Error(e) => Some(e.error.code),
+        _ => None,
+    }
+}
+
+/// Extract error message string from an error response message.
+#[must_use]
+pub fn error_message_of_message(msg: &JsonRpcMessage) -> Option<&str> {
+    match msg {
+        JsonRpcMessage::Error(e) => Some(e.error.message.as_str()),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1475,4 +1525,36 @@ mod tests {
         ));
     }
 
+
+    #[test]
+    fn wave20_batch_and_error_extractors() {
+        let raw = r#"[{"jsonrpc":"2.0","id":1,"method":"ping"},{"jsonrpc":"2.0","method":"notify"}]"#;
+        let batch = match parse_batch_messages(raw) {
+            Ok(b) => b,
+            Err(e) => panic!("{e}"),
+        };
+        assert_eq!(batch_message_count(&batch), 2);
+        assert!(batch_has_request(&batch));
+        assert!(batch_has_notification(&batch));
+        assert_eq!(
+            first_request_id_in_batch(&batch).map(|id| request_id_display(&id)),
+            Some("1".into())
+        );
+
+        let err_raw = r#"{"jsonrpc":"2.0","id":null,"error":{"code":-32600,"message":"bad"}}"#;
+        match parse_message(err_raw) {
+            ParseResult::Ok(msg) => {
+                assert_eq!(error_code_of_message(&msg), Some(-32600));
+                assert_eq!(error_message_of_message(&msg), Some("bad"));
+            }
+            ParseResult::Err(e) => panic!("{e}"),
+        }
+        match parse_message(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#) {
+            ParseResult::Ok(msg) => {
+                assert!(error_code_of_message(&msg).is_none());
+                assert!(error_message_of_message(&msg).is_none());
+            }
+            ParseResult::Err(e) => panic!("{e}"),
+        }
+    }
 }

@@ -2406,6 +2406,100 @@ pub fn is_logging_method(method: &str) -> bool {
         || method.starts_with("logging/")
 }
 
+
+// --- WAVE20 pure residual ---
+
+/// Extract optional `description` from a resource wire object.
+#[must_use]
+pub fn resource_description(resource: &serde_json::Value) -> Option<&str> {
+    resource
+        .get("description")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+}
+
+/// Extract optional `description` from a tool wire object.
+#[must_use]
+pub fn tool_description(tool: &serde_json::Value) -> Option<&str> {
+    tool.get("description")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+}
+
+/// Extract `uriTemplate` from a resource template wire object.
+#[must_use]
+pub fn resource_template_uri_template(template: &serde_json::Value) -> Option<&str> {
+    template
+        .get("uriTemplate")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+}
+
+/// Audience values from content annotations (`annotations.audience` string or array).
+#[must_use]
+pub fn content_annotation_audience(content: &serde_json::Value) -> Vec<String> {
+    let Some(ann) = content.get("annotations") else {
+        return Vec::new();
+    };
+    match ann.get("audience") {
+        Some(serde_json::Value::String(s)) if !s.is_empty() => vec![s.clone()],
+        Some(serde_json::Value::Array(arr)) => arr
+            .iter()
+            .filter_map(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// Priority from content annotations (`annotations.priority` number).
+#[must_use]
+pub fn content_annotation_priority(content: &serde_json::Value) -> Option<f64> {
+    content
+        .get("annotations")
+        .and_then(|a| a.get("priority"))
+        .and_then(|v| v.as_f64())
+}
+
+/// Optional `instructions` string from initialize result.
+#[must_use]
+pub fn initialize_instructions(result: &serde_json::Value) -> Option<&str> {
+    result
+        .get("instructions")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+}
+
+/// True when method is cancellation-related (`notifications/cancelled`).
+#[must_use]
+pub fn is_cancellation_method(method: &str) -> bool {
+    method == methods::CANCELLED_NOTIFICATION || method == "notifications/cancelled"
+}
+
+/// Collect root URIs from a roots/list result.
+#[must_use]
+pub fn root_uris_from_list(result: &serde_json::Value) -> Vec<String> {
+    result
+        .get("roots")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|r| r.get("uri").and_then(|u| u.as_str()).map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Tool name from tools/call params.
+#[must_use]
+pub fn tool_name_from_call_params(params: &serde_json::Value) -> Option<&str> {
+    params
+        .get("name")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4245,6 +4339,53 @@ mod tests {
         assert!(is_logging_method(methods::LOGGING_SET_LEVEL));
         assert!(is_logging_method(methods::LOG_MESSAGE));
         assert!(!is_logging_method(methods::TOOLS_CALL));
+    }
+
+    #[test]
+    fn wave20_descriptions_annotations_roots_and_call_params() {
+        let res = serde_json::json!({"uri":"file:///a","name":"a","description":"Alpha"});
+        assert_eq!(resource_description(&res), Some("Alpha"));
+        assert!(resource_description(&serde_json::json!({"uri":"x"})).is_none());
+
+        let tool = serde_json::json!({"name":"ping","description":"Ping tool"});
+        assert_eq!(tool_description(&tool), Some("Ping tool"));
+
+        let tmpl = serde_json::json!({"uriTemplate":"file:///{bucket}/{key}","name":"obj"});
+        assert_eq!(
+            resource_template_uri_template(&tmpl),
+            Some("file:///{bucket}/{key}")
+        );
+
+        let c = serde_json::json!({
+            "type":"text","text":"hi",
+            "annotations":{"audience":["user","assistant"],"priority":0.75}
+        });
+        assert_eq!(
+            content_annotation_audience(&c),
+            vec!["user".to_string(), "assistant".to_string()]
+        );
+        assert_eq!(content_annotation_priority(&c), Some(0.75));
+        assert!(content_annotation_audience(&serde_json::json!({"type":"text"})).is_empty());
+
+        let init = serde_json::json!({
+            "protocolVersion":"2025-03-26",
+            "serverInfo":{"name":"demo","version":"1"},
+            "instructions":"Use tools carefully"
+        });
+        assert_eq!(initialize_instructions(&init), Some("Use tools carefully"));
+
+        assert!(is_cancellation_method(methods::CANCELLED_NOTIFICATION));
+        assert!(!is_cancellation_method(methods::PING));
+
+        let roots = serde_json::json!({"roots":[{"uri":"file:///a"},{"uri":"file:///b"}]});
+        assert_eq!(
+            root_uris_from_list(&roots),
+            vec!["file:///a".to_string(), "file:///b".to_string()]
+        );
+
+        let call = serde_json::json!({"name":"echo","arguments":{"x":1}});
+        assert_eq!(tool_name_from_call_params(&call), Some("echo"));
+        assert!(tool_name_from_call_params(&serde_json::json!({})).is_none());
     }
 
 }
