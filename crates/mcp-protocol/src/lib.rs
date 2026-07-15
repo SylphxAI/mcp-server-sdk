@@ -71,15 +71,58 @@ pub enum Content {
     },
 }
 
-/// Embedded resource payload (parity with MCP ResourceContents text form).
+/// Embedded resource payload (parity with MCP `EmbeddedResource` / resource contents).
+///
+/// Wire form may include `type: "resource"` (TS `resourceText` / `resourceBlob`).
+/// Pure residual stores optional text and/or base64 blob — no I/O.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EmbeddedResource {
+    /// Present on wire contents items from builders (`type: "resource"`).
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
     pub uri: String,
     #[serde(rename = "mimeType", skip_serializing_if = "Option::is_none")]
     pub mime_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
+    /// Base64 blob body (parity with TS `resourceBlob` / EmbeddedResource.blob).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub blob: Option<String>,
+}
+
+impl EmbeddedResource {
+    /// Text contents item with `type: "resource"` (parity with builders `resourceText` item).
+    #[must_use]
+    pub fn text_item(
+        uri: impl Into<String>,
+        text: impl Into<String>,
+        mime_type: Option<String>,
+    ) -> Self {
+        Self {
+            kind: Some("resource".into()),
+            uri: uri.into(),
+            mime_type: mime_type.or_else(|| Some("text/plain".into())),
+            text: Some(text.into()),
+            blob: None,
+        }
+    }
+
+    /// Blob contents item with `type: "resource"` (parity with builders `resourceBlob` item).
+    #[must_use]
+    pub fn blob_item(
+        uri: impl Into<String>,
+        blob_b64: impl Into<String>,
+        mime_type: impl Into<String>,
+    ) -> Self {
+        Self {
+            kind: Some("resource".into()),
+            uri: uri.into(),
+            mime_type: Some(mime_type.into()),
+            text: None,
+            blob: Some(blob_b64.into()),
+        }
+    }
 }
 
 impl Content {
@@ -153,7 +196,68 @@ pub struct Tool {
     pub description: Option<String>,
     pub input_schema: serde_json::Value,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_schema: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub annotations: Option<ToolAnnotations>,
+}
+
+/// Resource descriptor (parity with `src/protocol/mcp.ts` `Resource`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Resource {
+    pub uri: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(rename = "mimeType", skip_serializing_if = "Option::is_none")]
+    pub mime_type: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<u64>,
+}
+
+/// Resource template descriptor (parity with `ResourceTemplate`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResourceTemplate {
+    pub uri_template: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(rename = "mimeType", skip_serializing_if = "Option::is_none")]
+    pub mime_type: Option<String>,
+}
+
+/// Prompt argument descriptor.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PromptArgument {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub required: Option<bool>,
+}
+
+/// Prompt descriptor (parity with `src/protocol/mcp.ts` `Prompt`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Prompt {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub arguments: Option<Vec<PromptArgument>>,
+}
+
+/// Root descriptor (parity with `Root`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Root {
+    pub uri: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 /// Build a tools/list result envelope body.
@@ -577,7 +681,65 @@ pub fn protocol_tool(
         title: None,
         description,
         input_schema,
+        output_schema: None,
         annotations,
+    }
+}
+
+/// Protocol resource descriptor (parity with `toProtocolResource`).
+#[must_use]
+pub fn protocol_resource(
+    name: impl Into<String>,
+    uri: impl Into<String>,
+    description: Option<String>,
+    mime_type: Option<String>,
+) -> Resource {
+    Resource {
+        uri: uri.into(),
+        name: name.into(),
+        description,
+        mime_type,
+        size: None,
+    }
+}
+
+/// Protocol resource template (parity with `toProtocolTemplate`).
+#[must_use]
+pub fn protocol_template(
+    name: impl Into<String>,
+    uri_template: impl Into<String>,
+    description: Option<String>,
+    mime_type: Option<String>,
+) -> ResourceTemplate {
+    ResourceTemplate {
+        uri_template: uri_template.into(),
+        name: name.into(),
+        description,
+        mime_type,
+    }
+}
+
+/// Protocol prompt descriptor (parity with `toProtocolPrompt`).
+#[must_use]
+pub fn protocol_prompt(
+    name: impl Into<String>,
+    description: Option<String>,
+    arguments: Option<Vec<PromptArgument>>,
+) -> Prompt {
+    Prompt {
+        name: name.into(),
+        title: None,
+        description,
+        arguments,
+    }
+}
+
+/// Root entry (parity with `Root`).
+#[must_use]
+pub fn protocol_root(uri: impl Into<String>, name: Option<String>) -> Root {
+    Root {
+        uri: uri.into(),
+        name,
     }
 }
 
@@ -590,9 +752,11 @@ pub fn embedded_resource_content(
 ) -> Content {
     Content::Resource {
         resource: EmbeddedResource {
+            kind: None,
             uri: uri.into(),
             mime_type,
             text,
+            blob: None,
         },
         annotations: None,
     }
@@ -606,34 +770,190 @@ pub fn resources_read_result(items: &[EmbeddedResource]) -> serde_json::Value {
     })
 }
 
-/// Text resource contents (parity with builders `resourceText`).
+/// Multi-item resources/read (parity with builders `resourceContents`).
+#[must_use]
+pub fn resource_contents(items: &[EmbeddedResource]) -> serde_json::Value {
+    resources_read_result(items)
+}
+
+/// Text resource contents item (parity with builders `resourceText` item shape).
 #[must_use]
 pub fn resource_text(
     uri: impl Into<String>,
     text: impl Into<String>,
     mime_type: Option<String>,
 ) -> EmbeddedResource {
-    EmbeddedResource {
-        uri: uri.into(),
-        mime_type: mime_type.or_else(|| Some("text/plain".into())),
-        text: Some(text.into()),
-    }
+    EmbeddedResource::text_item(uri, text, mime_type)
 }
 
-/// Blob resource contents — blob stored as text field for pure envelope (no binary I/O).
+/// Full resources/read envelope for a single text resource (parity with `resourceText` return).
+#[must_use]
+pub fn resource_text_result(
+    uri: impl Into<String>,
+    text: impl Into<String>,
+    mime_type: Option<String>,
+) -> serde_json::Value {
+    resources_read_result(&[resource_text(uri, text, mime_type)])
+}
+
+/// Blob resource contents envelope (parity with builders `resourceBlob`).
 #[must_use]
 pub fn resource_blob(
     uri: impl Into<String>,
     blob_b64: impl Into<String>,
     mime_type: impl Into<String>,
 ) -> serde_json::Value {
+    resources_read_result(&[EmbeddedResource::blob_item(uri, blob_b64, mime_type)])
+}
+
+/// Empty `ping` result body.
+#[must_use]
+pub fn ping_result() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// tools/call result that already includes optional `structuredContent`.
+#[must_use]
+pub fn tool_result_with_structured(
+    content: &[Content],
+    is_error: bool,
+    structured_content: Option<serde_json::Value>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert(
+        "content".into(),
+        serde_json::to_value(content).unwrap_or_else(|_| serde_json::json!([])),
+    );
+    map.insert("isError".into(), serde_json::Value::Bool(is_error));
+    if let Some(sc) = structured_content {
+        map.insert("structuredContent".into(), sc);
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Common server capabilities object (pure builder — no runtime enablement).
+#[must_use]
+pub fn server_capabilities(
+    tools_list_changed: Option<bool>,
+    resources_subscribe: Option<bool>,
+    resources_list_changed: Option<bool>,
+    prompts_list_changed: Option<bool>,
+    logging: bool,
+    completions: bool,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    if tools_list_changed.is_some() {
+        let mut tools = serde_json::Map::new();
+        if let Some(v) = tools_list_changed {
+            tools.insert("listChanged".into(), serde_json::Value::Bool(v));
+        }
+        map.insert("tools".into(), serde_json::Value::Object(tools));
+    }
+    if resources_subscribe.is_some() || resources_list_changed.is_some() {
+        let mut resources = serde_json::Map::new();
+        if let Some(v) = resources_subscribe {
+            resources.insert("subscribe".into(), serde_json::Value::Bool(v));
+        }
+        if let Some(v) = resources_list_changed {
+            resources.insert("listChanged".into(), serde_json::Value::Bool(v));
+        }
+        map.insert("resources".into(), serde_json::Value::Object(resources));
+    }
+    if prompts_list_changed.is_some() {
+        let mut prompts = serde_json::Map::new();
+        if let Some(v) = prompts_list_changed {
+            prompts.insert("listChanged".into(), serde_json::Value::Bool(v));
+        }
+        map.insert("prompts".into(), serde_json::Value::Object(prompts));
+    }
+    if logging {
+        map.insert("logging".into(), serde_json::json!({}));
+    }
+    if completions {
+        map.insert("completions".into(), serde_json::json!({}));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// `sampling/createMessage` params envelope (pure data — no client RPC).
+#[must_use]
+pub fn sampling_create_params(
+    messages: &[serde_json::Value],
+    max_tokens: u64,
+    system_prompt: Option<String>,
+    temperature: Option<f64>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert(
+        "messages".into(),
+        serde_json::Value::Array(messages.to_vec()),
+    );
+    map.insert("maxTokens".into(), serde_json::Value::Number(max_tokens.into()));
+    if let Some(sp) = system_prompt {
+        map.insert("systemPrompt".into(), serde_json::Value::String(sp));
+    }
+    if let Some(t) = temperature {
+        if let Some(num) = serde_json::Number::from_f64(t) {
+            map.insert("temperature".into(), serde_json::Value::Number(num));
+        }
+    }
+    serde_json::Value::Object(map)
+}
+
+/// `sampling/createMessage` result envelope.
+#[must_use]
+pub fn sampling_create_result(
+    role: impl Into<String>,
+    content: Content,
+    model: impl Into<String>,
+    stop_reason: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("role".into(), serde_json::Value::String(role.into()));
+    map.insert(
+        "content".into(),
+        serde_json::to_value(content).unwrap_or_else(|_| serde_json::json!({})),
+    );
+    map.insert("model".into(), serde_json::Value::String(model.into()));
+    if let Some(sr) = stop_reason {
+        map.insert("stopReason".into(), serde_json::Value::String(sr));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// `elicitation/create` params envelope (pure data — no client RPC).
+#[must_use]
+pub fn elicitation_create_params(
+    message: impl Into<String>,
+    requested_schema: serde_json::Value,
+) -> serde_json::Value {
     serde_json::json!({
-        "contents": [{
-            "uri": uri.into(),
-            "mimeType": mime_type.into(),
-            "blob": blob_b64.into(),
-        }]
+        "message": message.into(),
+        "requestedSchema": requested_schema,
     })
+}
+
+/// `elicitation/create` result envelope (`action` + optional content).
+#[must_use]
+pub fn elicitation_create_result(
+    action: impl Into<String>,
+    content: Option<serde_json::Value>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert("action".into(), serde_json::Value::String(action.into()));
+    if let Some(c) = content {
+        map.insert("content".into(), c);
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Valid elicitation actions (parity with `ElicitationAction`).
+pub const ELICITATION_ACTIONS: &[&str] = &["accept", "decline", "cancel"];
+
+/// True when `action` is a recognized elicitation action.
+#[must_use]
+pub fn is_valid_elicitation_action(action: &str) -> bool {
+    ELICITATION_ACTIONS.contains(&action)
 }
 
 /// tools/call multi-content result envelope.
@@ -703,6 +1023,41 @@ pub mod methods {
     pub const CANCELLED_NOTIFICATION: &str = "notifications/cancelled";
     pub const ROOTS_LIST: &str = "roots/list";
     pub const ROOTS_LIST_CHANGED: &str = "notifications/roots/list_changed";
+
+    /// All known MCP method strings (parity with TS `Method` values).
+    pub const ALL: &[&str] = &[
+        INITIALIZE,
+        INITIALIZED,
+        PING,
+        RESOURCES_LIST,
+        RESOURCES_TEMPLATES_LIST,
+        RESOURCES_READ,
+        RESOURCES_SUBSCRIBE,
+        RESOURCES_UNSUBSCRIBE,
+        RESOURCES_UPDATED,
+        RESOURCES_LIST_CHANGED,
+        PROMPTS_LIST,
+        PROMPTS_GET,
+        PROMPTS_LIST_CHANGED,
+        TOOLS_LIST,
+        TOOLS_CALL,
+        TOOLS_LIST_CHANGED,
+        LOGGING_SET_LEVEL,
+        LOG_MESSAGE,
+        COMPLETION_COMPLETE,
+        SAMPLING_CREATE_MESSAGE,
+        ELICITATION_CREATE,
+        PROGRESS_NOTIFICATION,
+        CANCELLED_NOTIFICATION,
+        ROOTS_LIST,
+        ROOTS_LIST_CHANGED,
+    ];
+}
+
+/// True when `method` is a known MCP method string (parity with TS `Method` catalog).
+#[must_use]
+pub fn is_mcp_method(method: &str) -> bool {
+    methods::ALL.contains(&method)
 }
 
 /// Check if a URI matches a template pattern (`{param}` → single path segment).
@@ -904,6 +1259,7 @@ mod tests {
             title: None,
             description: Some("p".into()),
             input_schema: serde_json::json!({"type": "object"}),
+            output_schema: None,
             annotations: None,
         }];
         let body = tools_list_result(&tools, Some("abc".into()));
@@ -1195,6 +1551,13 @@ mod tests {
                 let out = normalize_tool_result(input);
                 let expected_len = case["expectedContentLen"].as_u64().unwrap_or(0) as usize;
                 assert_eq!(array_len(&out, "content"), expected_len, "case {name}");
+                if let Some(sc) = case.get("expectedStructuredContent") {
+                    assert_eq!(
+                        out.get("structuredContent"),
+                        Some(sc),
+                        "case {name} structuredContent"
+                    );
+                }
             }
         }
 
@@ -1209,6 +1572,165 @@ mod tests {
             }
         }
         assert!(!is_valid_log_level("trace"));
+
+        // WAVE11: MCP method catalog golden
+        if let Some(methods_list) = doc.get("mcpMethods").and_then(|v| v.as_array()) {
+            assert_eq!(methods_list.len(), methods::ALL.len());
+            for v in methods_list {
+                let s = match v.as_str() {
+                    Some(s) => s,
+                    None => panic!("method not string"),
+                };
+                assert!(is_mcp_method(s), "method {s}");
+            }
+        }
+        assert!(!is_mcp_method("not/a/method"));
+
+        // WAVE11: protocol descriptors golden
+        if let Some(cases) = doc.get("protocolDescriptors").and_then(|v| v.as_array()) {
+            for case in cases {
+                let kind = case["kind"].as_str().unwrap_or("?");
+                match kind {
+                    "resource" => {
+                        let r = protocol_resource(
+                            case["name"].as_str().unwrap_or(""),
+                            case["uri"].as_str().unwrap_or(""),
+                            case.get("description")
+                                .and_then(|v| v.as_str())
+                                .map(str::to_string),
+                            case.get("mimeType")
+                                .and_then(|v| v.as_str())
+                                .map(str::to_string),
+                        );
+                        assert_eq!(r.name, case["name"].as_str().unwrap_or(""));
+                        assert_eq!(r.uri, case["uri"].as_str().unwrap_or(""));
+                    }
+                    "template" => {
+                        let t = protocol_template(
+                            case["name"].as_str().unwrap_or(""),
+                            case["uriTemplate"].as_str().unwrap_or(""),
+                            case.get("description")
+                                .and_then(|v| v.as_str())
+                                .map(str::to_string),
+                            case.get("mimeType")
+                                .and_then(|v| v.as_str())
+                                .map(str::to_string),
+                        );
+                        assert_eq!(
+                            t.uri_template,
+                            case["uriTemplate"].as_str().unwrap_or("")
+                        );
+                        if let Some(ok) = case.get("matchUri").and_then(|v| v.as_str()) {
+                            assert!(matches_template(&t.uri_template, ok));
+                        }
+                        if let Some(bad) = case.get("rejectUri").and_then(|v| v.as_str()) {
+                            assert!(!matches_template(&t.uri_template, bad));
+                        }
+                    }
+                    "prompt" => {
+                        let args = case
+                            .get("arguments")
+                            .and_then(|v| v.as_array())
+                            .map(|arr| {
+                                arr.iter()
+                                    .map(|a| PromptArgument {
+                                        name: a["name"].as_str().unwrap_or("").into(),
+                                        description: a
+                                            .get("description")
+                                            .and_then(|v| v.as_str())
+                                            .map(str::to_string),
+                                        required: a.get("required").and_then(|v| v.as_bool()),
+                                    })
+                                    .collect::<Vec<_>>()
+                            });
+                        let p = protocol_prompt(
+                            case["name"].as_str().unwrap_or(""),
+                            case.get("description")
+                                .and_then(|v| v.as_str())
+                                .map(str::to_string),
+                            args,
+                        );
+                        assert_eq!(p.name, case["name"].as_str().unwrap_or(""));
+                    }
+                    other => panic!("unknown protocolDescriptors kind {other}"),
+                }
+            }
+        }
+
+        // WAVE11: resource contents wire golden
+        if let Some(cases) = doc.get("resourceContents").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                if case.get("text").is_some() {
+                    let body = resource_text_result(
+                        case["uri"].as_str().unwrap_or(""),
+                        case["text"].as_str().unwrap_or(""),
+                        None,
+                    );
+                    assert_eq!(
+                        body["contents"][0]["type"].as_str(),
+                        case.get("expectedType").and_then(|v| v.as_str()),
+                        "case {name}"
+                    );
+                    if let Some(mime) = case.get("expectedMime").and_then(|v| v.as_str()) {
+                        assert_eq!(body["contents"][0]["mimeType"], mime, "case {name}");
+                    }
+                } else if case.get("blob").is_some() {
+                    let body = resource_blob(
+                        case["uri"].as_str().unwrap_or(""),
+                        case["blob"].as_str().unwrap_or(""),
+                        case["mimeType"].as_str().unwrap_or("application/octet-stream"),
+                    );
+                    assert_eq!(
+                        body["contents"][0]["type"].as_str(),
+                        case.get("expectedType").and_then(|v| v.as_str()),
+                        "case {name}"
+                    );
+                    assert_eq!(
+                        body["contents"][0]["blob"].as_str(),
+                        case.get("blob").and_then(|v| v.as_str()),
+                        "case {name}"
+                    );
+                }
+            }
+        }
+
+        // WAVE11: elicitation actions golden
+        if let Some(actions) = doc.get("elicitationActions").and_then(|v| v.as_array()) {
+            for v in actions {
+                let s = match v.as_str() {
+                    Some(s) => s,
+                    None => panic!("elicitation action not string"),
+                };
+                assert!(is_valid_elicitation_action(s), "action {s}");
+            }
+        }
+
+        // WAVE11: sampling envelope golden
+        if let Some(sc) = doc.get("samplingCreate") {
+            let max_tokens = sc["maxTokens"].as_u64().unwrap_or(0);
+            let params = sampling_create_params(
+                &[serde_json::json!({"role": "user", "content": {"type": "text", "text": "hi"}})],
+                max_tokens,
+                None,
+                None,
+            );
+            assert_eq!(params["maxTokens"], max_tokens);
+            let msg_count = sc["messageCount"].as_u64().unwrap_or(0) as usize;
+            assert_eq!(array_len(&params, "messages"), msg_count);
+            let result = sampling_create_result(
+                "assistant",
+                Content::text("ok"),
+                sc["model"].as_str().unwrap_or("m"),
+                sc.get("stopReason")
+                    .and_then(|v| v.as_str())
+                    .map(str::to_string),
+            );
+            assert_eq!(
+                result["stopReason"].as_str(),
+                sc.get("stopReason").and_then(|v| v.as_str())
+            );
+        }
     }
 
     #[test]
@@ -1280,6 +1802,14 @@ mod tests {
         let n = normalize_tool_result(&single);
         assert_eq!(array_len(&n, "content"), 1);
         assert_eq!(n["content"][0]["text"], "solo");
+
+        // structuredContent on full result must be preserved
+        let with_sc = serde_json::json!({
+            "content": [{"type": "text", "text": "x"}],
+            "structuredContent": {"k": 1}
+        });
+        let n = normalize_tool_result(&with_sc);
+        assert_eq!(n["structuredContent"]["k"], 1);
     }
 
     #[test]
@@ -1322,5 +1852,154 @@ mod tests {
         assert_eq!(tool.name, "ping");
         let body = tools_list_result(&[tool], None);
         assert_eq!(body["tools"][0]["name"], "ping");
+    }
+
+    #[test]
+    fn wave11_protocol_descriptors_and_templates() {
+        let r = protocol_resource(
+            "readme",
+            "file:///README.md",
+            Some("docs".into()),
+            Some("text/markdown".into()),
+        );
+        assert_eq!(r.name, "readme");
+        assert_eq!(r.uri, "file:///README.md");
+        let list = resources_list_result(
+            &[serde_json::to_value(&r).unwrap_or_else(|_| serde_json::json!({}))],
+            None,
+        );
+        assert_eq!(list["resources"][0]["name"], "readme");
+
+        let t = protocol_template(
+            "file",
+            "file:///{path}",
+            Some("f".into()),
+            Some("text/plain".into()),
+        );
+        assert_eq!(t.uri_template, "file:///{path}");
+        assert!(matches_template(&t.uri_template, "file:///a.txt"));
+        assert!(!matches_template(&t.uri_template, "file:///a/b"));
+
+        let p = protocol_prompt(
+            "greet",
+            Some("say hi".into()),
+            Some(vec![PromptArgument {
+                name: "who".into(),
+                description: Some("name".into()),
+                required: Some(true),
+            }]),
+        );
+        assert_eq!(p.name, "greet");
+        assert_eq!(
+            p.arguments
+                .as_ref()
+                .and_then(|a| a.first())
+                .map(|a| a.name.as_str()),
+            Some("who")
+        );
+
+        let root = protocol_root("file:///", Some("workspace".into()));
+        assert_eq!(root.uri, "file:///");
+        assert_eq!(root.name.as_deref(), Some("workspace"));
+    }
+
+    #[test]
+    fn wave11_resource_contents_wire_shape() {
+        let item = resource_text("file:///a", "hello", None);
+        assert_eq!(item.kind.as_deref(), Some("resource"));
+        assert_eq!(item.mime_type.as_deref(), Some("text/plain"));
+        let full = resource_text_result("file:///a", "hello", None);
+        assert_eq!(full["contents"][0]["type"], "resource");
+        assert_eq!(full["contents"][0]["text"], "hello");
+
+        let blob = resource_blob("file:///b", "AAAA", "image/png");
+        assert_eq!(blob["contents"][0]["type"], "resource");
+        assert_eq!(blob["contents"][0]["blob"], "AAAA");
+        assert_eq!(blob["contents"][0]["mimeType"], "image/png");
+
+        let multi = resource_contents(&[
+            resource_text("file:///1", "one", None),
+            EmbeddedResource::blob_item("file:///2", "BB", "application/octet-stream"),
+        ]);
+        assert_eq!(array_len(&multi, "contents"), 2);
+    }
+
+    #[test]
+    fn wave11_sampling_elicitation_envelopes() {
+        let params = sampling_create_params(
+            &[serde_json::json!({"role": "user", "content": {"type": "text", "text": "hi"}})],
+            128,
+            Some("sys".into()),
+            Some(0.2),
+        );
+        assert_eq!(params["maxTokens"], 128);
+        assert_eq!(params["systemPrompt"], "sys");
+        assert_eq!(params["temperature"], 0.2);
+        assert_eq!(array_len(&params, "messages"), 1);
+
+        let result = sampling_create_result(
+            "assistant",
+            Content::text("yo"),
+            "test-model",
+            Some("endTurn".into()),
+        );
+        assert_eq!(result["role"], "assistant");
+        assert_eq!(result["model"], "test-model");
+        assert_eq!(result["stopReason"], "endTurn");
+        assert_eq!(result["content"]["type"], "text");
+
+        let ep = elicitation_create_params(
+            "Name?",
+            serde_json::json!({
+                "type": "object",
+                "properties": { "name": { "type": "string" } }
+            }),
+        );
+        assert_eq!(ep["message"], "Name?");
+        assert_eq!(ep["requestedSchema"]["type"], "object");
+
+        let er = elicitation_create_result("accept", Some(serde_json::json!({"name": "Ada"})));
+        assert_eq!(er["action"], "accept");
+        assert_eq!(er["content"]["name"], "Ada");
+        assert!(is_valid_elicitation_action("accept"));
+        assert!(is_valid_elicitation_action("decline"));
+        assert!(is_valid_elicitation_action("cancel"));
+        assert!(!is_valid_elicitation_action("maybe"));
+    }
+
+    #[test]
+    fn wave11_method_catalog_and_capabilities() {
+        assert!(is_mcp_method(methods::TOOLS_CALL));
+        assert!(is_mcp_method(methods::SAMPLING_CREATE_MESSAGE));
+        assert!(is_mcp_method(methods::ELICITATION_CREATE));
+        assert!(is_mcp_method(methods::RESOURCES_TEMPLATES_LIST));
+        assert!(!is_mcp_method("tools/unknown"));
+        assert_eq!(methods::ALL.len(), 25);
+
+        let caps = server_capabilities(
+            Some(true),
+            Some(true),
+            Some(true),
+            Some(false),
+            true,
+            true,
+        );
+        assert_eq!(caps["tools"]["listChanged"], true);
+        assert_eq!(caps["resources"]["subscribe"], true);
+        assert_eq!(caps["resources"]["listChanged"], true);
+        assert_eq!(caps["prompts"]["listChanged"], false);
+        assert!(caps.get("logging").is_some());
+        assert!(caps.get("completions").is_some());
+
+        assert_eq!(ping_result(), serde_json::json!({}));
+
+        let with_sc = tool_result_with_structured(
+            &[Content::text("ok")],
+            false,
+            Some(serde_json::json!({"score": 1})),
+        );
+        assert_eq!(with_sc["structuredContent"]["score"], 1);
+        let n = normalize_tool_result(&with_sc);
+        assert_eq!(n["structuredContent"]["score"], 1);
     }
 }

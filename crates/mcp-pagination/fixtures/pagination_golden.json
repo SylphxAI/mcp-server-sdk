@@ -54,6 +54,24 @@
       "expectedLen": 5,
       "expectedFirst": 0,
       "hasNext": false
+    },
+    {
+      "name": "single_item_page",
+      "itemCount": 3,
+      "cursor": null,
+      "options": { "defaultPageSize": 1, "maxPageSize": 100 },
+      "expectedLen": 1,
+      "expectedFirst": 0,
+      "hasNext": true
+    },
+    {
+      "name": "page_size_one_exact_end",
+      "itemCount": 1,
+      "cursor": null,
+      "options": { "defaultPageSize": 1, "maxPageSize": 10 },
+      "expectedLen": 1,
+      "expectedFirst": 0,
+      "hasNext": false
     }
   ]
 }

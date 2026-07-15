@@ -1,6 +1,6 @@
 {
   "schema": "mcp-protocol-golden/v1",
-  "source": "src/protocol/mcp.ts; src/notifications/emitter.ts; src/builders/tool.ts",
+  "source": "src/protocol/mcp.ts; src/notifications/emitter.ts; src/builders/tool.ts; src/builders/resource.ts; src/builders/prompt.ts",
   "latestProtocolVersion": "2025-03-26",
   "supportedProtocolVersions": ["2025-03-26", "2024-11-05"],
   "negotiate": [
@@ -11,6 +11,33 @@
   ],
   "logLevels": [
     "debug", "info", "notice", "warning", "error", "critical", "alert", "emergency"
+  ],
+  "mcpMethods": [
+    "initialize",
+    "notifications/initialized",
+    "ping",
+    "resources/list",
+    "resources/templates/list",
+    "resources/read",
+    "resources/subscribe",
+    "resources/unsubscribe",
+    "notifications/resources/updated",
+    "notifications/resources/list_changed",
+    "prompts/list",
+    "prompts/get",
+    "notifications/prompts/list_changed",
+    "tools/list",
+    "tools/call",
+    "notifications/tools/list_changed",
+    "logging/setLevel",
+    "notifications/message",
+    "completion/complete",
+    "sampling/createMessage",
+    "elicitation/create",
+    "notifications/progress",
+    "notifications/cancelled",
+    "roots/list",
+    "notifications/roots/list_changed"
   ],
   "notificationToJsonRpc": [
     {
@@ -89,6 +116,62 @@
       "name": "empty_content_array",
       "input": { "content": [] },
       "expectedContentLen": 0
+    },
+    {
+      "name": "preserves_structured_content",
+      "input": {
+        "content": [{ "type": "text", "text": "x" }],
+        "structuredContent": { "k": 1 }
+      },
+      "expectedContentLen": 1,
+      "expectedStructuredContent": { "k": 1 }
     }
-  ]
+  ],
+  "protocolDescriptors": [
+    {
+      "kind": "resource",
+      "name": "readme",
+      "uri": "file:///README.md",
+      "description": "docs",
+      "mimeType": "text/markdown"
+    },
+    {
+      "kind": "template",
+      "name": "file",
+      "uriTemplate": "file:///{path}",
+      "description": "f",
+      "mimeType": "text/plain",
+      "matchUri": "file:///a.txt",
+      "rejectUri": "file:///a/b"
+    },
+    {
+      "kind": "prompt",
+      "name": "greet",
+      "description": "say hi",
+      "arguments": [{ "name": "who", "required": true }]
+    }
+  ],
+  "resourceContents": [
+    {
+      "name": "text_item",
+      "uri": "file:///a",
+      "text": "hello",
+      "expectedType": "resource",
+      "expectedMime": "text/plain"
+    },
+    {
+      "name": "blob_item",
+      "uri": "file:///b",
+      "blob": "AAAA",
+      "mimeType": "image/png",
+      "expectedType": "resource"
+    }
+  ],
+  "elicitationActions": ["accept", "decline", "cancel"],
+  "samplingCreate": {
+    "maxTokens": 64,
+    "messageCount": 1,
+    "model": "fixture-model",
+    "stopReason": "endTurn"
+  }
 }

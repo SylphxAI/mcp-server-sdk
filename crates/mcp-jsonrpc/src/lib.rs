@@ -137,6 +137,54 @@ pub fn error_response(
     }
 }
 
+/// Convenience: parse error (-32700).
+#[must_use]
+pub fn parse_error(id: Option<RequestId>, message: impl Into<String>) -> JsonRpcError {
+    error_response(id, error_code::PARSE_ERROR, message, None)
+}
+
+/// Convenience: invalid request (-32600).
+#[must_use]
+pub fn invalid_request(id: Option<RequestId>, message: impl Into<String>) -> JsonRpcError {
+    error_response(id, error_code::INVALID_REQUEST, message, None)
+}
+
+/// Convenience: method not found (-32601).
+#[must_use]
+pub fn method_not_found(id: RequestId, method: impl Into<String>) -> JsonRpcError {
+    error_response(
+        Some(id),
+        error_code::METHOD_NOT_FOUND,
+        format!("Method not found: {}", method.into()),
+        None,
+    )
+}
+
+/// Convenience: invalid params (-32602).
+#[must_use]
+pub fn invalid_params(id: RequestId, message: impl Into<String>) -> JsonRpcError {
+    error_response(Some(id), error_code::INVALID_PARAMS, message, None)
+}
+
+/// Convenience: internal error (-32603).
+#[must_use]
+pub fn internal_error(id: Option<RequestId>, message: impl Into<String>) -> JsonRpcError {
+    error_response(id, error_code::INTERNAL_ERROR, message, None)
+}
+
+/// True when `code` is a standard JSON-RPC error code.
+#[must_use]
+pub fn is_standard_error_code(code: i64) -> bool {
+    matches!(
+        code,
+        error_code::PARSE_ERROR
+            | error_code::INVALID_REQUEST
+            | error_code::METHOD_NOT_FOUND
+            | error_code::INVALID_PARAMS
+            | error_code::INTERNAL_ERROR
+    )
+}
+
 /// Type guard: message is a request (`id` + `method`).
 #[must_use]
 pub fn is_request(msg: &JsonRpcMessage) -> bool {
@@ -315,6 +363,29 @@ mod tests {
         assert!(!is_success(&msg));
     }
 
+    #[test]
+    fn wave11_standard_error_constructors() {
+        let e = method_not_found(RequestId::Number(3), "tools/unknown");
+        assert_eq!(e.error.code, error_code::METHOD_NOT_FOUND);
+        assert!(e.error.message.contains("tools/unknown"));
+        assert!(is_standard_error_code(e.error.code));
+
+        let e = invalid_params(RequestId::String("a".into()), "missing name");
+        assert_eq!(e.error.code, error_code::INVALID_PARAMS);
+
+        let e = parse_error(None, "bad json");
+        assert_eq!(e.error.code, error_code::PARSE_ERROR);
+
+        let e = invalid_request(Some(RequestId::Number(1)), "no method");
+        assert_eq!(e.error.code, error_code::INVALID_REQUEST);
+
+        let e = internal_error(Some(RequestId::Number(2)), "boom");
+        assert_eq!(e.error.code, error_code::INTERNAL_ERROR);
+
+        assert!(!is_standard_error_code(-32000));
+        assert!(!is_standard_error_code(0));
+    }
+
     /// Load committed golden fixture and assert parse/kind parity (pure residual differential).
     #[test]
     fn pure_residual_jsonrpc_golden_fixture() {
@@ -323,6 +394,29 @@ mod tests {
             Ok(v) => v,
             Err(e) => panic!("jsonrpc_golden.json: {e}"),
         };
+        if let Some(codes) = doc.get("standardErrorCodes") {
+            assert_eq!(
+                codes["parseError"].as_i64(),
+                Some(error_code::PARSE_ERROR)
+            );
+            assert_eq!(
+                codes["invalidRequest"].as_i64(),
+                Some(error_code::INVALID_REQUEST)
+            );
+            assert_eq!(
+                codes["methodNotFound"].as_i64(),
+                Some(error_code::METHOD_NOT_FOUND)
+            );
+            assert_eq!(
+                codes["invalidParams"].as_i64(),
+                Some(error_code::INVALID_PARAMS)
+            );
+            assert_eq!(
+                codes["internalError"].as_i64(),
+                Some(error_code::INTERNAL_ERROR)
+            );
+            assert!(is_standard_error_code(error_code::METHOD_NOT_FOUND));
+        }
         let cases = match doc["cases"].as_array() {
             Some(a) => a,
             None => panic!("cases"),
@@ -346,7 +440,12 @@ mod tests {
                     other => panic!("unexpected kind {other} for ok parse in {name}"),
                 },
                 ParseResult::Err(e) => match kind {
-                    "err_version" => assert!(e.contains("version") || e.contains("Invalid"), "{name}: {e}"),
+                    "err_version" => {
+                        assert!(e.contains("version") || e.contains("Invalid"), "{name}: {e}")
+                    }
+                    "err_object" => {
+                        assert!(e.to_lowercase().contains("object"), "{name}: {e}")
+                    }
                     other => panic!("unexpected err for kind {other} in {name}: {e}"),
                 },
             }
