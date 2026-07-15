@@ -1,0 +1,38 @@
+{
+  "packetId": "MCP-SERVER-SDK-WAVE23-PURE-RESIDUAL-HANDLER-SUBSCRIBE-COMPLETION-2026-07-15",
+  "at": "2026-07-15T22:05:00Z",
+  "repo": "SylphxAI/mcp-server-sdk",
+  "verdict": "unit_green_pure_residual",
+  "authorityModel": "rust_product_kernels_authority; TS package surface remains production npm entry (dist/)",
+  "rust_impl": 16,
+  "ts_only": 0,
+  "ts_deleted": 0,
+  "authority_rust": 0,
+  "sole_rust_production_authority": false,
+  "package_main_rust": false,
+  "auditVerdict": "prod_audit_fail",
+  "pureResidualDeepen": [
+    "tool_context_sampling_available/elicitation_available",
+    "uri_from_subscribe_params",
+    "subscription_add/subscription_remove",
+    "resource_uri_matches_completion",
+    "completion_values_from_resource_uris",
+    "basic_completion_result",
+    "completion_ref_type/argument_value/ref_prompt_name",
+    "dispatch_message_kind",
+    "is_initialized_notification_method",
+    "handler_error_message",
+    "tool_context_progress_token",
+    "logging_set_level_accepts"
+  ],
+  "notClaims": [
+    "authority_rust",
+    "ts_deleted",
+    "differential_green",
+    "product_effect_live",
+    "sole_rust_production_authority",
+    "prod_audit_pass",
+    "package_main_rust"
+  ],
+  "notes": "Ordinary reversible pure residual WAVE23. No denom shrink."
+}

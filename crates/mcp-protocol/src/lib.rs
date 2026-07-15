@@ -2743,6 +2743,166 @@ pub fn cursor_from_list_params(params: &serde_json::Value) -> Option<&str> {
         .filter(|s| !s.is_empty())
 }
 
+// ── WAVE23 pure residual: handler subscribe/completion/dispatch dual-oracle ──
+
+/// Whether the tool context may expose a sampling client.
+/// Dual-oracle of handler `clientCapabilities?.sampling && requestFn`.
+#[must_use]
+pub fn tool_context_sampling_available(
+    client_has_sampling_cap: bool,
+    request_fn_present: bool,
+) -> bool {
+    client_has_sampling_cap && request_fn_present
+}
+
+/// Whether the tool context may expose an elicit helper.
+/// Dual-oracle of handler `clientCapabilities?.elicitation && requestFn`.
+#[must_use]
+pub fn tool_context_elicitation_available(
+    client_has_elicitation_cap: bool,
+    request_fn_present: bool,
+) -> bool {
+    client_has_elicitation_cap && request_fn_present
+}
+
+/// URI from resources/subscribe|unsubscribe params.
+#[must_use]
+pub fn uri_from_subscribe_params(params: &serde_json::Value) -> Option<&str> {
+    params
+        .get("uri")
+        .and_then(|v| v.as_str())
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+}
+
+/// Pure subscription set add — returns whether the set grew.
+/// Dual-oracle of `handleResourcesSubscribe` (`subscriptions.add`).
+#[must_use]
+pub fn subscription_add(existing: &[String], uri: &str) -> (Vec<String>, bool) {
+    if existing.iter().any(|u| u == uri) {
+        return (existing.to_vec(), false);
+    }
+    let mut next = existing.to_vec();
+    next.push(uri.to_string());
+    (next, true)
+}
+
+/// Pure subscription set remove — returns whether the set shrank.
+/// Dual-oracle of `handleResourcesUnsubscribe` (`subscriptions.delete`).
+#[must_use]
+pub fn subscription_remove(existing: &[String], uri: &str) -> (Vec<String>, bool) {
+    let before = existing.len();
+    let next: Vec<String> = existing.iter().filter(|u| u.as_str() != uri).cloned().collect();
+    let removed = next.len() < before;
+    (next, removed)
+}
+
+/// True when `uri` contains the completion argument value (resource ref filter).
+/// Dual-oracle of `resource.uri.includes(params.argument.value)`.
+#[must_use]
+pub fn resource_uri_matches_completion(uri: &str, argument_value: &str) -> bool {
+    uri.contains(argument_value)
+}
+
+/// Filter resource URIs for completion/complete ref/resource branch.
+#[must_use]
+pub fn completion_values_from_resource_uris(
+    uris: &[&str],
+    argument_value: &str,
+) -> Vec<String> {
+    uris.iter()
+        .filter(|u| resource_uri_matches_completion(u, argument_value))
+        .map(|u| (*u).to_string())
+        .collect()
+}
+
+/// Basic completion result body — dual-oracle of handler
+/// `{ completion: { values, hasMore: false } }` (no total when unset).
+#[must_use]
+pub fn basic_completion_result(values: &[String]) -> serde_json::Value {
+    completion_complete_result(values, None, Some(false))
+}
+
+/// Parse completion ref type from params (`ref.type`).
+#[must_use]
+pub fn completion_ref_type(params: &serde_json::Value) -> Option<&str> {
+    params
+        .pointer("/ref/type")
+        .and_then(|v| v.as_str())
+        .filter(|t| is_valid_completion_ref_type(t))
+}
+
+/// Completion argument value from params.
+#[must_use]
+pub fn completion_argument_value(params: &serde_json::Value) -> Option<&str> {
+    params.pointer("/argument/value").and_then(|v| v.as_str())
+}
+
+/// Prompt name from completion ref when `ref/prompt`.
+#[must_use]
+pub fn completion_ref_prompt_name(params: &serde_json::Value) -> Option<&str> {
+    if completion_ref_type(params) != Some("ref/prompt") {
+        return None;
+    }
+    params.pointer("/ref/name").and_then(|v| v.as_str())
+}
+
+/// Dispatch classification for an inbound JSON-RPC message kind label.
+/// Dual-oracle of `dispatch` notification vs request branching (no I/O).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DispatchMessageKind {
+    Notification,
+    Request,
+    Other,
+}
+
+/// Classify message kind for handler dispatch.
+#[must_use]
+pub fn dispatch_message_kind(is_notification: bool, is_request: bool) -> DispatchMessageKind {
+    if is_notification {
+        DispatchMessageKind::Notification
+    } else if is_request {
+        DispatchMessageKind::Request
+    } else {
+        DispatchMessageKind::Other
+    }
+}
+
+/// True when a notification method is `notifications/initialized`.
+#[must_use]
+pub fn is_initialized_notification_method(method: &str) -> bool {
+    method == methods::INITIALIZED
+}
+
+/// Error message text for handler catch dual-oracle
+/// (`error instanceof Error ? error.message : String(error)`).
+#[must_use]
+pub fn handler_error_message(is_error_instance: bool, message: &str, display: &str) -> String {
+    if is_error_instance {
+        message.to_string()
+    } else {
+        display.to_string()
+    }
+}
+
+/// Progress token extraction for tool context (`params._meta?.progressToken`).
+/// Dual-oracle of handler `params._meta?.progressToken` (not top-level progressToken).
+#[must_use]
+pub fn tool_context_progress_token(params: &serde_json::Value) -> Option<serde_json::Value> {
+    params
+        .pointer("/_meta/progressToken")
+        .filter(|v| !v.is_null())
+        .cloned()
+}
+
+/// Whether logging/setLevel should accept the level (valid LogLevel enum).
+/// Dual-oracle of handler assignment (TS assigns without validate; pure residual
+/// fail-closed helper for product path dens).
+#[must_use]
+pub fn logging_set_level_accepts(level: &str) -> bool {
+    is_valid_log_level(level)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -4780,5 +4940,85 @@ mod tests {
         );
         assert!(cursor_from_list_params(&serde_json::json!({"cursor": "   "})).is_none());
         assert!(cursor_from_list_params(&serde_json::json!({})).is_none());
+    }
+
+    #[test]
+    fn wave23_handler_subscribe_completion_dispatch() {
+        assert!(tool_context_sampling_available(true, true));
+        assert!(!tool_context_sampling_available(true, false));
+        assert!(!tool_context_elicitation_available(false, true));
+        assert!(tool_context_elicitation_available(true, true));
+
+        assert_eq!(
+            uri_from_subscribe_params(&serde_json::json!({"uri": " file:///a "})),
+            Some("file:///a")
+        );
+        assert!(uri_from_subscribe_params(&serde_json::json!({"uri": "  "})).is_none());
+
+        let (next, added) = subscription_add(&["file:///a".into()], "file:///b");
+        assert!(added);
+        assert_eq!(next.len(), 2);
+        let (same, added2) = subscription_add(&next, "file:///a");
+        assert!(!added2);
+        assert_eq!(same.len(), 2);
+        let (after, removed) = subscription_remove(&next, "file:///a");
+        assert!(removed);
+        assert_eq!(after, vec!["file:///b".to_string()]);
+        let (_, removed2) = subscription_remove(&after, "file:///missing");
+        assert!(!removed2);
+
+        let uris = ["file:///docs/a.md", "file:///src/b.ts", "mem://c"];
+        let vals = completion_values_from_resource_uris(&uris, "docs");
+        assert_eq!(vals, vec!["file:///docs/a.md".to_string()]);
+        assert!(resource_uri_matches_completion("file:///x", "x"));
+        assert!(!resource_uri_matches_completion("file:///x", "y"));
+
+        let body = basic_completion_result(&["a".into(), "b".into()]);
+        assert_eq!(body["completion"]["values"][0], "a");
+        assert_eq!(body["completion"]["hasMore"], false);
+
+        let params = serde_json::json!({
+            "ref": {"type": "ref/prompt", "name": "greet"},
+            "argument": {"name": "who", "value": "Ad"}
+        });
+        assert_eq!(completion_ref_type(&params), Some("ref/prompt"));
+        assert_eq!(completion_argument_value(&params), Some("Ad"));
+        assert_eq!(completion_ref_prompt_name(&params), Some("greet"));
+        assert!(completion_ref_prompt_name(&serde_json::json!({
+            "ref": {"type": "ref/resource", "uri": "f://{id}"}
+        }))
+        .is_none());
+
+        assert_eq!(
+            dispatch_message_kind(true, false),
+            DispatchMessageKind::Notification
+        );
+        assert_eq!(
+            dispatch_message_kind(false, true),
+            DispatchMessageKind::Request
+        );
+        assert_eq!(
+            dispatch_message_kind(false, false),
+            DispatchMessageKind::Other
+        );
+        assert!(is_initialized_notification_method(methods::INITIALIZED));
+        assert!(!is_initialized_notification_method(methods::TOOLS_CALL));
+
+        assert_eq!(
+            handler_error_message(true, "boom", "Error: boom"),
+            "boom"
+        );
+        assert_eq!(
+            handler_error_message(false, "boom", "stringified"),
+            "stringified"
+        );
+
+        let call = serde_json::json!({"_meta": {"progressToken": 7}});
+        assert_eq!(
+            tool_context_progress_token(&call),
+            Some(serde_json::json!(7))
+        );
+        assert!(logging_set_level_accepts("info"));
+        assert!(!logging_set_level_accepts("verbose"));
     }
 }
