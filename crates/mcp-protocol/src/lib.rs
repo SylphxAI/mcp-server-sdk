@@ -2236,6 +2236,99 @@ pub fn apply_template_params(
     Some(out)
 }
 
+// --- WAVE18 pure residual deepen (no product transport cutover) ---
+
+/// Extract prompt names from a `prompts/list` result.
+#[must_use]
+pub fn prompt_names_from_list(result: &serde_json::Value) -> Vec<String> {
+    result
+        .get("prompts")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|p| p.get("name").and_then(|n| n.as_str()).map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Extract resource names from a `resources/list` result.
+#[must_use]
+pub fn resource_names_from_list(result: &serde_json::Value) -> Vec<String> {
+    result
+        .get("resources")
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|r| r.get("name").and_then(|n| n.as_str()).map(str::to_string))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// Count tools in a tools/list result.
+#[must_use]
+pub fn tool_count_from_list(result: &serde_json::Value) -> usize {
+    result
+        .get("tools")
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0)
+}
+
+/// Normalize protocol version string (trim); empty → None.
+#[must_use]
+pub fn normalize_protocol_version(version: &str) -> Option<&str> {
+    let v = version.trim();
+    if v.is_empty() {
+        None
+    } else {
+        Some(v)
+    }
+}
+
+/// True when method is `ping` (case-sensitive product method).
+#[must_use]
+pub fn is_ping_method(method: &str) -> bool {
+    method == "ping"
+}
+
+/// Extract content `type` field from a content object.
+#[must_use]
+pub fn content_type_of(content: &serde_json::Value) -> Option<&str> {
+    content.get("type").and_then(|v| v.as_str())
+}
+
+/// First content type from a tool result content array.
+#[must_use]
+pub fn tool_result_first_content_type(result: &serde_json::Value) -> Option<&str> {
+    result
+        .get("content")
+        .and_then(|v| v.as_array())
+        .and_then(|a| a.first())
+        .and_then(content_type_of)
+}
+
+/// Whether tool result is marked as error (`isError: true`).
+#[must_use]
+pub fn tool_result_is_error(result: &serde_json::Value) -> bool {
+    result
+        .get("isError")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false)
+}
+
+/// Extract progress token from progress notification params.
+#[must_use]
+pub fn progress_token_from_params(params: &serde_json::Value) -> Option<serde_json::Value> {
+    params.get("progressToken").cloned()
+}
+
+/// Extract progress fraction (0..1-ish) from progress params.
+#[must_use]
+pub fn progress_value_from_params(params: &serde_json::Value) -> Option<f64> {
+    params.get("progress").and_then(|v| v.as_f64())
+}
 
 #[cfg(test)]
 mod tests {
@@ -3966,6 +4059,73 @@ mod tests {
         let mut bad = std::collections::BTreeMap::new();
         bad.insert("name".into(), "a/b".into());
         assert!(apply_template_params("file:///{name}/x", &bad).is_none());
+    }
+
+    #[test]
+    fn wave18_list_progress_and_content_extractors() {
+        let prompts = serde_json::json!({
+            "prompts": [{"name": "p1"}, {"name": "p2"}],
+            "nextCursor": "c1"
+        });
+        assert_eq!(
+            prompt_names_from_list(&prompts),
+            vec!["p1".to_string(), "p2".to_string()]
+        );
+        assert!(list_has_next_cursor(&prompts));
+        assert!(!list_has_next_cursor(&serde_json::json!({"nextCursor": ""})));
+        assert!(!list_has_next_cursor(&serde_json::json!({})));
+
+        let resources = serde_json::json!({
+            "resources": [
+                {"name": "r1", "uri": "file:///a"},
+                {"name": "r2", "uri": "file:///b"}
+            ]
+        });
+        assert_eq!(
+            resource_names_from_list(&resources),
+            vec!["r1".to_string(), "r2".to_string()]
+        );
+
+        let tools = tools_list_result(
+            &[Tool {
+                name: "ping".into(),
+                title: None,
+                description: None,
+                input_schema: serde_json::json!({"type": "object"}),
+                output_schema: None,
+                annotations: None,
+            }],
+            Some("n".into()),
+        );
+        assert_eq!(tool_count_from_list(&tools), 1);
+        assert!(list_has_next_cursor(&tools));
+
+        assert_eq!(normalize_protocol_version("  2025-03-26  "), Some("2025-03-26"));
+        assert!(normalize_protocol_version("   ").is_none());
+        assert!(is_ping_method("ping"));
+        assert!(!is_ping_method("Ping"));
+
+        let ok = serde_json::json!({
+            "content": [{"type": "text", "text": "hi"}],
+            "isError": false
+        });
+        assert_eq!(tool_result_first_content_type(&ok), Some("text"));
+        assert!(!tool_result_is_error(&ok));
+        let err = tool_error("boom");
+        assert!(tool_result_is_error(&err));
+        assert_eq!(content_type_of(&serde_json::json!({"type": "image"})), Some("image"));
+
+        let prog = serde_json::json!({
+            "progressToken": "t1",
+            "progress": 0.5,
+            "total": 1.0
+        });
+        assert_eq!(
+            progress_token_from_params(&prog),
+            Some(serde_json::json!("t1"))
+        );
+        assert_eq!(progress_value_from_params(&prog), Some(0.5));
+        assert!(progress_value_from_params(&serde_json::json!({})).is_none());
     }
 
 }

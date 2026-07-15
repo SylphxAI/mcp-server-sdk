@@ -277,6 +277,41 @@ pub fn page_has_next_cursor<T>(page: &PageResult<T>) -> bool {
     page.next_cursor.is_some()
 }
 
+// --- WAVE18 pure residual ---
+
+/// Decode cursor to offset only (None if invalid).
+#[must_use]
+pub fn cursor_offset(cursor: &str) -> Option<usize> {
+    decode_page_cursor(cursor).map(|(offset, _)| offset)
+}
+
+/// Decode cursor to page size only (None if invalid).
+#[must_use]
+pub fn cursor_page_size(cursor: &str) -> Option<usize> {
+    decode_page_cursor(cursor).map(|(_, size)| size)
+}
+
+/// True when a cursor string is present, non-empty, and valid.
+#[must_use]
+pub fn cursor_present_and_valid(cursor: Option<&str>) -> bool {
+    match cursor {
+        Some(c) if !c.is_empty() => is_valid_page_cursor(c),
+        _ => false,
+    }
+}
+
+/// Compute next offset after consuming a page (saturating).
+#[must_use]
+pub fn advance_offset(offset: usize, page_size: usize) -> usize {
+    offset.saturating_add(page_size)
+}
+
+/// Whether requesting `page_size` from `offset` would return any items.
+#[must_use]
+pub fn would_return_items(offset: usize, page_size: usize, total_len: usize) -> bool {
+    page_size > 0 && offset < total_len
+}
+
 /// Paginate a slice of items (parity with TS `paginate`).
 #[must_use]
 pub fn paginate<T: Clone>(
@@ -819,5 +854,20 @@ mod tests {
         let empty = empty_page::<i32>();
         assert!(page_is_empty(&empty));
         assert!(!page_has_next_cursor(&empty));
+    }
+
+    #[test]
+    fn wave18_cursor_offset_size_and_advance() {
+        let cur = encode_page_cursor(20, 10);
+        assert_eq!(cursor_offset(&cur), Some(20));
+        assert_eq!(cursor_page_size(&cur), Some(10));
+        assert!(cursor_present_and_valid(Some(&cur)));
+        assert!(!cursor_present_and_valid(None));
+        assert!(!cursor_present_and_valid(Some("")));
+        assert!(!cursor_present_and_valid(Some("!!!")));
+        assert_eq!(advance_offset(20, 10), 30);
+        assert!(would_return_items(0, 10, 5));
+        assert!(!would_return_items(5, 10, 5));
+        assert!(!would_return_items(0, 0, 5));
     }
 }

@@ -617,6 +617,59 @@ pub fn normalize_method_name(method: &str) -> Option<&str> {
     }
 }
 
+// --- WAVE18 pure residual ---
+
+/// Extract string id from RequestId when it is a string; None for numbers.
+#[must_use]
+pub fn request_id_as_str(id: &RequestId) -> Option<&str> {
+    match id {
+        RequestId::String(s) => Some(s.as_str()),
+        RequestId::Number(_) => None,
+    }
+}
+
+/// Extract number id from RequestId when it is a number; None for strings.
+#[must_use]
+pub fn request_id_as_i64(id: &RequestId) -> Option<i64> {
+    match id {
+        RequestId::Number(n) => Some(*n),
+        RequestId::String(_) => None,
+    }
+}
+
+/// Whether a message is a request with method `ping`.
+#[must_use]
+pub fn is_ping_request(msg: &JsonRpcMessage) -> bool {
+    matches!(msg, JsonRpcMessage::Request(r) if r.method == "ping")
+}
+
+/// True when message is success with null result.
+#[must_use]
+pub fn is_null_result_success(msg: &JsonRpcMessage) -> bool {
+    match msg {
+        JsonRpcMessage::Success(s) => s.result.is_null(),
+        _ => false,
+    }
+}
+
+/// True when message is an error response (convenience dual-oracle).
+#[must_use]
+pub fn is_error_response(msg: &JsonRpcMessage) -> bool {
+    matches!(msg, JsonRpcMessage::Error(_))
+}
+
+/// True when a RequestId is numeric.
+#[must_use]
+pub fn request_id_is_number(id: &RequestId) -> bool {
+    matches!(id, RequestId::Number(_))
+}
+
+/// True when a RequestId is a string.
+#[must_use]
+pub fn request_id_is_string(id: &RequestId) -> bool {
+    matches!(id, RequestId::String(_))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1290,6 +1343,35 @@ mod tests {
         assert_eq!(normalize_method_name("  tools/list  "), Some("tools/list"));
         assert!(normalize_method_name("   ").is_none());
         assert!(normalize_method_name("").is_none());
+    }
+
+    #[test]
+    fn wave18_request_id_ping_and_error_extractors() {
+        let n = RequestId::Number(42);
+        let s = RequestId::String("abc".into());
+        assert_eq!(request_id_as_i64(&n), Some(42));
+        assert!(request_id_as_str(&n).is_none());
+        assert_eq!(request_id_as_str(&s), Some("abc"));
+        assert!(request_id_as_i64(&s).is_none());
+        assert!(request_id_is_number(&n));
+        assert!(request_id_is_string(&s));
+        assert!(!request_id_is_number(&s));
+
+        let ping = JsonRpcMessage::Request(request(RequestId::Number(1), "ping", None));
+        assert!(is_ping_request(&ping));
+        let tools = JsonRpcMessage::Request(request(RequestId::Number(1), "tools/list", None));
+        assert!(!is_ping_request(&tools));
+
+        let err = invalid_params(RequestId::Number(2), "bad");
+        let msg = JsonRpcMessage::Error(err);
+        assert!(is_error_response(&msg));
+        assert!(!is_error_response(&ping));
+        assert_eq!(message_error_message(&msg), Some("bad"));
+
+        let empty = empty_success_response(RequestId::Number(9));
+        assert!(is_null_result_success(&empty));
+        let with = JsonRpcMessage::Success(success(RequestId::Number(1), json!({"ok": true})));
+        assert!(!is_null_result_success(&with));
     }
 
 }
