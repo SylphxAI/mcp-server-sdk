@@ -27,6 +27,33 @@
       "options": { "defaultPageSize": 50, "maxPageSize": 100 },
       "expectedLen": 0,
       "hasNext": false
+    },
+    {
+      "name": "exact_page_boundary_no_next",
+      "itemCount": 50,
+      "cursor": null,
+      "options": { "defaultPageSize": 50, "maxPageSize": 100 },
+      "expectedLen": 50,
+      "expectedFirst": 0,
+      "hasNext": false
+    },
+    {
+      "name": "custom_small_page",
+      "itemCount": 25,
+      "cursor": null,
+      "options": { "defaultPageSize": 10, "maxPageSize": 100 },
+      "expectedLen": 10,
+      "expectedFirst": 0,
+      "hasNext": true
+    },
+    {
+      "name": "bad_cursor_falls_back_to_start",
+      "itemCount": 5,
+      "cursor": "!!!not-a-cursor!!!",
+      "options": { "defaultPageSize": 50, "maxPageSize": 100 },
+      "expectedLen": 5,
+      "expectedFirst": 0,
+      "hasNext": false
     }
   ]
 }

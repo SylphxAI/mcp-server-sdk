@@ -1,9 +1,13 @@
 {
   "cases": [
     {"name": "request", "input": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}", "kind": "request"},
+    {"name": "request_string_id", "input": "{\"jsonrpc\":\"2.0\",\"id\":\"req-1\",\"method\":\"tools/list\",\"params\":{}}", "kind": "request"},
     {"name": "notification", "input": "{\"jsonrpc\":\"2.0\",\"method\":\"n\"}", "kind": "notification"},
+    {"name": "notification_initialized", "input": "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}", "kind": "notification"},
     {"name": "success", "input": "{\"jsonrpc\":\"2.0\",\"id\":\"a\",\"result\":true}", "kind": "success"},
+    {"name": "success_object", "input": "{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"tools\":[]}}", "kind": "success"},
     {"name": "error", "input": "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32600,\"message\":\"bad\"}}", "kind": "error"},
+    {"name": "error_method_not_found", "input": "{\"jsonrpc\":\"2.0\",\"id\":3,\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}", "kind": "error"},
     {"name": "bad_version", "input": "{\"jsonrpc\":\"1.0\",\"id\":1,\"method\":\"x\"}", "kind": "err_version"}
   ]
 }

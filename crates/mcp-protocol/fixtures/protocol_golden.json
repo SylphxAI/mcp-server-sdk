@@ -1,6 +1,6 @@
 {
   "schema": "mcp-protocol-golden/v1",
-  "source": "src/protocol/mcp.ts",
+  "source": "src/protocol/mcp.ts; src/notifications/emitter.ts; src/builders/tool.ts",
   "latestProtocolVersion": "2025-03-26",
   "supportedProtocolVersions": ["2025-03-26", "2024-11-05"],
   "negotiate": [
@@ -8,5 +8,87 @@
     { "client": "2025-03-26", "expected": "2025-03-26" },
     { "client": null, "expected": "2025-03-26" },
     { "client": "nope", "expected": "2025-03-26" }
+  ],
+  "logLevels": [
+    "debug", "info", "notice", "warning", "error", "critical", "alert", "emergency"
+  ],
+  "notificationToJsonRpc": [
+    {
+      "name": "tools_list_changed",
+      "notificationType": "tools/list_changed",
+      "expectedMethod": "notifications/tools/list_changed",
+      "expectParams": false
+    },
+    {
+      "name": "resources_list_changed",
+      "notificationType": "resources/list_changed",
+      "expectedMethod": "notifications/resources/list_changed",
+      "expectParams": false
+    },
+    {
+      "name": "prompts_list_changed",
+      "notificationType": "prompts/list_changed",
+      "expectedMethod": "notifications/prompts/list_changed",
+      "expectParams": false
+    },
+    {
+      "name": "resource_updated",
+      "notificationType": "resource/updated",
+      "uri": "file:///readme.md",
+      "expectedMethod": "notifications/resources/updated",
+      "expectParams": true
+    },
+    {
+      "name": "progress",
+      "notificationType": "progress",
+      "progressToken": "t1",
+      "progress": 0.5,
+      "total": 1.0,
+      "message": "halfway",
+      "expectedMethod": "notifications/progress",
+      "expectParams": true
+    },
+    {
+      "name": "log",
+      "notificationType": "log",
+      "level": "info",
+      "data": { "ok": true },
+      "logger": "app",
+      "expectedMethod": "notifications/message",
+      "expectParams": true
+    },
+    {
+      "name": "cancelled",
+      "notificationType": "cancelled",
+      "requestId": 7,
+      "reason": "client cancelled",
+      "expectedMethod": "notifications/cancelled",
+      "expectParams": true
+    }
+  ],
+  "normalizeToolResult": [
+    {
+      "name": "full_result",
+      "input": { "content": [{ "type": "text", "text": "a" }], "isError": false },
+      "expectedContentLen": 1
+    },
+    {
+      "name": "array_of_content",
+      "input": [
+        { "type": "text", "text": "a" },
+        { "type": "text", "text": "b" }
+      ],
+      "expectedContentLen": 2
+    },
+    {
+      "name": "single_content",
+      "input": { "type": "text", "text": "solo" },
+      "expectedContentLen": 1
+    },
+    {
+      "name": "empty_content_array",
+      "input": { "content": [] },
+      "expectedContentLen": 0
+    }
   ]
 }

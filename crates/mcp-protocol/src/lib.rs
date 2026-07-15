@@ -335,6 +335,252 @@ pub fn log_notification(
     }
 }
 
+// ============================================================================
+// Log levels (parity with src/protocol/mcp.ts `LogLevel`)
+// ============================================================================
+
+/// MCP log levels, most-verbose first (spec order is not severity-sorted).
+pub const LOG_LEVELS: &[&str] = &[
+    "debug",
+    "info",
+    "notice",
+    "warning",
+    "error",
+    "critical",
+    "alert",
+    "emergency",
+];
+
+/// True when `level` is a recognized MCP log level string.
+#[must_use]
+pub fn is_valid_log_level(level: &str) -> bool {
+    LOG_LEVELS.contains(&level)
+}
+
+// ============================================================================
+// Notification → JSON-RPC (parity with src/notifications/emitter.ts `toJsonRpc`)
+// ============================================================================
+
+/// Pure JSON-RPC wire form of a high-level [`Notification`].
+///
+/// Parity with TS `toJsonRpc` in `src/notifications/emitter.ts` — method name +
+/// optional params object. No I/O; transports remain TS product authority.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct JsonRpcNotificationWire {
+    pub method: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<serde_json::Value>,
+}
+
+/// Convert a pure notification shape to MCP JSON-RPC method + params.
+#[must_use]
+pub fn notification_to_jsonrpc(n: &Notification) -> JsonRpcNotificationWire {
+    match n {
+        Notification::Progress {
+            progress_token,
+            progress,
+            total,
+            message,
+        } => {
+            let mut map = serde_json::Map::new();
+            map.insert("progressToken".into(), progress_token.clone());
+            map.insert(
+                "progress".into(),
+                serde_json::Value::Number(
+                    serde_json::Number::from_f64(*progress)
+                        .unwrap_or_else(|| serde_json::Number::from(0)),
+                ),
+            );
+            if let Some(t) = total {
+                if let Some(num) = serde_json::Number::from_f64(*t) {
+                    map.insert("total".into(), serde_json::Value::Number(num));
+                }
+            }
+            if let Some(m) = message {
+                map.insert("message".into(), serde_json::Value::String(m.clone()));
+            }
+            JsonRpcNotificationWire {
+                method: methods::PROGRESS_NOTIFICATION.into(),
+                params: Some(serde_json::Value::Object(map)),
+            }
+        }
+        Notification::Log {
+            level,
+            logger,
+            data,
+        } => {
+            let mut map = serde_json::Map::new();
+            map.insert("level".into(), serde_json::Value::String(level.clone()));
+            if let Some(l) = logger {
+                map.insert("logger".into(), serde_json::Value::String(l.clone()));
+            }
+            map.insert("data".into(), data.clone());
+            JsonRpcNotificationWire {
+                method: methods::LOG_MESSAGE.into(),
+                params: Some(serde_json::Value::Object(map)),
+            }
+        }
+        Notification::ResourcesListChanged {} => JsonRpcNotificationWire {
+            method: methods::RESOURCES_LIST_CHANGED.into(),
+            params: None,
+        },
+        Notification::ToolsListChanged {} => JsonRpcNotificationWire {
+            method: methods::TOOLS_LIST_CHANGED.into(),
+            params: None,
+        },
+        Notification::PromptsListChanged {} => JsonRpcNotificationWire {
+            method: methods::PROMPTS_LIST_CHANGED.into(),
+            params: None,
+        },
+        Notification::ResourceUpdated { uri } => JsonRpcNotificationWire {
+            method: methods::RESOURCES_UPDATED.into(),
+            params: Some(serde_json::json!({ "uri": uri })),
+        },
+        Notification::Cancelled {
+            request_id,
+            reason,
+        } => {
+            let mut map = serde_json::Map::new();
+            map.insert("requestId".into(), request_id.clone());
+            if let Some(r) = reason {
+                map.insert("reason".into(), serde_json::Value::String(r.clone()));
+            }
+            JsonRpcNotificationWire {
+                method: methods::CANCELLED_NOTIFICATION.into(),
+                params: Some(serde_json::Value::Object(map)),
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Tool result normalize (parity with src/builders/tool.ts `normalizeResult`)
+// ============================================================================
+
+/// Normalize a tools/call handler result into a `ToolsCallResult` body.
+///
+/// Accepts:
+/// - full result object `{ "content": [...], "isError"?: bool, ... }`
+/// - array of content items
+/// - single content object
+#[must_use]
+pub fn normalize_tool_result(result: &serde_json::Value) -> serde_json::Value {
+    if let Some(obj) = result.as_object() {
+        if obj.get("content").and_then(|c| c.as_array()).is_some() {
+            return result.clone();
+        }
+    }
+    if result.is_array() {
+        return serde_json::json!({ "content": result });
+    }
+    // Single content item (or unknown shape → wrap as sole content element).
+    serde_json::json!({ "content": [result] })
+}
+
+// ============================================================================
+// Initialize + remaining list envelopes (pure protocol builders)
+// ============================================================================
+
+/// `initialize` result body (parity with `InitializeResult` shape).
+#[must_use]
+pub fn initialize_result(
+    protocol_version: impl Into<String>,
+    server_name: impl Into<String>,
+    server_version: impl Into<String>,
+    capabilities: serde_json::Value,
+    instructions: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert(
+        "protocolVersion".into(),
+        serde_json::Value::String(protocol_version.into()),
+    );
+    map.insert("capabilities".into(), capabilities);
+    map.insert(
+        "serverInfo".into(),
+        serde_json::json!({
+            "name": server_name.into(),
+            "version": server_version.into(),
+        }),
+    );
+    if let Some(i) = instructions {
+        map.insert("instructions".into(), serde_json::Value::String(i));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// Default empty server capabilities object.
+#[must_use]
+pub fn empty_server_capabilities() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// `resources/templates/list` result envelope.
+#[must_use]
+pub fn resource_templates_list_result(
+    templates: &[serde_json::Value],
+    next_cursor: Option<String>,
+) -> serde_json::Value {
+    let mut map = serde_json::Map::new();
+    map.insert(
+        "resourceTemplates".into(),
+        serde_json::Value::Array(templates.to_vec()),
+    );
+    if let Some(c) = next_cursor {
+        map.insert("nextCursor".into(), serde_json::Value::String(c));
+    }
+    serde_json::Value::Object(map)
+}
+
+/// `roots/list` result envelope.
+#[must_use]
+pub fn roots_list_result(roots: &[serde_json::Value]) -> serde_json::Value {
+    serde_json::json!({ "roots": roots })
+}
+
+/// `completion/complete` result envelope.
+#[must_use]
+pub fn completion_complete_result(
+    values: &[String],
+    total: Option<u64>,
+    has_more: Option<bool>,
+) -> serde_json::Value {
+    let mut completion = serde_json::Map::new();
+    completion.insert(
+        "values".into(),
+        serde_json::Value::Array(
+            values
+                .iter()
+                .map(|s| serde_json::Value::String(s.clone()))
+                .collect(),
+        ),
+    );
+    if let Some(t) = total {
+        completion.insert("total".into(), serde_json::Value::Number(t.into()));
+    }
+    if let Some(h) = has_more {
+        completion.insert("hasMore".into(), serde_json::Value::Bool(h));
+    }
+    serde_json::json!({ "completion": completion })
+}
+
+/// Protocol tool descriptor from name + fields (parity with `toProtocolTool` data shape).
+#[must_use]
+pub fn protocol_tool(
+    name: impl Into<String>,
+    description: Option<String>,
+    input_schema: serde_json::Value,
+    annotations: Option<ToolAnnotations>,
+) -> Tool {
+    Tool {
+        name: name.into(),
+        title: None,
+        description,
+        input_schema,
+        annotations,
+    }
+}
+
 /// Embedded resource content (parity with builders `embedded`).
 #[must_use]
 pub fn embedded_resource_content(
@@ -351,8 +597,6 @@ pub fn embedded_resource_content(
         annotations: None,
     }
 }
-
-
 
 /// resources/read result envelope from one or more embedded resources.
 #[must_use]
@@ -885,5 +1129,198 @@ mod tests {
         assert!(is_tool_error_result(&err));
         assert_eq!(err["content"][0]["text"], "fixture-boom");
         assert!(!is_tool_error_result(&empty_tool_result()));
+
+        // WAVE10: notification → JSON-RPC method mapping golden
+        if let Some(cases) = doc.get("notificationToJsonRpc").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let ntype = match case["notificationType"].as_str() {
+                    Some(s) => s,
+                    None => panic!("notificationType for {name}"),
+                };
+                let n = match ntype {
+                    "tools/list_changed" => tools_list_changed(),
+                    "resources/list_changed" => resources_list_changed(),
+                    "prompts/list_changed" => prompts_list_changed(),
+                    "resource/updated" => {
+                        let uri = case["uri"].as_str().unwrap_or("file:///x");
+                        resource_updated(uri)
+                    }
+                    "progress" => progress_notification(
+                        case.get("progressToken")
+                            .cloned()
+                            .unwrap_or(serde_json::json!(1)),
+                        case["progress"].as_f64().unwrap_or(0.0),
+                        case.get("total").and_then(|v| v.as_f64()),
+                        case.get("message")
+                            .and_then(|v| v.as_str())
+                            .map(str::to_string),
+                    ),
+                    "log" => log_notification(
+                        case["level"].as_str().unwrap_or("info"),
+                        case.get("data").cloned().unwrap_or(serde_json::json!({})),
+                        case.get("logger")
+                            .and_then(|v| v.as_str())
+                            .map(str::to_string),
+                    ),
+                    "cancelled" => cancelled(
+                        case.get("requestId")
+                            .cloned()
+                            .unwrap_or(serde_json::json!(1)),
+                        case.get("reason")
+                            .and_then(|v| v.as_str())
+                            .map(str::to_string),
+                    ),
+                    other => panic!("unknown notificationType {other} in {name}"),
+                };
+                let wire = notification_to_jsonrpc(&n);
+                let expected_method = match case["expectedMethod"].as_str() {
+                    Some(s) => s,
+                    None => panic!("expectedMethod for {name}"),
+                };
+                assert_eq!(wire.method, expected_method, "case {name}");
+                let expect_params = case["expectParams"].as_bool().unwrap_or(false);
+                assert_eq!(wire.params.is_some(), expect_params, "case {name} params");
+            }
+        }
+
+        // WAVE10: normalize_tool_result golden
+        if let Some(cases) = doc.get("normalizeToolResult").and_then(|v| v.as_array()) {
+            for case in cases {
+                let name = case["name"].as_str().unwrap_or("?");
+                let input = match case.get("input") {
+                    Some(v) => v,
+                    None => panic!("input for {name}"),
+                };
+                let out = normalize_tool_result(input);
+                let expected_len = case["expectedContentLen"].as_u64().unwrap_or(0) as usize;
+                assert_eq!(array_len(&out, "content"), expected_len, "case {name}");
+            }
+        }
+
+        // WAVE10: log levels
+        if let Some(levels) = doc.get("logLevels").and_then(|v| v.as_array()) {
+            for v in levels {
+                let s = match v.as_str() {
+                    Some(s) => s,
+                    None => panic!("log level not string"),
+                };
+                assert!(is_valid_log_level(s), "level {s}");
+            }
+        }
+        assert!(!is_valid_log_level("trace"));
+    }
+
+    #[test]
+    fn wave10_notification_to_jsonrpc_methods() {
+        let wire = notification_to_jsonrpc(&tools_list_changed());
+        assert_eq!(wire.method, methods::TOOLS_LIST_CHANGED);
+        assert!(wire.params.is_none());
+
+        let wire = notification_to_jsonrpc(&resource_updated("file:///a"));
+        assert_eq!(wire.method, methods::RESOURCES_UPDATED);
+        assert_eq!(
+            wire.params.as_ref().and_then(|p| p.get("uri")).and_then(|u| u.as_str()),
+            Some("file:///a")
+        );
+
+        let wire = notification_to_jsonrpc(&progress_notification(
+            serde_json::json!("tok"),
+            3.0,
+            Some(10.0),
+            Some("working".into()),
+        ));
+        assert_eq!(wire.method, methods::PROGRESS_NOTIFICATION);
+        let p = match wire.params.as_ref() {
+            Some(p) => p,
+            None => panic!("expected params"),
+        };
+        assert_eq!(p["progressToken"], "tok");
+        assert_eq!(p["progress"], 3.0);
+        assert_eq!(p["total"], 10.0);
+        assert_eq!(p["message"], "working");
+
+        let wire = notification_to_jsonrpc(&log_notification(
+            "warning",
+            serde_json::json!({"x": 1}),
+            Some("svc".into()),
+        ));
+        assert_eq!(wire.method, methods::LOG_MESSAGE);
+        assert_eq!(
+            wire.params.as_ref().and_then(|p| p.get("level")).and_then(|l| l.as_str()),
+            Some("warning")
+        );
+
+        let wire = notification_to_jsonrpc(&cancelled(serde_json::json!(42), Some("bye".into())));
+        assert_eq!(wire.method, methods::CANCELLED_NOTIFICATION);
+        assert_eq!(
+            wire.params.as_ref().and_then(|p| p.get("requestId")),
+            Some(&serde_json::json!(42))
+        );
+    }
+
+    #[test]
+    fn wave10_normalize_tool_result_shapes() {
+        let full = serde_json::json!({
+            "content": [{"type": "text", "text": "a"}],
+            "isError": false
+        });
+        let n = normalize_tool_result(&full);
+        assert_eq!(array_len(&n, "content"), 1);
+        assert_eq!(n["isError"], false);
+
+        let arr = serde_json::json!([
+            {"type": "text", "text": "a"},
+            {"type": "text", "text": "b"}
+        ]);
+        let n = normalize_tool_result(&arr);
+        assert_eq!(array_len(&n, "content"), 2);
+
+        let single = serde_json::json!({"type": "text", "text": "solo"});
+        let n = normalize_tool_result(&single);
+        assert_eq!(array_len(&n, "content"), 1);
+        assert_eq!(n["content"][0]["text"], "solo");
+    }
+
+    #[test]
+    fn wave10_initialize_and_list_envelopes() {
+        let init = initialize_result(
+            LATEST_PROTOCOL_VERSION,
+            "test-server",
+            "0.1.0",
+            empty_server_capabilities(),
+            Some("hi".into()),
+        );
+        assert_eq!(init["protocolVersion"], LATEST_PROTOCOL_VERSION);
+        assert_eq!(init["serverInfo"]["name"], "test-server");
+        assert_eq!(init["instructions"], "hi");
+
+        let tpl = resource_templates_list_result(
+            &[serde_json::json!({"uriTemplate": "file:///{p}", "name": "f"})],
+            Some("c".into()),
+        );
+        assert_eq!(array_len(&tpl, "resourceTemplates"), 1);
+        assert_eq!(tpl["nextCursor"], "c");
+
+        let roots = roots_list_result(&[serde_json::json!({"uri": "file:///"})]);
+        assert_eq!(array_len(&roots, "roots"), 1);
+
+        let comp = completion_complete_result(&["a".into(), "b".into()], Some(2), Some(false));
+        assert_eq!(comp["completion"]["values"][0], "a");
+        assert_eq!(comp["completion"]["total"], 2);
+        assert_eq!(comp["completion"]["hasMore"], false);
+
+        assert!(is_valid_log_level("error"));
+        assert!(!is_valid_log_level("verbose"));
+
+        let tool = protocol_tool(
+            "ping",
+            Some("p".into()),
+            serde_json::json!({"type": "object"}),
+            None,
+        );
+        assert_eq!(tool.name, "ping");
+        let body = tools_list_result(&[tool], None);
+        assert_eq!(body["tools"][0]["name"], "ping");
     }
 }

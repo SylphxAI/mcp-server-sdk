@@ -1,0 +1,51 @@
+{
+  "schema": "honesty-map/v1",
+  "wave": "FLEET-ENTERPRISE-WAVE10",
+  "receipt": "FLEET-ENTERPRISE-WAVE10",
+  "at": "2026-07-15T12:00:00Z",
+  "repo": "SylphxAI/mcp-server-sdk",
+  "defaultBranch": "main",
+  "liveHeadHonesty": "origin/main pure residual crates/mcp-{pagination,protocol,jsonrpc} only; WAVE10 deepens pure protocol helpers (notification_to_jsonrpc, normalize_tool_result, initialize/list/completion envelopes, log levels, expanded goldens); full package product surface remains TypeScript",
+  "cratesOnMain": ["mcp-pagination", "mcp-protocol", "mcp-jsonrpc"],
+  "pureResidual": true,
+  "pureResidualDeepen": [
+    "notification_to_jsonrpc",
+    "normalize_tool_result",
+    "is_valid_log_level",
+    "initialize_result",
+    "resource_templates_list_result",
+    "roots_list_result",
+    "completion_complete_result",
+    "protocol_tool",
+    "expanded golden fixtures"
+  ],
+  "product_effect_live": false,
+  "authority_rust": false,
+  "ts_deleted": false,
+  "differential_green": false,
+  "sole_rust_production_authority": false,
+  "auditVerdict": "prod_audit_fail",
+  "auditVerdictReason": "3 pure residual library crates only; 13 caps remain ts_only product path; no differential_green; package publish/runtime authority remains TypeScript",
+  "capabilitySummary": {
+    "total": 16,
+    "ts_only": 13,
+    "rust_impl": 3,
+    "authority_rust": 0,
+    "ts_deleted": 0,
+    "parity_proven": 0
+  },
+  "notClaims": [
+    "authority_rust",
+    "ts_deleted",
+    "differential_green",
+    "product_effect_live",
+    "sole_rust_library_for_all_caps",
+    "sole_rust_production_authority",
+    "prod_audit_pass"
+  ],
+  "checks": {
+    "cargo_test_workspace": "pass",
+    "cargo_clippy_workspace_deny_warnings": "pass"
+  },
+  "residualTs": "entire @sylphx/mcp-server-sdk package (src/**, examples/**) — intentional legacy TypeScript product authority per PROJECT.md / ADR-38"
+}
