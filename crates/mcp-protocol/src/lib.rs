@@ -3371,6 +3371,68 @@ pub fn wave30_notification_ack() -> serde_json::Value {
 
 
 #[cfg(test)]
+
+// ── WAVE31 pure residual dens: resources/subscribe + logging/setLevel + completion/complete gate kernels ──
+
+/// Dual-oracle residual method names.
+pub const METHOD_RESOURCES_SUBSCRIBE: &str = "resources/subscribe";
+pub const METHOD_RESOURCES_UNSUBSCRIBE: &str = "resources/unsubscribe";
+pub const METHOD_LOGGING_SET_LEVEL: &str = "logging/setLevel";
+pub const METHOD_COMPLETION_COMPLETE: &str = "completion/complete";
+
+/// Dual-oracle residual: resources subscribe params require non-empty uri.
+#[must_use]
+pub fn resources_subscribe_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("uri")
+        .and_then(|v| v.as_str())
+        .map(|s| !s.is_empty())
+        .unwrap_or(false)
+}
+
+/// Dual-oracle residual: resources unsubscribe params require non-empty uri.
+#[must_use]
+pub fn resources_unsubscribe_params_valid(params: &serde_json::Value) -> bool {
+    resources_subscribe_params_valid(params)
+}
+
+/// Dual-oracle residual: logging/setLevel params require known level.
+#[must_use]
+pub fn logging_set_level_params_gate(params: &serde_json::Value) -> bool {
+    params
+        .get("level")
+        .and_then(|v| v.as_str())
+        .map(logging_level_valid)
+        .unwrap_or(false)
+}
+
+/// Dual-oracle residual: completion/complete requires ref object.
+#[must_use]
+pub fn completion_complete_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("ref")
+        .map(|r| r.is_object())
+        .unwrap_or(false)
+}
+
+/// Dual-oracle residual: empty completion values list.
+#[must_use]
+pub fn empty_completion_values() -> serde_json::Value {
+    serde_json::json!([])
+}
+
+/// Dual-oracle residual: wave31 empty object alias inventory.
+#[must_use]
+pub fn wave31_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// Dual-oracle residual: is subscribe/unsubscribe method.
+#[must_use]
+pub fn is_resource_subscription_method(method: &str) -> bool {
+    method == METHOD_RESOURCES_SUBSCRIBE || method == METHOD_RESOURCES_UNSUBSCRIBE
+}
+
 mod tests {
     use super::*;
 
@@ -5689,6 +5751,29 @@ mod tests {
         assert_eq!(empty_roots_list_result()["roots"], serde_json::json!([]));
         assert_eq!(wave30_notification_ack(), serde_json::json!({}));
     }
+
+    #[test]
+    fn wave31_subscribe_logging_completion_residual() {
+        assert_eq!(METHOD_RESOURCES_SUBSCRIBE, "resources/subscribe");
+        assert_eq!(METHOD_RESOURCES_UNSUBSCRIBE, "resources/unsubscribe");
+        assert_eq!(METHOD_LOGGING_SET_LEVEL, "logging/setLevel");
+        assert_eq!(METHOD_COMPLETION_COMPLETE, "completion/complete");
+        assert!(resources_subscribe_params_valid(&serde_json::json!({"uri": "file:///a"})));
+        assert!(!resources_subscribe_params_valid(&serde_json::json!({"uri": ""})));
+        assert!(!resources_subscribe_params_valid(&serde_json::json!({})));
+        assert!(resources_unsubscribe_params_valid(&serde_json::json!({"uri": "file:///b"})));
+        assert!(logging_set_level_params_gate(&serde_json::json!({"level": "info"})));
+        assert!(!logging_set_level_params_gate(&serde_json::json!({"level": "verbose"})));
+        assert!(completion_complete_params_valid(&serde_json::json!({"ref": {"type": "ref/prompt", "name": "p"}})));
+        assert!(!completion_complete_params_valid(&serde_json::json!({"ref": "x"})));
+        assert!(!completion_complete_params_valid(&serde_json::json!({})));
+        assert_eq!(empty_completion_values(), serde_json::json!([]));
+        assert_eq!(wave31_empty_object(), serde_json::json!({}));
+        assert!(is_resource_subscription_method("resources/subscribe"));
+        assert!(is_resource_subscription_method("resources/unsubscribe"));
+        assert!(!is_resource_subscription_method("resources/list"));
+    }
+
 
 
 
