@@ -7139,3 +7139,86 @@ mod wave46_tests {
         assert!(wave46_not_list_call());
     }
 }
+
+
+// ── WAVE47 pure residual dens: ping + roots + tools/list catalog dual-oracle residual ──
+// Dual-oracle residual of METHOD_PING / METHOD_ROOTS_LIST / METHOD_TOOLS_LIST pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+// product residual dens wave70
+
+/// Dual-oracle residual: WAVE47 ping method.
+pub const WAVE47_METHOD_PING: &str = "ping";
+/// Dual-oracle residual: WAVE47 roots/list method.
+pub const WAVE47_METHOD_ROOTS_LIST: &str = "roots/list";
+/// Dual-oracle residual: WAVE47 tools/list method.
+pub const WAVE47_METHOD_TOOLS_LIST: &str = "tools/list";
+/// Dual-oracle residual: WAVE47 prompts/list method.
+pub const WAVE47_METHOD_PROMPTS_LIST: &str = "prompts/list";
+
+/// Dual-oracle residual: WAVE47 method catalog.
+pub const WAVE47_METHODS: &[&str] = &[
+    WAVE47_METHOD_PING,
+    WAVE47_METHOD_ROOTS_LIST,
+    WAVE47_METHOD_TOOLS_LIST,
+    WAVE47_METHOD_PROMPTS_LIST,
+];
+
+#[must_use]
+pub fn wave47_method_count() -> usize {
+    WAVE47_METHODS.len()
+}
+
+#[must_use]
+pub fn is_wave47_method(method: &str) -> bool {
+    WAVE47_METHODS.contains(&method)
+}
+
+#[must_use]
+pub fn wave47_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE47_METHOD_PING => Some("lifecycle"),
+        WAVE47_METHOD_ROOTS_LIST => Some("roots"),
+        WAVE47_METHOD_TOOLS_LIST => Some("tools"),
+        WAVE47_METHOD_PROMPTS_LIST => Some("prompts"),
+        _ => None,
+    }
+}
+
+#[must_use]
+pub fn wave47_methods_match_ssot() -> bool {
+    WAVE47_METHOD_PING == METHOD_PING
+        && WAVE47_METHOD_ROOTS_LIST == METHOD_ROOTS_LIST
+        && WAVE47_METHOD_TOOLS_LIST == METHOD_TOOLS_LIST
+        && WAVE47_METHOD_PROMPTS_LIST == METHOD_PROMPTS_LIST
+}
+
+#[must_use]
+pub fn wave47_not_sampling_or_tools_call() -> bool {
+    !WAVE47_METHODS.contains(&"sampling/createMessage")
+        && !WAVE47_METHODS.contains(&METHOD_TOOLS_CALL)
+}
+
+#[cfg(test)]
+mod wave47_tests {
+    use super::*;
+
+    #[test]
+    fn wave47_ping_roots_tools_prompts_list_dual_oracle() {
+        assert_eq!(WAVE47_METHOD_PING, "ping");
+        assert_eq!(WAVE47_METHOD_ROOTS_LIST, "roots/list");
+        assert_eq!(WAVE47_METHOD_TOOLS_LIST, "tools/list");
+        assert_eq!(WAVE47_METHOD_PROMPTS_LIST, "prompts/list");
+        assert_eq!(wave47_method_count(), 4);
+        assert!(is_wave47_method("ping"));
+        assert!(is_wave47_method("tools/list"));
+        assert!(!is_wave47_method("tools/call"));
+        assert_eq!(wave47_method_group(WAVE47_METHOD_PING), Some("lifecycle"));
+        assert_eq!(wave47_method_group(WAVE47_METHOD_ROOTS_LIST), Some("roots"));
+        assert_eq!(wave47_method_group(WAVE47_METHOD_TOOLS_LIST), Some("tools"));
+        assert_eq!(wave47_method_group(WAVE47_METHOD_PROMPTS_LIST), Some("prompts"));
+        assert!(wave47_methods_match_ssot());
+        assert!(wave47_not_sampling_or_tools_call());
+        assert_eq!(WAVE47_METHOD_PING, METHOD_PING);
+        assert_eq!(WAVE47_METHOD_TOOLS_LIST, METHOD_TOOLS_LIST);
+    }
+}
