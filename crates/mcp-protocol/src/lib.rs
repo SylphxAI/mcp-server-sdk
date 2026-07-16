@@ -3716,6 +3716,53 @@ pub fn wave36_empty_object() -> serde_json::Value {
     serde_json::json!({})
 }
 
+// ── WAVE37 pure residual dens: Protocol version catalog dual-oracle dens ──
+// Dual-oracle of `src/protocol/mcp.ts` LATEST_PROTOCOL_VERSION /
+// SUPPORTED_PROTOCOL_VERSIONS pure residual catalog.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: latest protocol version wire.
+pub const WAVE37_LATEST_PROTOCOL_VERSION: &str = "2025-03-26";
+/// Dual-oracle residual: supported protocol versions catalog.
+pub const WAVE37_SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2025-03-26", "2024-11-05"];
+/// Dual-oracle residual: supported catalog count.
+pub const WAVE37_SUPPORTED_PROTOCOL_VERSION_COUNT: usize = 2;
+
+/// Dual-oracle residual: known supported protocol version.
+#[must_use]
+pub fn is_wave37_supported_protocol_version(v: &str) -> bool {
+    WAVE37_SUPPORTED_PROTOCOL_VERSIONS.contains(&v)
+}
+
+/// Dual-oracle residual: version is latest.
+#[must_use]
+pub fn is_wave37_latest_protocol_version(v: &str) -> bool {
+    v == WAVE37_LATEST_PROTOCOL_VERSION
+}
+
+/// Dual-oracle residual: negotiate — pick client if supported else latest.
+#[must_use]
+pub fn wave37_negotiate_protocol_version(client: Option<&str>) -> &'static str {
+    match client {
+        Some(v) if is_wave37_supported_protocol_version(v) => {
+            // return the static catalog entry
+            WAVE37_SUPPORTED_PROTOCOL_VERSIONS
+                .iter()
+                .copied()
+                .find(|c| *c == v)
+                .unwrap_or(WAVE37_LATEST_PROTOCOL_VERSION)
+        }
+        _ => WAVE37_LATEST_PROTOCOL_VERSION,
+    }
+}
+
+/// Dual-oracle residual: empty object helper (parity with prior dens waves).
+#[must_use]
+pub fn wave37_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+
 
 
 
@@ -6233,6 +6280,40 @@ mod tests {
             assert!(is_wave36_content_type(t));
         }
     }
+
+    #[test]
+    fn wave37_protocol_version_catalog_residual() {
+        assert_eq!(WAVE37_LATEST_PROTOCOL_VERSION, "2025-03-26");
+        assert_eq!(WAVE37_SUPPORTED_PROTOCOL_VERSION_COUNT, 2);
+        assert_eq!(
+            WAVE37_SUPPORTED_PROTOCOL_VERSIONS.len(),
+            WAVE37_SUPPORTED_PROTOCOL_VERSION_COUNT
+        );
+        assert_eq!(WAVE37_SUPPORTED_PROTOCOL_VERSIONS[0], "2025-03-26");
+        assert_eq!(WAVE37_SUPPORTED_PROTOCOL_VERSIONS[1], "2024-11-05");
+        assert!(is_wave37_supported_protocol_version("2025-03-26"));
+        assert!(is_wave37_supported_protocol_version("2024-11-05"));
+        assert!(!is_wave37_supported_protocol_version("2024-01-01"));
+        assert!(is_wave37_latest_protocol_version("2025-03-26"));
+        assert!(!is_wave37_latest_protocol_version("2024-11-05"));
+        assert_eq!(
+            wave37_negotiate_protocol_version(Some("2024-11-05")),
+            "2024-11-05"
+        );
+        assert_eq!(
+            wave37_negotiate_protocol_version(Some("nope")),
+            "2025-03-26"
+        );
+        assert_eq!(wave37_negotiate_protocol_version(None), "2025-03-26");
+        assert_eq!(wave37_empty_object(), serde_json::json!({}));
+        // dual-oracle with existing SSOT constants
+        assert_eq!(WAVE37_LATEST_PROTOCOL_VERSION, LATEST_PROTOCOL_VERSION);
+        assert_eq!(
+            WAVE37_SUPPORTED_PROTOCOL_VERSIONS,
+            SUPPORTED_PROTOCOL_VERSIONS
+        );
+    }
+
 
 
 
