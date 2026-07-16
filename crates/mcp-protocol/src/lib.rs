@@ -3489,6 +3489,54 @@ pub fn is_wave32_list_changed_or_message_method(method: &str) -> bool {
 }
 
 
+// ── WAVE33 pure residual dens: sampling/createMessage + roots/list_changed residual kernels ──
+// Dual-oracle residual of MCP method catalog halves not densed in WAVE32.
+// Transport/handler I/O remains residual. NO authority_rust / package_main_rust invent.
+
+/// Dual-oracle residual: sampling createMessage method.
+pub const WAVE33_METHOD_SAMPLING_CREATE_MESSAGE: &str = "sampling/createMessage";
+/// Dual-oracle residual: notifications/roots/list_changed method.
+pub const WAVE33_METHOD_NOTIFICATIONS_ROOTS_LIST_CHANGED: &str =
+    "notifications/roots/list_changed";
+/// Dual-oracle residual: notifications/resources/list_changed method.
+pub const WAVE33_METHOD_NOTIFICATIONS_RESOURCES_LIST_CHANGED: &str =
+    "notifications/resources/list_changed";
+
+/// Dual-oracle residual: sampling createMessage params gate (messages array required).
+#[must_use]
+pub fn wave33_sampling_create_message_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("messages")
+        .and_then(|m| m.as_array())
+        .map(|a| !a.is_empty())
+        .unwrap_or(false)
+}
+
+/// Dual-oracle residual: list_changed family accepts empty object / null / missing.
+#[must_use]
+pub fn wave33_list_changed_params_ok(params: &serde_json::Value) -> bool {
+    params.is_null() || params.is_object()
+}
+
+/// Dual-oracle residual: wave33 empty object alias.
+#[must_use]
+pub fn wave33_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// Dual-oracle residual: is wave33 densed method family.
+#[must_use]
+pub fn is_wave33_sampling_or_list_changed_method(method: &str) -> bool {
+    matches!(
+        method,
+        "sampling/createMessage"
+            | "notifications/roots/list_changed"
+            | "notifications/resources/list_changed"
+    )
+}
+
+
+
 mod tests {
     use super::*;
 
@@ -5870,6 +5918,39 @@ mod tests {
         ));
         assert!(!is_wave32_list_changed_or_message_method("ping"));
     }
+
+    #[test]
+    fn wave33_sampling_roots_list_changed_residual() {
+        assert_eq!(
+            WAVE33_METHOD_SAMPLING_CREATE_MESSAGE,
+            "sampling/createMessage"
+        );
+        assert_eq!(
+            WAVE33_METHOD_NOTIFICATIONS_ROOTS_LIST_CHANGED,
+            "notifications/roots/list_changed"
+        );
+        assert_eq!(
+            WAVE33_METHOD_NOTIFICATIONS_RESOURCES_LIST_CHANGED,
+            "notifications/resources/list_changed"
+        );
+        assert!(wave33_sampling_create_message_params_valid(&serde_json::json!({
+            "messages": [{"role": "user", "content": {"type": "text", "text": "hi"}}]
+        })));
+        assert!(!wave33_sampling_create_message_params_valid(&serde_json::json!({
+            "messages": []
+        })));
+        assert!(!wave33_sampling_create_message_params_valid(&serde_json::json!({})));
+        assert!(wave33_list_changed_params_ok(&serde_json::json!({})));
+        assert!(wave33_list_changed_params_ok(&serde_json::Value::Null));
+        assert!(!wave33_list_changed_params_ok(&serde_json::json!([])));
+        assert_eq!(wave33_empty_object(), serde_json::json!({}));
+        assert!(is_wave33_sampling_or_list_changed_method("sampling/createMessage"));
+        assert!(is_wave33_sampling_or_list_changed_method(
+            "notifications/roots/list_changed"
+        ));
+        assert!(!is_wave33_sampling_or_list_changed_method("ping"));
+    }
+
 
 
 
