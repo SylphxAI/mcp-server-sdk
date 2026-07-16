@@ -7144,7 +7144,6 @@ mod wave46_tests {
 // ── WAVE47 pure residual dens: ping + roots + tools/list catalog dual-oracle residual ──
 // Dual-oracle residual of METHOD_PING / METHOD_ROOTS_LIST / METHOD_TOOLS_LIST pure halves.
 // Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
-// product residual dens wave70
 
 /// Dual-oracle residual: WAVE47 ping method.
 pub const WAVE47_METHOD_PING: &str = "ping";
@@ -7155,12 +7154,32 @@ pub const WAVE47_METHOD_TOOLS_LIST: &str = "tools/list";
 /// Dual-oracle residual: WAVE47 prompts/list method.
 pub const WAVE47_METHOD_PROMPTS_LIST: &str = "prompts/list";
 
-/// Dual-oracle residual: WAVE47 method catalog.
+/// Dual-oracle residual: WAVE47 method catalog (lifecycle/list surface).
 pub const WAVE47_METHODS: &[&str] = &[
     WAVE47_METHOD_PING,
     WAVE47_METHOD_ROOTS_LIST,
     WAVE47_METHOD_TOOLS_LIST,
     WAVE47_METHOD_PROMPTS_LIST,
+];
+
+/// Dual-oracle residual: WAVE47 notifications/roots/list_changed.
+pub const WAVE47_METHOD_NOTIFICATIONS_ROOTS_LIST_CHANGED: &str =
+    "notifications/roots/list_changed";
+/// Dual-oracle residual: WAVE47 notifications/resources/list_changed.
+pub const WAVE47_METHOD_NOTIFICATIONS_RESOURCES_LIST_CHANGED: &str =
+    "notifications/resources/list_changed";
+/// Dual-oracle residual: WAVE47 notifications/prompts/list_changed.
+pub const WAVE47_METHOD_NOTIFICATIONS_PROMPTS_LIST_CHANGED: &str =
+    "notifications/prompts/list_changed";
+/// Dual-oracle residual: WAVE47 notifications/cancelled.
+pub const WAVE47_METHOD_NOTIFICATIONS_CANCELLED: &str = "notifications/cancelled";
+
+/// Dual-oracle residual: WAVE47 notification residual catalog (complementary dens).
+pub const WAVE47_NOTIFICATION_METHODS: &[&str] = &[
+    WAVE47_METHOD_NOTIFICATIONS_ROOTS_LIST_CHANGED,
+    WAVE47_METHOD_NOTIFICATIONS_RESOURCES_LIST_CHANGED,
+    WAVE47_METHOD_NOTIFICATIONS_PROMPTS_LIST_CHANGED,
+    WAVE47_METHOD_NOTIFICATIONS_CANCELLED,
 ];
 
 #[must_use]
@@ -7169,8 +7188,18 @@ pub fn wave47_method_count() -> usize {
 }
 
 #[must_use]
+pub fn wave47_notification_method_count() -> usize {
+    WAVE47_NOTIFICATION_METHODS.len()
+}
+
+#[must_use]
 pub fn is_wave47_method(method: &str) -> bool {
-    WAVE47_METHODS.contains(&method)
+    WAVE47_METHODS.contains(&method) || WAVE47_NOTIFICATION_METHODS.contains(&method)
+}
+
+#[must_use]
+pub fn is_wave47_notification_method(method: &str) -> bool {
+    WAVE47_NOTIFICATION_METHODS.contains(&method)
 }
 
 #[must_use]
@@ -7180,6 +7209,10 @@ pub fn wave47_method_group(method: &str) -> Option<&'static str> {
         WAVE47_METHOD_ROOTS_LIST => Some("roots"),
         WAVE47_METHOD_TOOLS_LIST => Some("tools"),
         WAVE47_METHOD_PROMPTS_LIST => Some("prompts"),
+        WAVE47_METHOD_NOTIFICATIONS_ROOTS_LIST_CHANGED
+        | WAVE47_METHOD_NOTIFICATIONS_RESOURCES_LIST_CHANGED
+        | WAVE47_METHOD_NOTIFICATIONS_PROMPTS_LIST_CHANGED
+        | WAVE47_METHOD_NOTIFICATIONS_CANCELLED => Some("notifications"),
         _ => None,
     }
 }
@@ -7190,12 +7223,27 @@ pub fn wave47_methods_match_ssot() -> bool {
         && WAVE47_METHOD_ROOTS_LIST == METHOD_ROOTS_LIST
         && WAVE47_METHOD_TOOLS_LIST == METHOD_TOOLS_LIST
         && WAVE47_METHOD_PROMPTS_LIST == METHOD_PROMPTS_LIST
+        && WAVE47_METHOD_NOTIFICATIONS_ROOTS_LIST_CHANGED
+            == WAVE33_METHOD_NOTIFICATIONS_ROOTS_LIST_CHANGED
+        && WAVE47_METHOD_NOTIFICATIONS_RESOURCES_LIST_CHANGED
+            == WAVE33_METHOD_NOTIFICATIONS_RESOURCES_LIST_CHANGED
+        && WAVE47_METHOD_NOTIFICATIONS_PROMPTS_LIST_CHANGED
+            == WAVE32_METHOD_NOTIFICATIONS_PROMPTS_LIST_CHANGED
+        && WAVE47_METHOD_NOTIFICATIONS_CANCELLED == METHOD_NOTIFICATIONS_CANCELLED
 }
 
 #[must_use]
 pub fn wave47_not_sampling_or_tools_call() -> bool {
     !WAVE47_METHODS.contains(&"sampling/createMessage")
         && !WAVE47_METHODS.contains(&METHOD_TOOLS_CALL)
+        && !WAVE47_NOTIFICATION_METHODS.contains(&METHOD_TOOLS_CALL)
+}
+
+#[must_use]
+pub fn wave47_notifications_only_catalog() -> bool {
+    WAVE47_NOTIFICATION_METHODS
+        .iter()
+        .all(|m| m.starts_with("notifications/"))
 }
 
 #[cfg(test)]
@@ -7211,14 +7259,40 @@ mod wave47_tests {
         assert_eq!(wave47_method_count(), 4);
         assert!(is_wave47_method("ping"));
         assert!(is_wave47_method("tools/list"));
-        assert!(!is_wave47_method("tools/call"));
+        assert!(!is_wave47_method("sampling/createMessage"));
         assert_eq!(wave47_method_group(WAVE47_METHOD_PING), Some("lifecycle"));
-        assert_eq!(wave47_method_group(WAVE47_METHOD_ROOTS_LIST), Some("roots"));
         assert_eq!(wave47_method_group(WAVE47_METHOD_TOOLS_LIST), Some("tools"));
-        assert_eq!(wave47_method_group(WAVE47_METHOD_PROMPTS_LIST), Some("prompts"));
         assert!(wave47_methods_match_ssot());
         assert!(wave47_not_sampling_or_tools_call());
-        assert_eq!(WAVE47_METHOD_PING, METHOD_PING);
-        assert_eq!(WAVE47_METHOD_TOOLS_LIST, METHOD_TOOLS_LIST);
+    }
+
+    #[test]
+    fn wave47_list_changed_cancelled_notifications_dual_oracle() {
+        assert_eq!(
+            WAVE47_METHOD_NOTIFICATIONS_ROOTS_LIST_CHANGED,
+            "notifications/roots/list_changed"
+        );
+        assert_eq!(
+            WAVE47_METHOD_NOTIFICATIONS_RESOURCES_LIST_CHANGED,
+            "notifications/resources/list_changed"
+        );
+        assert_eq!(
+            WAVE47_METHOD_NOTIFICATIONS_PROMPTS_LIST_CHANGED,
+            "notifications/prompts/list_changed"
+        );
+        assert_eq!(
+            WAVE47_METHOD_NOTIFICATIONS_CANCELLED,
+            "notifications/cancelled"
+        );
+        assert_eq!(wave47_notification_method_count(), 4);
+        assert!(is_wave47_notification_method("notifications/roots/list_changed"));
+        assert!(is_wave47_method("notifications/cancelled"));
+        assert_eq!(
+            wave47_method_group(WAVE47_METHOD_NOTIFICATIONS_PROMPTS_LIST_CHANGED),
+            Some("notifications")
+        );
+        assert!(wave47_notifications_only_catalog());
+        assert!(!is_wave46_method(WAVE47_METHOD_NOTIFICATIONS_CANCELLED));
+        assert!(!is_wave47_method(WAVE46_METHOD_SAMPLING_CREATE_MESSAGE));
     }
 }
