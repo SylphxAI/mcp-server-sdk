@@ -3484,9 +3484,10 @@ pub fn wave40_completion_complete_params_valid(params: &serde_json::Value) -> bo
 }
 
 
-#[cfg(test)]
-
 // ── WAVE31 pure residual dens: resources/subscribe + logging/setLevel + completion/complete gate kernels ──
+// NOTE: METHOD_* SSOT constants must NOT be #[cfg(test)] — wave40/41/42/49 non-test residual
+// helpers reference them (wave49_methods_match_ssot etc.). Orphan #[cfg(test)] gated only
+// METHOD_RESOURCES_SUBSCRIBE and broke lib builds.
 
 /// Dual-oracle residual method names.
 pub const METHOD_RESOURCES_SUBSCRIBE: &str = "resources/subscribe";
