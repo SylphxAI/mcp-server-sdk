@@ -3275,6 +3275,55 @@ pub fn wave28_empty_array() -> serde_json::Value {
     serde_json::json!([])
 }
 
+// ── WAVE29 pure residual dens: tools/call + prompts/get + resources/read gate kernels ──
+
+/// Dual-oracle tools/call method residual.
+pub const METHOD_TOOLS_CALL: &str = "tools/call";
+/// Dual-oracle prompts/get method residual.
+pub const METHOD_PROMPTS_GET: &str = "prompts/get";
+/// Dual-oracle resources/read method residual.
+pub const METHOD_RESOURCES_READ: &str = "resources/read";
+
+/// Dual-oracle: tools/call params require non-empty name residual.
+#[must_use]
+pub fn tools_call_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("name")
+        .and_then(|v| v.as_str())
+        .is_some_and(|s| !s.is_empty())
+}
+
+/// Dual-oracle: prompts/get params require non-empty name residual.
+#[must_use]
+pub fn prompts_get_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("name")
+        .and_then(|v| v.as_str())
+        .is_some_and(|s| !s.is_empty())
+}
+
+/// Dual-oracle: resources/read params require non-empty uri residual.
+#[must_use]
+pub fn resources_read_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("uri")
+        .and_then(|v| v.as_str())
+        .is_some_and(|s| !s.is_empty())
+}
+
+/// Dual-oracle residual honesty: empty content array for tool success.
+#[must_use]
+pub fn empty_tool_content() -> serde_json::Value {
+    serde_json::json!([])
+}
+
+/// Dual-oracle residual: wave29 empty object alias inventory.
+#[must_use]
+pub fn wave29_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+
 
 
 
@@ -5561,6 +5610,26 @@ mod tests {
         let listed = serde_json::json!({"tools": [tool.clone(), tool]});
         assert_eq!(tools_count_from_list(&listed), 2);
     }
+
+    #[test]
+    fn wave29_tools_call_prompts_get_resources_read_residual() {
+        assert_eq!(METHOD_TOOLS_CALL, "tools/call");
+        assert_eq!(METHOD_PROMPTS_GET, "prompts/get");
+        assert_eq!(METHOD_RESOURCES_READ, "resources/read");
+        assert!(tools_call_params_valid(&serde_json::json!({"name": "echo"})));
+        assert!(!tools_call_params_valid(&serde_json::json!({"name": ""})));
+        assert!(!tools_call_params_valid(&serde_json::json!({})));
+        assert!(prompts_get_params_valid(&serde_json::json!({"name": "p"})));
+        assert!(!prompts_get_params_valid(&serde_json::json!({"name": ""})));
+        assert!(resources_read_params_valid(&serde_json::json!({"uri": "file:///a"})));
+        assert!(!resources_read_params_valid(&serde_json::json!({"uri": ""})));
+        assert!(tool_result_is_error(&serde_json::json!({"isError": true})));
+        assert!(!tool_result_is_error(&serde_json::json!({"isError": false})));
+        assert!(!tool_result_is_error(&serde_json::json!({})));
+        assert_eq!(empty_tool_content(), serde_json::json!([]));
+        assert_eq!(wave29_empty_object(), serde_json::json!({}));
+    }
+
 
 
 }
