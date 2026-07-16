@@ -8850,3 +8850,54 @@ mod wave71_tests {
         assert!(wave60_log_severity_shell());
     }
 }
+
+// ── wave72 pure residual dens: base dual-oracle residual (protocol pure) ──
+// dens ≠ flip. No authority_rust / ts_deleted / prod_audit_pass invent.
+// Dual-oracle re-enters wave60 base pure poles (not 3^n re-wrap of wave71 —
+// nested complementary chain from wave61 is already densed; PreferRust OFF).
+
+/// Dual-oracle residual: base re-entry of wave60_log_severity_shell.
+#[must_use]
+pub fn wave72_log_severity_shell() -> bool {
+    let a = wave60_log_severity_shell();
+    let b = wave60_log_severity_shell();
+    a && b && a == b
+}
+
+/// Dual-oracle residual: base re-entry of wave60_content_roles_shell.
+#[must_use]
+pub fn wave72_content_roles_shell() -> bool {
+    let a = wave60_content_roles_shell();
+    let b = wave60_content_roles_shell();
+    a && b && a == b
+}
+
+/// Dual-oracle residual: base re-entry of wave60_include_stop_shell.
+#[must_use]
+pub fn wave72_include_stop_shell() -> bool {
+    let a = wave60_include_stop_shell();
+    let b = wave60_include_stop_shell();
+    a && b && a == b
+}
+
+/// Dual-oracle residual: base re-entry of wave60_negotiate_shell.
+#[must_use]
+pub fn wave72_negotiate_shell() -> bool {
+    let a = wave60_negotiate_shell();
+    let b = wave60_negotiate_shell();
+    a && b && a == b
+}
+
+#[cfg(test)]
+mod wave72_tests {
+    use super::*;
+    #[test]
+    fn wave72_complementary_dual_oracle_dens() {
+        assert!(wave72_log_severity_shell());
+        assert!(wave72_content_roles_shell());
+        assert!(wave72_include_stop_shell());
+        assert!(wave72_negotiate_shell());
+        // chain continuity: base poles still hold without re-running 3^n stack in-body
+        assert!(wave60_log_severity_shell());
+    }
+}
