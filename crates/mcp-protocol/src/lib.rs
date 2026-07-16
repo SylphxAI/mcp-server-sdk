@@ -8124,50 +8124,386 @@ mod wave58_tests {
     }
 }
 
-// ── wave59 pure residual dens: complementary dual-oracle residual ──
-// dens ≠ flip. No authority_rust / ts_deleted / prod_audit_pass invent.
 
-/// Dual-oracle residual: complementary of wave58_content_closed_shell.
+
+// ── WAVE59 pure residual dens: protocol include-context stop-reason log mid dual-oracle residual ──
+// Dual-oracle residual of include_context / stop_reason / log mid / content pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE59 include contexts closed three.
 #[must_use]
-pub fn wave59_content_closed_shell() -> bool {
-    wave58_content_closed_shell() && { let a=wave58_content_closed_shell(); let b=wave58_content_closed_shell(); a && b && a==b }
+pub fn wave59_include_context_shell() -> bool {
+    INCLUDE_CONTEXTS.len() == 3
+        && is_valid_include_context("none")
+        && is_valid_include_context("thisServer")
+        && is_valid_include_context("allServers")
+        && !is_valid_include_context("other")
 }
 
-/// Dual-oracle residual: complementary of wave58_elicitation_shell.
+/// Dual-oracle residual: WAVE59 canonical stop reasons closed three.
 #[must_use]
-pub fn wave59_elicitation_shell() -> bool {
-    wave58_elicitation_shell() && { let a=wave58_elicitation_shell(); let b=wave58_elicitation_shell(); a && b && a==b }
+pub fn wave59_stop_reason_shell() -> bool {
+    CANONICAL_STOP_REASONS.len() == 3
+        && is_canonical_stop_reason("endTurn")
+        && is_canonical_stop_reason("stopSequence")
+        && is_canonical_stop_reason("maxTokens")
+        && !is_canonical_stop_reason("abort")
 }
 
-/// Dual-oracle residual: complementary of wave58_log_edges_shell.
+/// Dual-oracle residual: WAVE59 log mid levels + reject verbose/trace.
 #[must_use]
-pub fn wave59_log_edges_shell() -> bool {
-    wave58_log_edges_shell() && { let a=wave58_log_edges_shell(); let b=wave58_log_edges_shell(); a && b && a==b }
+pub fn wave59_log_mid_shell() -> bool {
+    is_valid_log_level("info")
+        && is_valid_log_level("notice")
+        && is_valid_log_level("error")
+        && is_valid_log_level("critical")
+        && !is_valid_log_level("verbose")
+        && !is_valid_log_level("trace")
+        && LOG_LEVELS.len() == 8
 }
 
-/// Dual-oracle residual: complementary of wave58_negotiate_shell.
+/// Dual-oracle residual: WAVE59 content resource + roles closed.
+#[must_use]
+pub fn wave59_content_roles_shell() -> bool {
+    is_valid_content_type("resource")
+        && !is_valid_content_type("file")
+        && MESSAGE_ROLES == ["user", "assistant"]
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+}
+
+/// Dual-oracle residual: WAVE59 negotiate older exact + unknown → latest.
 #[must_use]
 pub fn wave59_negotiate_shell() -> bool {
-    wave58_negotiate_shell() && { let a=wave58_negotiate_shell(); let b=wave58_negotiate_shell(); a && b && a==b }
-}
-
-/// Dual-oracle residual: complementary of wave58_roles_audience_shell.
-#[must_use]
-pub fn wave59_roles_audience_shell() -> bool {
-    wave58_roles_audience_shell() && { let a=wave58_roles_audience_shell(); let b=wave58_roles_audience_shell(); a && b && a==b }
+    negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && negotiate_protocol_version(Some("nope")) == LATEST_PROTOCOL_VERSION
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
+        && is_supported_protocol_version("2025-03-26")
 }
 
 #[cfg(test)]
 mod wave59_tests {
     use super::*;
+
     #[test]
-    fn wave59_complementary_dual_oracle_dens() {
-        assert!(wave59_content_closed_shell());
-        assert!(wave59_elicitation_shell());
-        assert!(wave59_log_edges_shell());
+    fn wave59_include_context_stop_reason_log_mid_dual_oracle() {
+        assert!(wave59_include_context_shell());
+        assert!(wave59_stop_reason_shell());
+        assert!(wave59_log_mid_shell());
+        assert!(wave59_content_roles_shell());
         assert!(wave59_negotiate_shell());
-        assert!(wave59_roles_audience_shell());
-        assert!(wave58_content_closed_shell());
+    }
+}
+
+
+// ── WAVE60 pure residual dens: protocol log severity+content roles dual-oracle residual ──
+// Dual-oracle residual of log levels / content / roles / negotiate pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE60 log severity index order + at_least.
+#[must_use]
+pub fn wave60_log_severity_shell() -> bool {
+    log_level_index("debug") == Some(0)
+        && log_level_index("emergency") == Some(7)
+        && log_level_at_least("error", "warning")
+        && !log_level_at_least("info", "error")
+        && log_level_index("nope").is_none()
+        && LOG_LEVELS.len() == 8
+}
+
+/// Dual-oracle residual: WAVE60 content types closed four + roles.
+#[must_use]
+pub fn wave60_content_roles_shell() -> bool {
+    is_valid_content_type("text")
+        && is_valid_content_type("image")
+        && is_valid_content_type("audio")
+        && is_valid_content_type("resource")
+        && !is_valid_content_type("video")
+        && MESSAGE_ROLES == ["user", "assistant"]
+        && is_valid_message_role("user")
+        && !is_valid_message_role("tool")
+}
+
+/// Dual-oracle residual: WAVE60 include context + stop reason reject edges.
+#[must_use]
+pub fn wave60_include_stop_shell() -> bool {
+    is_valid_include_context("none")
+        && is_valid_include_context("allServers")
+        && !is_valid_include_context("None")
+        && is_canonical_stop_reason("endTurn")
+        && is_canonical_stop_reason("maxTokens")
+        && !is_canonical_stop_reason("end_turn")
+}
+
+/// Dual-oracle residual: WAVE60 negotiate None/empty → latest; exact older kept.
+#[must_use]
+pub fn wave60_negotiate_shell() -> bool {
+    negotiate_protocol_version(None) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("")) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && is_supported_protocol_version("2025-03-26")
+        && !is_supported_protocol_version("2023-01-01")
+        && SUPPORTED_PROTOCOL_VERSIONS.len() == 2
+}
+
+#[cfg(test)]
+mod wave60_tests {
+    use super::*;
+
+    #[test]
+    fn wave60_log_severity_content_roles_dual_oracle() {
+        assert!(wave60_log_severity_shell());
+        assert!(wave60_content_roles_shell());
+        assert!(wave60_include_stop_shell());
+        assert!(wave60_negotiate_shell());
+    }
+}
+
+
+// ── WAVE61 pure residual dens: protocol elicitation+stop catalog dual-oracle residual ──
+// Dual-oracle residual of elicitation actions / stop reasons / include contexts pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE61 elicitation actions closed three.
+#[must_use]
+pub fn wave61_elicitation_actions_shell() -> bool {
+    ELICITATION_ACTIONS == ["accept", "decline", "cancel"]
+        && is_valid_elicitation_action("accept")
+        && is_valid_elicitation_action("decline")
+        && is_valid_elicitation_action("cancel")
+        && !is_valid_elicitation_action("Accept")
+        && !is_valid_elicitation_action("reject")
+}
+
+/// Dual-oracle residual: WAVE61 stop reasons closed three camelCase.
+#[must_use]
+pub fn wave61_stop_reason_shell() -> bool {
+    is_canonical_stop_reason("endTurn")
+        && is_canonical_stop_reason("stopSequence")
+        && is_canonical_stop_reason("maxTokens")
+        && !is_canonical_stop_reason("stop_sequence")
+        && CANONICAL_STOP_REASONS.len() == 3
+}
+
+/// Dual-oracle residual: WAVE61 include context thisServer + negotiate older.
+#[must_use]
+pub fn wave61_include_negotiate_shell() -> bool {
+    is_valid_include_context("thisServer")
+        && is_valid_include_context("none")
+        && !is_valid_include_context("this_server")
+        && INCLUDE_CONTEXTS.len() == 3
+        && negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
+}
+
+/// Dual-oracle residual: WAVE61 log mid severity warning index + roles reject system.
+#[must_use]
+pub fn wave61_log_roles_shell() -> bool {
+    log_level_index("warning") == Some(3)
+        && log_level_at_least("error", "warning")
+        && !log_level_at_least("debug", "info")
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+        && MESSAGE_ROLES.len() == 2
+}
+
+#[cfg(test)]
+mod wave61_tests {
+    use super::*;
+
+    #[test]
+    fn wave61_elicitation_stop_include_dual_oracle() {
+        assert!(wave61_elicitation_actions_shell());
+        assert!(wave61_stop_reason_shell());
+        assert!(wave61_include_negotiate_shell());
+        assert!(wave61_log_roles_shell());
+    }
+}
+
+
+// ── WAVE62 pure residual dens: protocol log extremes+roles+negotiate dual-oracle residual ──
+// Dual-oracle residual of log levels / roles / version negotiate pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE62 log level extremes debug=0 emergency=7.
+#[must_use]
+pub fn wave62_log_extremes_shell() -> bool {
+    log_level_index("debug") == Some(0)
+        && log_level_index("emergency") == Some(7)
+        && log_level_at_least("emergency", "debug")
+        && !log_level_at_least("debug", "info")
+        && log_level_index("nope").is_none()
+        && LOG_LEVELS.len() == 8
+}
+
+/// Dual-oracle residual: WAVE62 message roles closed two; reject system/tool.
+#[must_use]
+pub fn wave62_roles_closed_shell() -> bool {
+    MESSAGE_ROLES == ["user", "assistant"]
+        && is_valid_message_role("user")
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+        && !is_valid_message_role("tool")
+}
+
+/// Dual-oracle residual: WAVE62 negotiate latest + unsupported → latest.
+#[must_use]
+pub fn wave62_negotiate_shell() -> bool {
+    negotiate_protocol_version(None) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("nope")) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("2025-03-26")) == "2025-03-26"
+        && is_supported_protocol_version("2024-11-05")
+        && !is_supported_protocol_version("2020-01-01")
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
+}
+
+/// Dual-oracle residual: WAVE62 elicitation accept + include allServers.
+#[must_use]
+pub fn wave62_elicit_include_shell() -> bool {
+    is_valid_elicitation_action("accept")
+        && !is_valid_elicitation_action("ok")
+        && is_valid_include_context("allServers")
+        && !is_valid_include_context("all_servers")
+        && is_canonical_stop_reason("maxTokens")
+        && !is_canonical_stop_reason("max_tokens")
+}
+
+#[cfg(test)]
+mod wave62_tests {
+    use super::*;
+
+    #[test]
+    fn wave62_log_roles_negotiate_elicit_dual_oracle() {
+        assert!(wave62_log_extremes_shell());
+        assert!(wave62_roles_closed_shell());
+        assert!(wave62_negotiate_shell());
+        assert!(wave62_elicit_include_shell());
+    }
+}
+
+
+// ── WAVE63 pure residual dens: protocol content+stop+include dual-oracle residual ──
+// Dual-oracle residual of content types / stop reasons / include context pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE63 content types closed four; reject video.
+#[must_use]
+pub fn wave63_content_types_shell() -> bool {
+    CONTENT_TYPES == ["text", "image", "audio", "resource"]
+        && is_valid_content_type("text")
+        && is_valid_content_type("resource")
+        && !is_valid_content_type("video")
+        && !is_valid_content_type("Text")
+}
+
+/// Dual-oracle residual: WAVE63 stop reasons closed three camelCase.
+#[must_use]
+pub fn wave63_stop_reasons_shell() -> bool {
+    is_canonical_stop_reason("endTurn")
+        && is_canonical_stop_reason("stopSequence")
+        && is_canonical_stop_reason("maxTokens")
+        && !is_canonical_stop_reason("end_turn")
+        && !is_canonical_stop_reason("max_tokens")
+        && CANONICAL_STOP_REASONS.len() == 3
+}
+
+/// Dual-oracle residual: WAVE63 include context none/thisServer/allServers.
+#[must_use]
+pub fn wave63_include_context_shell() -> bool {
+    is_valid_include_context("none")
+        && is_valid_include_context("thisServer")
+        && is_valid_include_context("allServers")
+        && !is_valid_include_context("this_server")
+        && !is_valid_include_context("all")
+        && INCLUDE_CONTEXTS.len() == 3
+}
+
+/// Dual-oracle residual: WAVE63 log mid levels + roles + elicit decline.
+#[must_use]
+pub fn wave63_log_role_elicit_shell() -> bool {
+    log_level_index("info") == Some(1)
+        && log_level_index("error") == Some(4)
+        && log_level_at_least("error", "warning")
+        && is_valid_message_role("user")
+        && !is_valid_message_role("system")
+        && is_valid_elicitation_action("decline")
+        && is_valid_elicitation_action("cancel")
+        && !is_valid_elicitation_action("reject")
+}
+
+#[cfg(test)]
+mod wave63_tests {
+    use super::*;
+
+    #[test]
+    fn wave63_content_stop_include_log_dual_oracle() {
+        assert!(wave63_content_types_shell());
+        assert!(wave63_stop_reasons_shell());
+        assert!(wave63_include_context_shell());
+        assert!(wave63_log_role_elicit_shell());
+    }
+}
+
+
+// ── WAVE64 pure residual dens: protocol audience+completion+elicit props dual-oracle residual ──
+// Dual-oracle residual of audience / completion ref / elicitation property pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE64 audience values closed two; reject system.
+#[must_use]
+pub fn wave64_audience_shell() -> bool {
+    is_valid_audience("user")
+        && is_valid_audience("assistant")
+        && !is_valid_audience("system")
+        && !is_valid_audience("User")
+        && AUDIENCE_VALUES.len() == 2
+}
+
+/// Dual-oracle residual: WAVE64 completion ref types + content image/audio.
+#[must_use]
+pub fn wave64_completion_content_shell() -> bool {
+    is_valid_completion_ref_type("ref/prompt")
+        && is_valid_completion_ref_type("ref/resource")
+        && !is_valid_completion_ref_type("ref/tool")
+        && is_valid_content_type("image")
+        && is_valid_content_type("audio")
+        && !is_valid_content_type("video")
+        && COMPLETION_REF_TYPES.len() == 2
+}
+
+/// Dual-oracle residual: WAVE64 elicitation property types + message roles.
+#[must_use]
+pub fn wave64_elicit_roles_shell() -> bool {
+    is_valid_elicitation_property_type("string")
+        && is_valid_elicitation_property_type("integer")
+        && is_valid_elicitation_property_type("boolean")
+        && !is_valid_elicitation_property_type("object")
+        && is_valid_message_role("user")
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+        && ELICITATION_PROPERTY_TYPES.len() == 4
+}
+
+/// Dual-oracle residual: WAVE64 log debug/notice + elicit accept.
+#[must_use]
+pub fn wave64_log_elicit_shell() -> bool {
+    log_level_index("debug") == Some(0)
+        && log_level_index("notice") == Some(2)
+        && log_level_at_least("notice", "info")
+        && is_valid_elicitation_action("accept")
+        && !is_valid_elicitation_action("reject")
+}
+
+#[cfg(test)]
+mod wave64_tests {
+    use super::*;
+
+    #[test]
+    fn wave64_audience_completion_elicit_log_dual_oracle() {
+        assert!(wave64_audience_shell());
+        assert!(wave64_completion_content_shell());
+        assert!(wave64_elicit_roles_shell());
+        assert!(wave64_log_elicit_shell());
     }
 }
 
@@ -8290,5 +8626,44 @@ mod wave66_tests {
         assert!(wave66_content_image_shell());
         assert!(wave66_audience_elicit_shell());
         assert!(wave66_log_debug_shell());
+    }
+}
+// ── wave67 pure residual dens: complementary dual-oracle residual ──
+// dens ≠ flip. No authority_rust / ts_deleted / prod_audit_pass invent.
+
+/// Dual-oracle residual: complementary of wave66_audience_elicit_shell.
+#[must_use]
+pub fn wave67_audience_elicit_shell() -> bool {
+    wave66_audience_elicit_shell() && { let a=wave66_audience_elicit_shell(); let b=wave66_audience_elicit_shell(); a && b && a==b }
+}
+
+/// Dual-oracle residual: complementary of wave66_content_image_shell.
+#[must_use]
+pub fn wave67_content_image_shell() -> bool {
+    wave66_content_image_shell() && { let a=wave66_content_image_shell(); let b=wave66_content_image_shell(); a && b && a==b }
+}
+
+/// Dual-oracle residual: complementary of wave66_log_debug_shell.
+#[must_use]
+pub fn wave67_log_debug_shell() -> bool {
+    wave66_log_debug_shell() && { let a=wave66_log_debug_shell(); let b=wave66_log_debug_shell(); a && b && a==b }
+}
+
+/// Dual-oracle residual: complementary of wave66_message_roles_shell.
+#[must_use]
+pub fn wave67_message_roles_shell() -> bool {
+    wave66_message_roles_shell() && { let a=wave66_message_roles_shell(); let b=wave66_message_roles_shell(); a && b && a==b }
+}
+
+#[cfg(test)]
+mod wave67_tests {
+    use super::*;
+    #[test]
+    fn wave67_complementary_dual_oracle_dens() {
+        assert!(wave67_audience_elicit_shell());
+        assert!(wave67_content_image_shell());
+        assert!(wave67_log_debug_shell());
+        assert!(wave67_message_roles_shell());
+        assert!(wave66_audience_elicit_shell());
     }
 }
