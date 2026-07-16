@@ -7297,61 +7297,39 @@ mod wave47_tests {
     }
 }
 
-// ── WAVE48 pure residual dens: resources list/subscribe + initialized dual-oracle residual ──
-// Dual-oracle residual of resources/* + notifications/initialized pure halves.
-// package main/exports still TS dist residual. dens ≠ flip / package_main_rust.
 
-/// Dual-oracle residual: WAVE48 resources list method.
-pub const WAVE48_METHOD_RESOURCES_LIST: &str = "resources/list";
-/// Dual-oracle residual: WAVE48 resources subscribe.
-pub const WAVE48_METHOD_RESOURCES_SUBSCRIBE: &str = "resources/subscribe";
-/// Dual-oracle residual: WAVE48 resources unsubscribe.
-pub const WAVE48_METHOD_RESOURCES_UNSUBSCRIBE: &str = "resources/unsubscribe";
-/// Dual-oracle residual: WAVE48 notifications initialized.
-pub const WAVE48_METHOD_NOTIFICATIONS_INITIALIZED: &str = "notifications/initialized";
+// ── WAVE48 pure residual dens: tools/call + prompts/get + resources/read dual-oracle ──
+// Dual-oracle residual of METHOD_TOOLS_CALL / PROMPTS_GET / RESOURCES_READ pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+// product residual dens wave71
 
-/// Dual-oracle residual: WAVE48 method catalog (resources plane).
+/// Dual-oracle residual: WAVE48 tools/call method.
+pub const WAVE48_METHOD_TOOLS_CALL: &str = "tools/call";
+/// Dual-oracle residual: WAVE48 prompts/get method.
+pub const WAVE48_METHOD_PROMPTS_GET: &str = "prompts/get";
+/// Dual-oracle residual: WAVE48 resources/read method.
+pub const WAVE48_METHOD_RESOURCES_READ: &str = "resources/read";
+
+/// Dual-oracle residual: WAVE48 method catalog.
 pub const WAVE48_METHODS: &[&str] = &[
-    WAVE48_METHOD_RESOURCES_LIST,
-    WAVE48_METHOD_RESOURCES_SUBSCRIBE,
-    WAVE48_METHOD_RESOURCES_UNSUBSCRIBE,
+    WAVE48_METHOD_TOOLS_CALL,
+    WAVE48_METHOD_PROMPTS_GET,
+    WAVE48_METHOD_RESOURCES_READ,
 ];
-
-/// Dual-oracle residual: WAVE48 notification catalog.
-pub const WAVE48_NOTIFICATION_METHODS: &[&str] = &[WAVE48_METHOD_NOTIFICATIONS_INITIALIZED];
-
-/// Dual-oracle residual: WAVE48 method count.
-#[must_use]
-pub fn wave48_method_count() -> usize {
-    WAVE48_METHODS.len()
-}
-
-/// Dual-oracle residual: WAVE48 notification count.
-#[must_use]
-pub fn wave48_notification_method_count() -> usize {
-    WAVE48_NOTIFICATION_METHODS.len()
-}
 
 /// Dual-oracle residual: WAVE48 method membership.
 #[must_use]
 pub fn is_wave48_method(method: &str) -> bool {
-    WAVE48_METHODS.contains(&method) || WAVE48_NOTIFICATION_METHODS.contains(&method)
-}
-
-/// Dual-oracle residual: WAVE48 notification membership.
-#[must_use]
-pub fn is_wave48_notification_method(method: &str) -> bool {
-    WAVE48_NOTIFICATION_METHODS.contains(&method)
+    WAVE48_METHODS.contains(&method)
 }
 
 /// Dual-oracle residual: WAVE48 method group.
 #[must_use]
 pub fn wave48_method_group(method: &str) -> Option<&'static str> {
     match method {
-        WAVE48_METHOD_RESOURCES_LIST
-        | WAVE48_METHOD_RESOURCES_SUBSCRIBE
-        | WAVE48_METHOD_RESOURCES_UNSUBSCRIBE => Some("resources"),
-        WAVE48_METHOD_NOTIFICATIONS_INITIALIZED => Some("notifications"),
+        WAVE48_METHOD_TOOLS_CALL => Some("tools"),
+        WAVE48_METHOD_PROMPTS_GET => Some("prompts"),
+        WAVE48_METHOD_RESOURCES_READ => Some("resources"),
         _ => None,
     }
 }
@@ -7359,26 +7337,28 @@ pub fn wave48_method_group(method: &str) -> Option<&'static str> {
 /// Dual-oracle residual: WAVE48 constants match METHOD_* SSOT.
 #[must_use]
 pub fn wave48_methods_match_ssot() -> bool {
-    WAVE48_METHOD_RESOURCES_LIST == METHOD_RESOURCES_LIST
-        && WAVE48_METHOD_RESOURCES_SUBSCRIBE == METHOD_RESOURCES_SUBSCRIBE
-        && WAVE48_METHOD_RESOURCES_UNSUBSCRIBE == METHOD_RESOURCES_UNSUBSCRIBE
-        && WAVE48_METHOD_NOTIFICATIONS_INITIALIZED == METHOD_NOTIFICATIONS_INITIALIZED
+    WAVE48_METHOD_TOOLS_CALL == METHOD_TOOLS_CALL
+        && WAVE48_METHOD_PROMPTS_GET == METHOD_PROMPTS_GET
+        && WAVE48_METHOD_RESOURCES_READ == METHOD_RESOURCES_READ
 }
 
-/// Dual-oracle residual: WAVE48 excludes tools/call + sampling.
+/// Dual-oracle residual: WAVE48 excludes list-only catalog methods.
 #[must_use]
-pub fn wave48_not_tools_call_or_sampling() -> bool {
-    !WAVE48_METHODS.contains(&METHOD_TOOLS_CALL)
-        && !WAVE48_METHODS.contains(&"sampling/createMessage")
-        && !WAVE48_NOTIFICATION_METHODS.contains(&METHOD_TOOLS_CALL)
+pub fn wave48_excludes_list_methods() -> bool {
+    !WAVE48_METHODS.contains(&METHOD_TOOLS_LIST)
+        && !WAVE48_METHODS.contains(&METHOD_PROMPTS_LIST)
+        && !WAVE48_METHODS.contains(&METHOD_RESOURCES_LIST)
+        && !WAVE48_METHODS.contains(&METHOD_PING)
 }
 
-/// Dual-oracle residual: notifications only catalog.
+/// Dual-oracle residual: group ladder for three methods.
 #[must_use]
-pub fn wave48_notifications_only_catalog() -> bool {
-    WAVE48_NOTIFICATION_METHODS
-        .iter()
-        .all(|m| m.starts_with("notifications/"))
+pub fn wave48_group_ladder() -> [Option<&'static str>; 3] {
+    [
+        wave48_method_group(WAVE48_METHOD_TOOLS_CALL),
+        wave48_method_group(WAVE48_METHOD_PROMPTS_GET),
+        wave48_method_group(WAVE48_METHOD_RESOURCES_READ),
+    ]
 }
 
 #[cfg(test)]
@@ -7386,37 +7366,21 @@ mod wave48_tests {
     use super::*;
 
     #[test]
-    fn wave48_resources_list_subscribe_dual_oracle() {
-        assert_eq!(WAVE48_METHOD_RESOURCES_LIST, "resources/list");
-        assert_eq!(WAVE48_METHOD_RESOURCES_SUBSCRIBE, "resources/subscribe");
-        assert_eq!(WAVE48_METHOD_RESOURCES_UNSUBSCRIBE, "resources/unsubscribe");
-        assert_eq!(wave48_method_count(), 3);
-        assert!(is_wave48_method("resources/list"));
-        assert!(is_wave48_method("resources/subscribe"));
-        assert!(!is_wave48_method("tools/call"));
-        assert_eq!(
-            wave48_method_group(WAVE48_METHOD_RESOURCES_LIST),
-            Some("resources")
-        );
+    fn wave48_tools_call_prompts_get_resources_read_dual_oracle() {
+        assert_eq!(WAVE48_METHOD_TOOLS_CALL, "tools/call");
+        assert_eq!(WAVE48_METHOD_PROMPTS_GET, "prompts/get");
+        assert_eq!(WAVE48_METHOD_RESOURCES_READ, "resources/read");
+        assert_eq!(WAVE48_METHODS.len(), 3);
+        assert!(is_wave48_method(WAVE48_METHOD_TOOLS_CALL));
+        assert!(!is_wave48_method(METHOD_PING));
         assert!(wave48_methods_match_ssot());
-        assert!(wave48_not_tools_call_or_sampling());
-    }
-
-    #[test]
-    fn wave48_notifications_initialized_dual_oracle() {
+        assert!(wave48_excludes_list_methods());
         assert_eq!(
-            WAVE48_METHOD_NOTIFICATIONS_INITIALIZED,
-            "notifications/initialized"
+            wave48_group_ladder(),
+            [Some("tools"), Some("prompts"), Some("resources")]
         );
-        assert_eq!(wave48_notification_method_count(), 1);
-        assert!(is_wave48_notification_method("notifications/initialized"));
-        assert!(is_wave48_method("notifications/initialized"));
-        assert_eq!(
-            wave48_method_group(WAVE48_METHOD_NOTIFICATIONS_INITIALIZED),
-            Some("notifications")
-        );
-        assert!(wave48_notifications_only_catalog());
-        assert!(!is_wave47_method(WAVE48_METHOD_RESOURCES_SUBSCRIBE));
-        assert!(!is_wave48_method(WAVE47_METHOD_PING));
+        assert_eq!(WAVE48_METHOD_TOOLS_CALL, METHOD_TOOLS_CALL);
+        assert_eq!(WAVE48_METHOD_PROMPTS_GET, METHOD_PROMPTS_GET);
+        assert_eq!(WAVE48_METHOD_RESOURCES_READ, METHOD_RESOURCES_READ);
     }
 }
