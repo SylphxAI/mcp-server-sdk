@@ -7866,3 +7866,66 @@ mod wave54_tests {
         assert!(wave53_supported_versions_shell());
     }
 }
+
+
+// ── WAVE55 pure residual dens: elicitation+lifecycle+completion dual-oracle residual ──
+// Dual-oracle residual of elicitation actions / lifecycle methods / completion ref pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: elicitation actions closed three.
+#[must_use]
+pub fn wave55_elicitation_actions_shell() -> bool {
+    ELICITATION_ACTIONS == ["accept", "decline", "cancel"]
+        && ELICITATION_ACTIONS.len() == 3
+        && ELICITATION_ACTIONS.contains(&"accept")
+        && !ELICITATION_ACTIONS.contains(&"reject")
+}
+
+/// Dual-oracle residual: lifecycle methods membership.
+#[must_use]
+pub fn wave55_lifecycle_shell() -> bool {
+    is_lifecycle_method("initialize")
+        && is_lifecycle_method("notifications/initialized")
+        && is_lifecycle_method("ping")
+        && !is_lifecycle_method("tools/list")
+}
+
+/// Dual-oracle residual: completion ref types + content types residual.
+#[must_use]
+pub fn wave55_completion_content_shell() -> bool {
+    COMPLETION_REF_TYPES == ["ref/prompt", "ref/resource"]
+        && CONTENT_TYPES.contains(&"text")
+        && CONTENT_TYPES.contains(&"resource")
+        && is_valid_content_type("image")
+        && !is_valid_content_type("video")
+}
+
+/// Dual-oracle residual: stop reasons closed.
+#[must_use]
+pub fn wave55_stop_reasons_shell() -> bool {
+    CANONICAL_STOP_REASONS == ["endTurn", "stopSequence", "maxTokens"]
+        && CANONICAL_STOP_REASONS.len() == 3
+}
+
+/// Dual-oracle residual: negotiate latest + log levels non-empty.
+#[must_use]
+pub fn wave55_negotiate_log_shell() -> bool {
+    LATEST_PROTOCOL_VERSION == "2025-03-26"
+        && is_supported_protocol_version(LATEST_PROTOCOL_VERSION)
+        && !LOG_LEVELS.is_empty()
+        && is_valid_log_level(LOG_LEVELS[0])
+}
+
+#[cfg(test)]
+mod wave55_tests {
+    use super::*;
+
+    #[test]
+    fn wave55_elicitation_lifecycle_completion_dual_oracle() {
+        assert!(wave55_elicitation_actions_shell());
+        assert!(wave55_lifecycle_shell());
+        assert!(wave55_completion_content_shell());
+        assert!(wave55_stop_reasons_shell());
+        assert!(wave55_negotiate_log_shell());
+    }
+}
