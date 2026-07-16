@@ -3207,6 +3207,76 @@ pub fn initialize_result_has_server_info(result: &serde_json::Value) -> bool {
         .is_some_and(|o| o.contains_key("name"))
 }
 
+// ── WAVE28 pure residual dens: tools/list empty + prompts/list empty + schema gate ──
+
+/// Dual-oracle tools list method residual.
+pub const METHOD_TOOLS_LIST: &str = "tools/list";
+/// Dual-oracle prompts list method residual.
+pub const METHOD_PROMPTS_LIST: &str = "prompts/list";
+/// Dual-oracle resources list method residual.
+pub const METHOD_RESOURCES_LIST: &str = "resources/list";
+
+/// Dual-oracle: empty tools list result residual.
+#[must_use]
+pub fn empty_tools_list_result() -> serde_json::Value {
+    serde_json::json!({"tools": []})
+}
+
+/// Dual-oracle: empty prompts list result residual.
+#[must_use]
+pub fn empty_prompts_list_result() -> serde_json::Value {
+    serde_json::json!({"prompts": []})
+}
+
+/// Dual-oracle: empty resources list result residual.
+#[must_use]
+pub fn empty_resources_list_result() -> serde_json::Value {
+    serde_json::json!({"resources": []})
+}
+
+/// Dual-oracle: count tools in tools/list result.
+#[must_use]
+pub fn tools_count_from_list(result: &serde_json::Value) -> usize {
+    result
+        .get("tools")
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0)
+}
+
+/// Dual-oracle: tool descriptor has required name residual.
+#[must_use]
+pub fn tool_descriptor_name_present(tool: &serde_json::Value) -> bool {
+    tool.get("name")
+        .and_then(|v| v.as_str())
+        .is_some_and(|s| !s.is_empty())
+}
+
+/// Dual-oracle: prompt descriptor has required name residual.
+#[must_use]
+pub fn prompt_descriptor_name_present(prompt: &serde_json::Value) -> bool {
+    prompt
+        .get("name")
+        .and_then(|v| v.as_str())
+        .is_some_and(|s| !s.is_empty())
+}
+
+/// Dual-oracle: inputSchema object residual gate for tools.
+#[must_use]
+pub fn tool_input_schema_is_object(tool: &serde_json::Value) -> bool {
+    tool.get("inputSchema")
+        .and_then(|v| v.as_object())
+        .is_some()
+}
+
+/// Dual-oracle empty array residual alias inventory.
+#[must_use]
+pub fn wave28_empty_array() -> serde_json::Value {
+    serde_json::json!([])
+}
+
+
+
 
 #[cfg(test)]
 mod tests {
@@ -5468,5 +5538,29 @@ mod tests {
         })));
         assert!(!initialize_result_has_server_info(&serde_json::json!({})));
     }
+
+    #[test]
+    fn wave28_tools_prompts_resources_list_residual() {
+        assert_eq!(METHOD_TOOLS_LIST, "tools/list");
+        assert_eq!(METHOD_PROMPTS_LIST, "prompts/list");
+        assert_eq!(METHOD_RESOURCES_LIST, "resources/list");
+        let tools = empty_tools_list_result();
+        assert_eq!(tools_count_from_list(&tools), 0);
+        assert_eq!(tools["tools"], serde_json::json!([]));
+        let prompts = empty_prompts_list_result();
+        assert_eq!(prompts["prompts"], serde_json::json!([]));
+        let resources = empty_resources_list_result();
+        assert_eq!(resources["resources"], serde_json::json!([]));
+        let tool = serde_json::json!({"name": "echo", "inputSchema": {"type": "object"}});
+        assert!(tool_descriptor_name_present(&tool));
+        assert!(tool_input_schema_is_object(&tool));
+        assert!(!tool_descriptor_name_present(&serde_json::json!({"name": ""})));
+        assert!(prompt_descriptor_name_present(&serde_json::json!({"name": "p"})));
+        assert!(!prompt_descriptor_name_present(&serde_json::json!({})));
+        assert_eq!(wave28_empty_array(), serde_json::json!([]));
+        let listed = serde_json::json!({"tools": [tool.clone(), tool]});
+        assert_eq!(tools_count_from_list(&listed), 2);
+    }
+
 
 }
