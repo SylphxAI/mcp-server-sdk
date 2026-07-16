@@ -3537,6 +3537,134 @@ pub fn is_wave33_sampling_or_list_changed_method(method: &str) -> bool {
 
 
 
+
+// ── WAVE34 pure residual dens: notifications/progress + tools/list residual kernels ──
+// Dual-oracle residual of MCP progress notification + tools/list method halves.
+// Transport/handler I/O remains residual. NO authority_rust / package_main_rust invent.
+
+/// Dual-oracle residual: notifications/progress method.
+pub const WAVE34_METHOD_NOTIFICATIONS_PROGRESS: &str = "notifications/progress";
+/// Dual-oracle residual: tools/list method.
+pub const WAVE34_METHOD_TOOLS_LIST: &str = "tools/list";
+/// Dual-oracle residual: tools/call method alias inventory.
+pub const WAVE34_METHOD_TOOLS_CALL: &str = "tools/call";
+
+/// Dual-oracle residual: progress params require progressToken + numeric progress.
+#[must_use]
+pub fn wave34_progress_params_valid(params: &serde_json::Value) -> bool {
+    let token_ok = params.get("progressToken").is_some();
+    let progress_ok = params
+        .get("progress")
+        .and_then(|v| v.as_f64())
+        .map(|p| p.is_finite() && (0.0..=100.0).contains(&p))
+        .unwrap_or(false);
+    token_ok && progress_ok
+}
+
+/// Dual-oracle residual: tools/list accepts empty object / null params.
+#[must_use]
+pub fn wave34_tools_list_params_ok(params: &serde_json::Value) -> bool {
+    params.is_null() || params.is_object()
+}
+
+/// Dual-oracle residual: wave34 empty object alias.
+#[must_use]
+pub fn wave34_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// Dual-oracle residual: is wave34 densed method family.
+#[must_use]
+pub fn is_wave34_progress_or_tools_method(method: &str) -> bool {
+    matches!(
+        method,
+        "notifications/progress" | "tools/list" | "tools/call"
+    )
+}
+
+// ── WAVE35 pure residual dens: Method catalog completeness dual-oracle residual ──
+// Dual-oracle residual of `src/protocol/mcp.ts` Method object keys/values pure halves.
+// Transport/handler I/O remains residual. NO authority_rust / package_main_rust invent.
+
+/// Dual-oracle residual: Method catalog wire values (product Method object order).
+pub const WAVE35_METHOD_CATALOG: &[&str] = &[
+    "initialize",
+    "notifications/initialized",
+    "ping",
+    "resources/list",
+    "resources/templates/list",
+    "resources/read",
+    "resources/subscribe",
+    "resources/unsubscribe",
+    "notifications/resources/updated",
+    "notifications/resources/list_changed",
+    "prompts/list",
+    "prompts/get",
+    "notifications/prompts/list_changed",
+    "tools/list",
+    "tools/call",
+    "notifications/tools/list_changed",
+    "logging/setLevel",
+    "notifications/message",
+    "completion/complete",
+    "sampling/createMessage",
+    "elicitation/create",
+    "notifications/progress",
+    "notifications/cancelled",
+    "roots/list",
+    "notifications/roots/list_changed",
+];
+
+/// Dual-oracle residual: Method object size.
+pub const WAVE35_METHOD_COUNT: usize = 25;
+
+/// Dual-oracle residual: known Method membership.
+#[must_use]
+pub fn is_wave35_method_catalog_member(method: &str) -> bool {
+    WAVE35_METHOD_CATALOG.contains(&method)
+}
+
+/// Dual-oracle residual: catalog length dual-oracle of Object.keys(Method).length.
+#[must_use]
+pub fn wave35_method_catalog_count() -> usize {
+    WAVE35_METHOD_CATALOG.len()
+}
+
+/// Dual-oracle residual: lifecycle methods pure residual subset.
+#[must_use]
+pub fn is_wave35_lifecycle_method(method: &str) -> bool {
+    matches!(
+        method,
+        "initialize" | "notifications/initialized" | "ping"
+    )
+}
+
+/// Dual-oracle residual: server→client request methods (sampling + elicitation).
+#[must_use]
+pub fn is_wave35_server_to_client_request(method: &str) -> bool {
+    matches!(method, "sampling/createMessage" | "elicitation/create")
+}
+
+/// Dual-oracle residual: list_changed notification family.
+#[must_use]
+pub fn is_wave35_list_changed_notification(method: &str) -> bool {
+    matches!(
+        method,
+        "notifications/resources/list_changed"
+            | "notifications/prompts/list_changed"
+            | "notifications/tools/list_changed"
+            | "notifications/roots/list_changed"
+    )
+}
+
+/// Dual-oracle residual: empty object alias.
+#[must_use]
+pub fn wave35_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+
+
 mod tests {
     use super::*;
 
@@ -5955,5 +6083,71 @@ mod tests {
 
 
 
+
+    #[test]
+    fn wave34_progress_tools_list_residual() {
+        assert_eq!(
+            WAVE34_METHOD_NOTIFICATIONS_PROGRESS,
+            "notifications/progress"
+        );
+        assert_eq!(WAVE34_METHOD_TOOLS_LIST, "tools/list");
+        assert_eq!(WAVE34_METHOD_TOOLS_CALL, "tools/call");
+        assert!(wave34_progress_params_valid(&serde_json::json!({
+            "progressToken": "t1",
+            "progress": 50.0
+        })));
+        assert!(wave34_progress_params_valid(&serde_json::json!({
+            "progressToken": 1,
+            "progress": 0.0
+        })));
+        assert!(!wave34_progress_params_valid(&serde_json::json!({
+            "progress": 50.0
+        })));
+        assert!(!wave34_progress_params_valid(&serde_json::json!({
+            "progressToken": "t1",
+            "progress": 101.0
+        })));
+        assert!(wave34_tools_list_params_ok(&serde_json::json!({})));
+        assert!(wave34_tools_list_params_ok(&serde_json::Value::Null));
+        assert!(!wave34_tools_list_params_ok(&serde_json::json!([])));
+        assert_eq!(wave34_empty_object(), serde_json::json!({}));
+        assert!(is_wave34_progress_or_tools_method("notifications/progress"));
+        assert!(is_wave34_progress_or_tools_method("tools/list"));
+        assert!(is_wave34_progress_or_tools_method("tools/call"));
+        assert!(!is_wave34_progress_or_tools_method("ping"));
+    }
+
+    #[test]
+    fn wave35_method_catalog_residual() {
+        assert_eq!(wave35_method_catalog_count(), WAVE35_METHOD_COUNT);
+        assert_eq!(WAVE35_METHOD_COUNT, 25);
+        assert_eq!(WAVE35_METHOD_CATALOG[0], "initialize");
+        assert_eq!(
+            WAVE35_METHOD_CATALOG[WAVE35_METHOD_COUNT - 1],
+            "notifications/roots/list_changed"
+        );
+        assert!(is_wave35_method_catalog_member("tools/call"));
+        assert!(is_wave35_method_catalog_member("elicitation/create"));
+        assert!(!is_wave35_method_catalog_member("tools/list_changed"));
+        assert!(is_wave35_lifecycle_method("initialize"));
+        assert!(is_wave35_lifecycle_method("ping"));
+        assert!(!is_wave35_lifecycle_method("tools/list"));
+        assert!(is_wave35_server_to_client_request("sampling/createMessage"));
+        assert!(is_wave35_server_to_client_request("elicitation/create"));
+        assert!(!is_wave35_server_to_client_request("tools/call"));
+        assert!(is_wave35_list_changed_notification(
+            "notifications/tools/list_changed"
+        ));
+        assert!(is_wave35_list_changed_notification(
+            "notifications/roots/list_changed"
+        ));
+        assert!(!is_wave35_list_changed_notification(
+            "notifications/resources/updated"
+        ));
+        assert_eq!(wave35_empty_object(), serde_json::json!({}));
+        for m in WAVE35_METHOD_CATALOG {
+            assert!(is_wave35_method_catalog_member(m));
+        }
+    }
 
 }
