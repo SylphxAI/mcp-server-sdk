@@ -8443,3 +8443,66 @@ mod wave63_tests {
         assert!(wave63_log_role_elicit_shell());
     }
 }
+
+
+// ── WAVE64 pure residual dens: protocol audience+completion+elicit props dual-oracle residual ──
+// Dual-oracle residual of audience / completion ref / elicitation property pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE64 audience values closed two; reject system.
+#[must_use]
+pub fn wave64_audience_shell() -> bool {
+    is_valid_audience("user")
+        && is_valid_audience("assistant")
+        && !is_valid_audience("system")
+        && !is_valid_audience("User")
+        && AUDIENCE_VALUES.len() == 2
+}
+
+/// Dual-oracle residual: WAVE64 completion ref types + content image/audio.
+#[must_use]
+pub fn wave64_completion_content_shell() -> bool {
+    is_valid_completion_ref_type("ref/prompt")
+        && is_valid_completion_ref_type("ref/resource")
+        && !is_valid_completion_ref_type("ref/tool")
+        && is_valid_content_type("image")
+        && is_valid_content_type("audio")
+        && !is_valid_content_type("video")
+        && COMPLETION_REF_TYPES.len() == 2
+}
+
+/// Dual-oracle residual: WAVE64 elicitation property types + message roles.
+#[must_use]
+pub fn wave64_elicit_roles_shell() -> bool {
+    is_valid_elicitation_property_type("string")
+        && is_valid_elicitation_property_type("integer")
+        && is_valid_elicitation_property_type("boolean")
+        && !is_valid_elicitation_property_type("object")
+        && is_valid_message_role("user")
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+        && ELICITATION_PROPERTY_TYPES.len() == 4
+}
+
+/// Dual-oracle residual: WAVE64 log debug/notice + elicit accept.
+#[must_use]
+pub fn wave64_log_elicit_shell() -> bool {
+    log_level_index("debug") == Some(0)
+        && log_level_index("notice") == Some(2)
+        && log_level_at_least("notice", "info")
+        && is_valid_elicitation_action("accept")
+        && !is_valid_elicitation_action("reject")
+}
+
+#[cfg(test)]
+mod wave64_tests {
+    use super::*;
+
+    #[test]
+    fn wave64_audience_completion_elicit_log_dual_oracle() {
+        assert!(wave64_audience_shell());
+        assert!(wave64_completion_content_shell());
+        assert!(wave64_elicit_roles_shell());
+        assert!(wave64_log_elicit_shell());
+    }
+}
