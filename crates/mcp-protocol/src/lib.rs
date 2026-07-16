@@ -7994,3 +7994,61 @@ mod wave56_tests {
         assert!(wave55_stop_reasons_shell());
     }
 }
+
+
+// ── WAVE57 pure residual dens: protocol negotiate+content+log dual-oracle residual ──
+// Dual-oracle residual of protocol version / content / log / roles pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE57 negotiate none/unknown → latest; known older exact.
+#[must_use]
+pub fn wave57_negotiate_shell() -> bool {
+    negotiate_protocol_version(None) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("nope")) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && negotiate_protocol_version(Some("2025-03-26")) == "2025-03-26"
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
+}
+
+/// Dual-oracle residual: WAVE57 content types closed four.
+#[must_use]
+pub fn wave57_content_shell() -> bool {
+    CONTENT_TYPES == ["text", "image", "audio", "resource"]
+        && is_valid_content_type("text")
+        && is_valid_content_type("audio")
+        && !is_valid_content_type("video")
+        && CONTENT_TYPES.len() == 4
+}
+
+/// Dual-oracle residual: WAVE57 roles + log head/tail.
+#[must_use]
+pub fn wave57_roles_log_shell() -> bool {
+    MESSAGE_ROLES == ["user", "assistant"]
+        && LOG_LEVELS[0] == "debug"
+        && LOG_LEVELS[LOG_LEVELS.len() - 1] == "emergency"
+        && LOG_LEVELS.len() == 8
+        && is_valid_log_level("warning")
+        && !is_valid_log_level("trace")
+}
+
+/// Dual-oracle residual: WAVE57 supported versions order latest first.
+#[must_use]
+pub fn wave57_versions_order_shell() -> bool {
+    SUPPORTED_PROTOCOL_VERSIONS == ["2025-03-26", "2024-11-05"]
+        && is_supported_protocol_version("2025-03-26")
+        && is_supported_protocol_version("2024-11-05")
+        && !is_supported_protocol_version("2023-01-01")
+}
+
+#[cfg(test)]
+mod wave57_tests {
+    use super::*;
+
+    #[test]
+    fn wave57_protocol_negotiate_content_log_dual_oracle() {
+        assert!(wave57_negotiate_shell());
+        assert!(wave57_content_shell());
+        assert!(wave57_roles_log_shell());
+        assert!(wave57_versions_order_shell());
+    }
+}
