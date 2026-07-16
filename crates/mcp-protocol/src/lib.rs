@@ -3370,6 +3370,59 @@ pub fn wave30_notification_ack() -> serde_json::Value {
 }
 
 
+
+// ── WAVE39 pure residual dens: elicitation + resource templates method residual ──
+// Dual-oracle residual of elicitation/create + resources/templates/list pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: elicitation create method.
+pub const WAVE39_METHOD_ELICITATION_CREATE: &str = "elicitation/create";
+/// Dual-oracle residual: resources templates list method.
+pub const WAVE39_METHOD_RESOURCES_TEMPLATES_LIST: &str = "resources/templates/list";
+
+/// Dual-oracle residual: wave39 method catalog.
+pub const WAVE39_METHODS: &[&str] = &[
+    WAVE39_METHOD_ELICITATION_CREATE,
+    WAVE39_METHOD_RESOURCES_TEMPLATES_LIST,
+];
+
+/// Dual-oracle residual: is wave39 densed method.
+#[must_use]
+pub fn is_wave39_method(method: &str) -> bool {
+    WAVE39_METHODS.contains(&method)
+}
+
+/// Dual-oracle residual: elicitation create params require non-empty message string pure half.
+#[must_use]
+pub fn wave39_elicitation_create_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("message")
+        .and_then(|v| v.as_str())
+        .is_some_and(|s| !s.trim().is_empty())
+}
+
+/// Dual-oracle residual: resources templates list accepts empty/object params.
+#[must_use]
+pub fn wave39_resources_templates_list_params_ok(params: &serde_json::Value) -> bool {
+    params.is_object() || params.is_null()
+}
+
+/// Dual-oracle residual: empty object alias inventory.
+#[must_use]
+pub fn wave39_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// Dual-oracle residual: method group for wave39 methods.
+#[must_use]
+pub fn wave39_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE39_METHOD_ELICITATION_CREATE => Some("elicitation"),
+        WAVE39_METHOD_RESOURCES_TEMPLATES_LIST => Some("resources"),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 
 // ── WAVE31 pure residual dens: resources/subscribe + logging/setLevel + completion/complete gate kernels ──
@@ -6414,6 +6467,45 @@ mod tests {
         assert_eq!(wave38_method_group(METHOD_TOOLS_LIST), Some("tools"));
         assert_eq!(wave38_method_group(METHOD_PING), Some("lifecycle"));
     }
+
+    #[test]
+    fn wave39_elicitation_templates_method_residual() {
+        assert_eq!(WAVE39_METHOD_ELICITATION_CREATE, "elicitation/create");
+        assert_eq!(
+            WAVE39_METHOD_RESOURCES_TEMPLATES_LIST,
+            "resources/templates/list"
+        );
+        assert_eq!(WAVE39_METHODS.len(), 2);
+        assert!(is_wave39_method("elicitation/create"));
+        assert!(is_wave39_method("resources/templates/list"));
+        assert!(!is_wave39_method("tools/list"));
+        assert!(wave39_elicitation_create_params_valid(&serde_json::json!({
+            "message": "Confirm?"
+        })));
+        assert!(!wave39_elicitation_create_params_valid(&serde_json::json!({
+            "message": "  "
+        })));
+        assert!(!wave39_elicitation_create_params_valid(&serde_json::json!({})));
+        assert!(wave39_resources_templates_list_params_ok(&serde_json::json!({})));
+        assert!(wave39_resources_templates_list_params_ok(&serde_json::Value::Null));
+        assert!(!wave39_resources_templates_list_params_ok(&serde_json::json!([])));
+        assert_eq!(wave39_empty_object(), serde_json::json!({}));
+        assert_eq!(
+            wave39_method_group(WAVE39_METHOD_ELICITATION_CREATE),
+            Some("elicitation")
+        );
+        assert_eq!(
+            wave39_method_group(WAVE39_METHOD_RESOURCES_TEMPLATES_LIST),
+            Some("resources")
+        );
+        // dual-oracle with existing method constants
+        assert_eq!(WAVE39_METHOD_ELICITATION_CREATE, METHOD_ELICITATION_CREATE);
+        assert_eq!(
+            WAVE39_METHOD_RESOURCES_TEMPLATES_LIST,
+            METHOD_RESOURCES_TEMPLATES_LIST
+        );
+    }
+
 
 
 
