@@ -7681,3 +7681,65 @@ mod wave51_tests {
         assert!(!is_wave50_method(WAVE51_LATEST_PROTOCOL_VERSION));
     }
 }
+
+// ── WAVE52 pure residual dens: negotiate protocol + content/log membership dual-oracle residual ──
+// Dual-oracle residual of protocol negotiate / CONTENT_TYPES / LOG_LEVELS pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE52 negotiate None → latest.
+#[must_use]
+pub fn wave52_negotiate_latest_shell() -> bool {
+    negotiate_protocol_version(None) == LATEST_PROTOCOL_VERSION
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
+}
+
+/// Dual-oracle residual: WAVE52 negotiate known older supported.
+#[must_use]
+pub fn wave52_negotiate_older_shell() -> bool {
+    negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && is_supported_protocol_version("2024-11-05")
+}
+
+/// Dual-oracle residual: WAVE52 content type membership.
+#[must_use]
+pub fn wave52_content_membership_shell() -> bool {
+    is_valid_content_type("text")
+        && is_valid_content_type("image")
+        && is_valid_content_type("audio")
+        && is_valid_content_type("resource")
+        && !is_valid_content_type("file")
+        && CONTENT_TYPES.len() == 4
+}
+
+/// Dual-oracle residual: WAVE52 message roles closed.
+#[must_use]
+pub fn wave52_roles_closed_shell() -> bool {
+    MESSAGE_ROLES == ["user", "assistant"]
+        && is_valid_message_role("user")
+        && !is_valid_message_role("tool")
+}
+
+/// Dual-oracle residual: WAVE52 log levels include warning/error mid.
+#[must_use]
+pub fn wave52_log_mid_shell() -> bool {
+    is_valid_log_level("warning")
+        && is_valid_log_level("error")
+        && is_valid_log_level("info")
+        && !is_valid_log_level("verbose")
+        && LOG_LEVELS.len() == 8
+}
+
+#[cfg(test)]
+mod wave52_tests {
+    use super::*;
+
+    #[test]
+    fn wave52_negotiate_content_log_membership_dual_oracle() {
+        assert!(wave52_negotiate_latest_shell());
+        assert!(wave52_negotiate_older_shell());
+        assert!(wave52_content_membership_shell());
+        assert!(wave52_roles_closed_shell());
+        assert!(wave52_log_mid_shell());
+        assert!(wave51_protocol_versions_match_ssot());
+    }
+}
