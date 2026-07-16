@@ -8319,3 +8319,64 @@ mod wave61_tests {
         assert!(wave61_log_roles_shell());
     }
 }
+
+
+// ── WAVE62 pure residual dens: protocol log extremes+roles+negotiate dual-oracle residual ──
+// Dual-oracle residual of log levels / roles / version negotiate pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE62 log level extremes debug=0 emergency=7.
+#[must_use]
+pub fn wave62_log_extremes_shell() -> bool {
+    log_level_index("debug") == Some(0)
+        && log_level_index("emergency") == Some(7)
+        && log_level_at_least("emergency", "debug")
+        && !log_level_at_least("debug", "info")
+        && log_level_index("nope").is_none()
+        && LOG_LEVELS.len() == 8
+}
+
+/// Dual-oracle residual: WAVE62 message roles closed two; reject system/tool.
+#[must_use]
+pub fn wave62_roles_closed_shell() -> bool {
+    MESSAGE_ROLES == ["user", "assistant"]
+        && is_valid_message_role("user")
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+        && !is_valid_message_role("tool")
+}
+
+/// Dual-oracle residual: WAVE62 negotiate latest + unsupported → latest.
+#[must_use]
+pub fn wave62_negotiate_shell() -> bool {
+    negotiate_protocol_version(None) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("nope")) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("2025-03-26")) == "2025-03-26"
+        && is_supported_protocol_version("2024-11-05")
+        && !is_supported_protocol_version("2020-01-01")
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
+}
+
+/// Dual-oracle residual: WAVE62 elicitation accept + include allServers.
+#[must_use]
+pub fn wave62_elicit_include_shell() -> bool {
+    is_valid_elicitation_action("accept")
+        && !is_valid_elicitation_action("ok")
+        && is_valid_include_context("allServers")
+        && !is_valid_include_context("all_servers")
+        && is_canonical_stop_reason("maxTokens")
+        && !is_canonical_stop_reason("max_tokens")
+}
+
+#[cfg(test)]
+mod wave62_tests {
+    use super::*;
+
+    #[test]
+    fn wave62_log_roles_negotiate_elicit_dual_oracle() {
+        assert!(wave62_log_extremes_shell());
+        assert!(wave62_roles_closed_shell());
+        assert!(wave62_negotiate_shell());
+        assert!(wave62_elicit_include_shell());
+    }
+}
