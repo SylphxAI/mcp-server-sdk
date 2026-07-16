@@ -7802,3 +7802,63 @@ mod wave53_tests {
     }
 }
 
+
+
+// ── WAVE54 pure residual dens: tools/prompts/resources list dual-oracle residual ──
+// Dual-oracle residual of METHOD_* list plane pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE54 list methods catalog.
+pub const WAVE54_LIST_METHODS: &[&str] = &[
+    METHOD_TOOLS_LIST,
+    METHOD_PROMPTS_LIST,
+    METHOD_RESOURCES_LIST,
+];
+
+/// Dual-oracle residual: WAVE54 list membership.
+#[must_use]
+pub fn is_wave54_list_method(method: &str) -> bool {
+    WAVE54_LIST_METHODS.contains(&method)
+}
+
+/// Dual-oracle residual: WAVE54 list methods match SSOT.
+#[must_use]
+pub fn wave54_list_methods_match_ssot() -> bool {
+    METHOD_TOOLS_LIST == "tools/list"
+        && METHOD_PROMPTS_LIST == "prompts/list"
+        && METHOD_RESOURCES_LIST == "resources/list"
+        && WAVE54_LIST_METHODS.len() == 3
+}
+
+/// Dual-oracle residual: WAVE54 list plane excludes call/get/read.
+#[must_use]
+pub fn wave54_list_not_invoke_plane() -> bool {
+    !WAVE54_LIST_METHODS.contains(&METHOD_TOOLS_CALL)
+        && !WAVE54_LIST_METHODS.contains(&METHOD_PROMPTS_GET)
+        && !WAVE54_LIST_METHODS.contains(&METHOD_RESOURCES_READ)
+        && is_wave54_list_method("tools/list")
+        && !is_wave54_list_method("tools/call")
+}
+
+/// Dual-oracle residual: WAVE54 does not claim negotiate plane.
+#[must_use]
+pub fn wave54_not_negotiate_plane() -> bool {
+    !is_wave54_list_method("initialize")
+        && wave53_supported_versions_shell()
+        && CONTENT_TYPES.len() == 4
+}
+
+#[cfg(test)]
+mod wave54_tests {
+    use super::*;
+
+    #[test]
+    fn wave54_tools_prompts_resources_list_dual_oracle() {
+        assert!(wave54_list_methods_match_ssot());
+        assert!(wave54_list_not_invoke_plane());
+        assert!(wave54_not_negotiate_plane());
+        assert_eq!(WAVE54_LIST_METHODS[0], "tools/list");
+        assert!(is_wave54_list_method("prompts/list"));
+        assert!(is_wave54_list_method("resources/list"));
+    }
+}
