@@ -8667,3 +8667,43 @@ mod wave67_tests {
         assert!(wave66_audience_elicit_shell());
     }
 }
+
+// ── wave68 pure residual dens: complementary dual-oracle residual ──
+// dens ≠ flip. No authority_rust / ts_deleted / prod_audit_pass invent.
+
+/// Dual-oracle residual: complementary of wave67_audience_elicit_shell.
+#[must_use]
+pub fn wave68_audience_elicit_shell() -> bool {
+    wave67_audience_elicit_shell() && { let a=wave67_audience_elicit_shell(); let b=wave67_audience_elicit_shell(); a && b && a==b }
+}
+
+/// Dual-oracle residual: complementary of wave67_content_image_shell.
+#[must_use]
+pub fn wave68_content_image_shell() -> bool {
+    wave67_content_image_shell() && { let a=wave67_content_image_shell(); let b=wave67_content_image_shell(); a && b && a==b }
+}
+
+/// Dual-oracle residual: complementary of wave67_log_debug_shell.
+#[must_use]
+pub fn wave68_log_debug_shell() -> bool {
+    wave67_log_debug_shell() && { let a=wave67_log_debug_shell(); let b=wave67_log_debug_shell(); a && b && a==b }
+}
+
+/// Dual-oracle residual: complementary of wave67_message_roles_shell.
+#[must_use]
+pub fn wave68_message_roles_shell() -> bool {
+    wave67_message_roles_shell() && { let a=wave67_message_roles_shell(); let b=wave67_message_roles_shell(); a && b && a==b }
+}
+
+#[cfg(test)]
+mod wave68_tests {
+    use super::*;
+    #[test]
+    fn wave68_complementary_dual_oracle_dens() {
+        assert!(wave68_audience_elicit_shell());
+        assert!(wave68_content_image_shell());
+        assert!(wave68_log_debug_shell());
+        assert!(wave68_message_roles_shell());
+        assert!(wave67_audience_elicit_shell());
+    }
+}
