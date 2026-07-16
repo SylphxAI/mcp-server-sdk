@@ -3327,6 +3327,49 @@ pub fn wave29_empty_object() -> serde_json::Value {
 
 
 
+
+// ── WAVE30 pure residual dens: notifications/* + roots/list gate kernels ──
+
+/// Dual-oracle notifications/initialized method residual.
+pub const METHOD_NOTIFICATIONS_INITIALIZED: &str = "notifications/initialized";
+/// Dual-oracle notifications/cancelled method residual.
+pub const METHOD_NOTIFICATIONS_CANCELLED: &str = "notifications/cancelled";
+/// Dual-oracle notifications/progress method residual.
+pub const METHOD_NOTIFICATIONS_PROGRESS: &str = "notifications/progress";
+/// Dual-oracle roots/list method residual.
+pub const METHOD_ROOTS_LIST: &str = "roots/list";
+
+/// Dual-oracle residual: notification methods do not expect a result payload.
+#[must_use]
+pub fn is_notification_method(method: &str) -> bool {
+    method.starts_with("notifications/")
+}
+
+/// Dual-oracle residual: roots/list params may be empty object or absent.
+#[must_use]
+pub fn roots_list_params_valid(params: Option<&serde_json::Value>) -> bool {
+    match params {
+        None => true,
+        Some(v) if v.is_null() => true,
+        Some(v) if v.is_object() => true,
+        _ => false,
+    }
+}
+
+/// Dual-oracle residual: progress notification requires progressToken.
+#[must_use]
+pub fn notifications_progress_params_valid(params: &serde_json::Value) -> bool {
+    params.get("progressToken").is_some()
+}
+
+/// Dual-oracle residual: wave30 empty notification ack alias.
+/// (empty roots list result lives as existing `empty_roots_list_result` dual-oracle.)
+#[must_use]
+pub fn wave30_notification_ack() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -5628,6 +5671,23 @@ mod tests {
         assert!(!tool_result_is_error(&serde_json::json!({})));
         assert_eq!(empty_tool_content(), serde_json::json!([]));
         assert_eq!(wave29_empty_object(), serde_json::json!({}));
+    }
+
+    #[test]
+    fn wave30_notifications_roots_residual() {
+        assert_eq!(METHOD_NOTIFICATIONS_INITIALIZED, "notifications/initialized");
+        assert_eq!(METHOD_NOTIFICATIONS_CANCELLED, "notifications/cancelled");
+        assert_eq!(METHOD_NOTIFICATIONS_PROGRESS, "notifications/progress");
+        assert_eq!(METHOD_ROOTS_LIST, "roots/list");
+        assert!(is_notification_method("notifications/initialized"));
+        assert!(!is_notification_method("tools/list"));
+        assert!(roots_list_params_valid(None));
+        assert!(roots_list_params_valid(Some(&serde_json::json!({}))));
+        assert!(!roots_list_params_valid(Some(&serde_json::json!([]))));
+        assert!(notifications_progress_params_valid(&serde_json::json!({"progressToken": "t1"})));
+        assert!(!notifications_progress_params_valid(&serde_json::json!({})));
+        assert_eq!(empty_roots_list_result()["roots"], serde_json::json!([]));
+        assert_eq!(wave30_notification_ack(), serde_json::json!({}));
     }
 
 
