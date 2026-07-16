@@ -3433,6 +3433,62 @@ pub fn is_resource_subscription_method(method: &str) -> bool {
     method == METHOD_RESOURCES_SUBSCRIBE || method == METHOD_RESOURCES_UNSUBSCRIBE
 }
 
+// ── WAVE32 pure residual dens: logging message + resource updated + list_changed residual kernels ──
+
+/// Dual-oracle residual notification method names densed this wave.
+pub const WAVE32_METHOD_NOTIFICATIONS_MESSAGE: &str = "notifications/message";
+pub const WAVE32_METHOD_NOTIFICATIONS_RESOURCES_UPDATED: &str = "notifications/resources/updated";
+pub const WAVE32_METHOD_NOTIFICATIONS_TOOLS_LIST_CHANGED: &str = "notifications/tools/list_changed";
+pub const WAVE32_METHOD_NOTIFICATIONS_PROMPTS_LIST_CHANGED: &str =
+    "notifications/prompts/list_changed";
+
+/// Dual-oracle residual: notifications/message requires non-empty level + data presence.
+#[must_use]
+pub fn wave32_notifications_message_params_valid(params: &serde_json::Value) -> bool {
+    let level_ok = params
+        .get("level")
+        .and_then(|v| v.as_str())
+        .map(|s| !s.is_empty())
+        .unwrap_or(false);
+    let data_ok = params.get("data").is_some();
+    level_ok && data_ok
+}
+
+/// Dual-oracle residual: resources/updated requires non-empty uri.
+#[must_use]
+pub fn wave32_resources_updated_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("uri")
+        .and_then(|v| v.as_str())
+        .map(|s| !s.is_empty())
+        .unwrap_or(false)
+}
+
+/// Dual-oracle residual: list_changed notifications accept empty params object/null.
+#[must_use]
+pub fn wave32_list_changed_params_ok(params: &serde_json::Value) -> bool {
+    params.is_object() || params.is_null()
+}
+
+/// Dual-oracle residual: wave32 empty object alias inventory.
+#[must_use]
+pub fn wave32_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// Dual-oracle residual: is wave32 densed notification method family.
+#[must_use]
+pub fn is_wave32_list_changed_or_message_method(method: &str) -> bool {
+    matches!(
+        method,
+        "notifications/message"
+            | "notifications/resources/updated"
+            | "notifications/tools/list_changed"
+            | "notifications/prompts/list_changed"
+    )
+}
+
+
 mod tests {
     use super::*;
 
@@ -5773,6 +5829,48 @@ mod tests {
         assert!(is_resource_subscription_method("resources/unsubscribe"));
         assert!(!is_resource_subscription_method("resources/list"));
     }
+
+    #[test]
+    fn wave32_message_resources_list_changed_residual() {
+        assert_eq!(WAVE32_METHOD_NOTIFICATIONS_MESSAGE, "notifications/message");
+        assert_eq!(
+            WAVE32_METHOD_NOTIFICATIONS_RESOURCES_UPDATED,
+            "notifications/resources/updated"
+        );
+        assert_eq!(
+            WAVE32_METHOD_NOTIFICATIONS_TOOLS_LIST_CHANGED,
+            "notifications/tools/list_changed"
+        );
+        assert_eq!(
+            WAVE32_METHOD_NOTIFICATIONS_PROMPTS_LIST_CHANGED,
+            "notifications/prompts/list_changed"
+        );
+        assert!(wave32_notifications_message_params_valid(
+            &serde_json::json!({"level":"info","data":{"m":"x"}})
+        ));
+        assert!(!wave32_notifications_message_params_valid(
+            &serde_json::json!({"level":"info"})
+        ));
+        assert!(!wave32_notifications_message_params_valid(
+            &serde_json::json!({"level":"","data":{}})
+        ));
+        assert!(wave32_resources_updated_params_valid(
+            &serde_json::json!({"uri":"file:///a"})
+        ));
+        assert!(!wave32_resources_updated_params_valid(
+            &serde_json::json!({"uri":""})
+        ));
+        assert!(wave32_list_changed_params_ok(&serde_json::json!({})));
+        assert!(wave32_list_changed_params_ok(&serde_json::Value::Null));
+        assert!(!wave32_list_changed_params_ok(&serde_json::json!([])));
+        assert_eq!(wave32_empty_object(), serde_json::json!({}));
+        assert!(is_wave32_list_changed_or_message_method("notifications/message"));
+        assert!(is_wave32_list_changed_or_message_method(
+            "notifications/tools/list_changed"
+        ));
+        assert!(!is_wave32_list_changed_or_message_method("ping"));
+    }
+
 
 
 
