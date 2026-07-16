@@ -8506,3 +8506,65 @@ mod wave64_tests {
         assert!(wave64_log_elicit_shell());
     }
 }
+
+
+// ── WAVE65 pure residual dens: protocol include+priority+log warning dual-oracle residual ──
+// Dual-oracle residual of include context / priority / log level pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE65 include context closed three; reject servers.
+#[must_use]
+pub fn wave65_include_context_shell() -> bool {
+    is_valid_include_context("none")
+        && is_valid_include_context("thisServer")
+        && is_valid_include_context("allServers")
+        && !is_valid_include_context("server")
+        && !is_valid_include_context("None")
+        && INCLUDE_CONTEXTS.len() == 3
+}
+
+/// Dual-oracle residual: WAVE65 priority poles [0,1] + clamp nonfinite.
+#[must_use]
+pub fn wave65_priority_poles_shell() -> bool {
+    is_valid_priority(0.0)
+        && is_valid_priority(0.5)
+        && is_valid_priority(1.0)
+        && !is_valid_priority(-0.01)
+        && !is_valid_priority(1.01)
+        && !is_valid_priority(f64::NAN)
+        && clamp_priority(f64::INFINITY) == 0.0
+}
+
+/// Dual-oracle residual: WAVE65 log warning severity + emergency tail.
+#[must_use]
+pub fn wave65_log_warning_shell() -> bool {
+    is_valid_log_level("warning")
+        && log_level_index("warning") == Some(3)
+        && log_level_index("emergency") == Some(7)
+        && log_level_at_least("error", "warning")
+        && !log_level_at_least("info", "error")
+        && LOG_LEVELS.len() == 8
+}
+
+/// Dual-oracle residual: WAVE65 elicit decline/cancel + content text.
+#[must_use]
+pub fn wave65_elicit_content_shell() -> bool {
+    is_valid_elicitation_action("decline")
+        && is_valid_elicitation_action("cancel")
+        && !is_valid_elicitation_action("ok")
+        && is_valid_content_type("text")
+        && !is_valid_content_type("markdown")
+}
+
+#[cfg(test)]
+mod wave65_tests {
+    use super::*;
+
+    #[test]
+    fn wave65_include_priority_log_elicit_dual_oracle() {
+        assert!(wave65_include_context_shell());
+        assert!(wave65_priority_poles_shell());
+        assert!(wave65_log_warning_shell());
+        assert!(wave65_elicit_content_shell());
+    }
+}
