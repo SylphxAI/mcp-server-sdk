@@ -8194,3 +8194,67 @@ mod wave59_tests {
         assert!(wave59_negotiate_shell());
     }
 }
+
+
+// ── WAVE60 pure residual dens: protocol log severity+content roles dual-oracle residual ──
+// Dual-oracle residual of log levels / content / roles / negotiate pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE60 log severity index order + at_least.
+#[must_use]
+pub fn wave60_log_severity_shell() -> bool {
+    log_level_index("debug") == Some(0)
+        && log_level_index("emergency") == Some(7)
+        && log_level_at_least("error", "warning")
+        && !log_level_at_least("info", "error")
+        && log_level_index("nope").is_none()
+        && LOG_LEVELS.len() == 8
+}
+
+/// Dual-oracle residual: WAVE60 content types closed four + roles.
+#[must_use]
+pub fn wave60_content_roles_shell() -> bool {
+    is_valid_content_type("text")
+        && is_valid_content_type("image")
+        && is_valid_content_type("audio")
+        && is_valid_content_type("resource")
+        && !is_valid_content_type("video")
+        && MESSAGE_ROLES == ["user", "assistant"]
+        && is_valid_message_role("user")
+        && !is_valid_message_role("tool")
+}
+
+/// Dual-oracle residual: WAVE60 include context + stop reason reject edges.
+#[must_use]
+pub fn wave60_include_stop_shell() -> bool {
+    is_valid_include_context("none")
+        && is_valid_include_context("allServers")
+        && !is_valid_include_context("None")
+        && is_canonical_stop_reason("endTurn")
+        && is_canonical_stop_reason("maxTokens")
+        && !is_canonical_stop_reason("end_turn")
+}
+
+/// Dual-oracle residual: WAVE60 negotiate None/empty → latest; exact older kept.
+#[must_use]
+pub fn wave60_negotiate_shell() -> bool {
+    negotiate_protocol_version(None) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("")) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && is_supported_protocol_version("2025-03-26")
+        && !is_supported_protocol_version("2023-01-01")
+        && SUPPORTED_PROTOCOL_VERSIONS.len() == 2
+}
+
+#[cfg(test)]
+mod wave60_tests {
+    use super::*;
+
+    #[test]
+    fn wave60_log_severity_content_roles_dual_oracle() {
+        assert!(wave60_log_severity_shell());
+        assert!(wave60_content_roles_shell());
+        assert!(wave60_include_stop_shell());
+        assert!(wave60_negotiate_shell());
+    }
+}
