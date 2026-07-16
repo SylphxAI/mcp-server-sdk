@@ -7037,3 +7037,105 @@ mod wave45_tests {
     }
 }
 
+
+
+// ── WAVE46 pure residual dens: sampling + notification resource update dual-oracle residual ──
+// Dual-oracle residual of sampling/createMessage + notifications/* residual pure halves.
+// package main/exports still TS dist residual. dens ≠ package_main_rust.
+
+/// Dual-oracle residual: WAVE46 sampling method.
+pub const WAVE46_METHOD_SAMPLING_CREATE_MESSAGE: &str = "sampling/createMessage";
+/// Dual-oracle residual: WAVE46 notifications message method.
+pub const WAVE46_METHOD_NOTIFICATIONS_MESSAGE: &str = "notifications/message";
+/// Dual-oracle residual: WAVE46 resources updated notification.
+pub const WAVE46_METHOD_NOTIFICATIONS_RESOURCES_UPDATED: &str = "notifications/resources/updated";
+/// Dual-oracle residual: WAVE46 tools list changed notification.
+pub const WAVE46_METHOD_NOTIFICATIONS_TOOLS_LIST_CHANGED: &str = "notifications/tools/list_changed";
+
+/// Dual-oracle residual: WAVE46 methods catalog.
+pub const WAVE46_METHODS: &[&str] = &[
+    WAVE46_METHOD_SAMPLING_CREATE_MESSAGE,
+    WAVE46_METHOD_NOTIFICATIONS_MESSAGE,
+    WAVE46_METHOD_NOTIFICATIONS_RESOURCES_UPDATED,
+    WAVE46_METHOD_NOTIFICATIONS_TOOLS_LIST_CHANGED,
+];
+
+/// Dual-oracle residual: known WAVE46 method.
+#[must_use]
+pub fn is_wave46_method(method: &str) -> bool {
+    WAVE46_METHODS.contains(&method)
+}
+
+/// Dual-oracle residual: WAVE46 method count.
+#[must_use]
+pub fn wave46_method_count() -> usize {
+    WAVE46_METHODS.len()
+}
+
+/// Dual-oracle residual: method group for WAVE46 methods.
+#[must_use]
+pub fn wave46_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE46_METHOD_SAMPLING_CREATE_MESSAGE => Some("sampling"),
+        WAVE46_METHOD_NOTIFICATIONS_MESSAGE
+        | WAVE46_METHOD_NOTIFICATIONS_RESOURCES_UPDATED
+        | WAVE46_METHOD_NOTIFICATIONS_TOOLS_LIST_CHANGED => Some("notifications"),
+        _ => None,
+    }
+}
+
+/// Dual-oracle residual: WAVE46 matches WAVE32/WAVE33 SSOT strings.
+#[must_use]
+pub fn wave46_methods_match_ssot() -> bool {
+    WAVE46_METHOD_SAMPLING_CREATE_MESSAGE == WAVE33_METHOD_SAMPLING_CREATE_MESSAGE
+        && WAVE46_METHOD_NOTIFICATIONS_MESSAGE == WAVE32_METHOD_NOTIFICATIONS_MESSAGE
+        && WAVE46_METHOD_NOTIFICATIONS_RESOURCES_UPDATED
+            == WAVE32_METHOD_NOTIFICATIONS_RESOURCES_UPDATED
+        && WAVE46_METHOD_NOTIFICATIONS_TOOLS_LIST_CHANGED
+            == WAVE32_METHOD_NOTIFICATIONS_TOOLS_LIST_CHANGED
+}
+
+/// Dual-oracle residual: WAVE46 is not list/call catalog.
+#[must_use]
+pub fn wave46_not_list_call() -> bool {
+    !WAVE46_METHODS.contains(&METHOD_TOOLS_LIST)
+        && !WAVE46_METHODS.contains(&METHOD_TOOLS_CALL)
+        && !WAVE46_METHODS.contains(&METHOD_PROMPTS_LIST)
+        && !WAVE46_METHODS.contains(&METHOD_RESOURCES_LIST)
+}
+
+#[cfg(test)]
+mod wave46_tests {
+    use super::*;
+
+    #[test]
+    fn wave46_sampling_notification_resource_dual_oracle() {
+        assert_eq!(
+            WAVE46_METHOD_SAMPLING_CREATE_MESSAGE,
+            "sampling/createMessage"
+        );
+        assert_eq!(WAVE46_METHOD_NOTIFICATIONS_MESSAGE, "notifications/message");
+        assert_eq!(
+            WAVE46_METHOD_NOTIFICATIONS_RESOURCES_UPDATED,
+            "notifications/resources/updated"
+        );
+        assert_eq!(
+            WAVE46_METHOD_NOTIFICATIONS_TOOLS_LIST_CHANGED,
+            "notifications/tools/list_changed"
+        );
+        assert_eq!(wave46_method_count(), 4);
+        assert!(is_wave46_method("sampling/createMessage"));
+        assert!(is_wave46_method("notifications/message"));
+        assert!(!is_wave46_method("tools/list"));
+        assert_eq!(
+            wave46_method_group(WAVE46_METHOD_SAMPLING_CREATE_MESSAGE),
+            Some("sampling")
+        );
+        assert_eq!(
+            wave46_method_group(WAVE46_METHOD_NOTIFICATIONS_MESSAGE),
+            Some("notifications")
+        );
+        assert!(wave46_methods_match_ssot());
+        assert!(wave46_not_list_call());
+    }
+}
