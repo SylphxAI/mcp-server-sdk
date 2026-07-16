@@ -7384,3 +7384,119 @@ mod wave48_tests {
         assert_eq!(WAVE48_METHOD_RESOURCES_READ, METHOD_RESOURCES_READ);
     }
 }
+
+// ── WAVE49 pure residual dens: resources list/subscribe + initialized dual-oracle residual ──
+// Dual-oracle residual of resources/* + notifications/initialized pure halves (residual10).
+// Concurrent WAVE48 claimed tools/call plane; residual10 resources dens re-homed as WAVE49.
+// package main/exports still TS dist residual. dens ≠ flip / package_main_rust.
+
+/// Dual-oracle residual: WAVE49 resources list method.
+pub const WAVE49_METHOD_RESOURCES_LIST: &str = "resources/list";
+/// Dual-oracle residual: WAVE49 resources subscribe.
+pub const WAVE49_METHOD_RESOURCES_SUBSCRIBE: &str = "resources/subscribe";
+/// Dual-oracle residual: WAVE49 resources unsubscribe.
+pub const WAVE49_METHOD_RESOURCES_UNSUBSCRIBE: &str = "resources/unsubscribe";
+/// Dual-oracle residual: WAVE49 notifications initialized.
+pub const WAVE49_METHOD_NOTIFICATIONS_INITIALIZED: &str = "notifications/initialized";
+
+/// Dual-oracle residual: WAVE49 method catalog (resources plane).
+pub const WAVE49_METHODS: &[&str] = &[
+    WAVE49_METHOD_RESOURCES_LIST,
+    WAVE49_METHOD_RESOURCES_SUBSCRIBE,
+    WAVE49_METHOD_RESOURCES_UNSUBSCRIBE,
+];
+
+/// Dual-oracle residual: WAVE49 notification catalog.
+pub const WAVE49_NOTIFICATION_METHODS: &[&str] = &[WAVE49_METHOD_NOTIFICATIONS_INITIALIZED];
+
+#[must_use]
+pub fn wave49_method_count() -> usize {
+    WAVE49_METHODS.len()
+}
+
+#[must_use]
+pub fn wave49_notification_method_count() -> usize {
+    WAVE49_NOTIFICATION_METHODS.len()
+}
+
+#[must_use]
+pub fn is_wave49_method(method: &str) -> bool {
+    WAVE49_METHODS.contains(&method) || WAVE49_NOTIFICATION_METHODS.contains(&method)
+}
+
+#[must_use]
+pub fn is_wave49_notification_method(method: &str) -> bool {
+    WAVE49_NOTIFICATION_METHODS.contains(&method)
+}
+
+#[must_use]
+pub fn wave49_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE49_METHOD_RESOURCES_LIST
+        | WAVE49_METHOD_RESOURCES_SUBSCRIBE
+        | WAVE49_METHOD_RESOURCES_UNSUBSCRIBE => Some("resources"),
+        WAVE49_METHOD_NOTIFICATIONS_INITIALIZED => Some("notifications"),
+        _ => None,
+    }
+}
+
+#[must_use]
+pub fn wave49_methods_match_ssot() -> bool {
+    WAVE49_METHOD_RESOURCES_LIST == METHOD_RESOURCES_LIST
+        && WAVE49_METHOD_RESOURCES_SUBSCRIBE == METHOD_RESOURCES_SUBSCRIBE
+        && WAVE49_METHOD_RESOURCES_UNSUBSCRIBE == METHOD_RESOURCES_UNSUBSCRIBE
+        && WAVE49_METHOD_NOTIFICATIONS_INITIALIZED == METHOD_NOTIFICATIONS_INITIALIZED
+}
+
+#[must_use]
+pub fn wave49_not_tools_call_or_sampling() -> bool {
+    !WAVE49_METHODS.contains(&METHOD_TOOLS_CALL)
+        && !WAVE49_METHODS.contains(&"sampling/createMessage")
+}
+
+#[must_use]
+pub fn wave49_notifications_only_catalog() -> bool {
+    WAVE49_NOTIFICATION_METHODS
+        .iter()
+        .all(|m| m.starts_with("notifications/"))
+}
+
+#[cfg(test)]
+mod wave49_tests {
+    use super::*;
+
+    #[test]
+    fn wave49_resources_list_subscribe_dual_oracle() {
+        assert_eq!(WAVE49_METHOD_RESOURCES_LIST, "resources/list");
+        assert_eq!(WAVE49_METHOD_RESOURCES_SUBSCRIBE, "resources/subscribe");
+        assert_eq!(WAVE49_METHOD_RESOURCES_UNSUBSCRIBE, "resources/unsubscribe");
+        assert_eq!(wave49_method_count(), 3);
+        assert!(is_wave49_method("resources/list"));
+        assert!(is_wave49_method("resources/subscribe"));
+        assert!(!is_wave49_method("tools/call"));
+        assert_eq!(
+            wave49_method_group(WAVE49_METHOD_RESOURCES_LIST),
+            Some("resources")
+        );
+        assert!(wave49_methods_match_ssot());
+        assert!(wave49_not_tools_call_or_sampling());
+    }
+
+    #[test]
+    fn wave49_notifications_initialized_dual_oracle() {
+        assert_eq!(
+            WAVE49_METHOD_NOTIFICATIONS_INITIALIZED,
+            "notifications/initialized"
+        );
+        assert_eq!(wave49_notification_method_count(), 1);
+        assert!(is_wave49_notification_method("notifications/initialized"));
+        assert!(is_wave49_method("notifications/initialized"));
+        assert_eq!(
+            wave49_method_group(WAVE49_METHOD_NOTIFICATIONS_INITIALIZED),
+            Some("notifications")
+        );
+        assert!(wave49_notifications_only_catalog());
+        assert!(!is_wave48_method(WAVE49_METHOD_RESOURCES_SUBSCRIBE));
+        assert!(!is_wave49_method(WAVE48_METHOD_TOOLS_CALL));
+    }
+}
