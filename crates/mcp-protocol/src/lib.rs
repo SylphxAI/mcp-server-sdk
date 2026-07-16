@@ -8380,3 +8380,66 @@ mod wave62_tests {
         assert!(wave62_elicit_include_shell());
     }
 }
+
+
+// ── WAVE63 pure residual dens: protocol content+stop+include dual-oracle residual ──
+// Dual-oracle residual of content types / stop reasons / include context pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE63 content types closed four; reject video.
+#[must_use]
+pub fn wave63_content_types_shell() -> bool {
+    CONTENT_TYPES == ["text", "image", "audio", "resource"]
+        && is_valid_content_type("text")
+        && is_valid_content_type("resource")
+        && !is_valid_content_type("video")
+        && !is_valid_content_type("Text")
+}
+
+/// Dual-oracle residual: WAVE63 stop reasons closed three camelCase.
+#[must_use]
+pub fn wave63_stop_reasons_shell() -> bool {
+    is_canonical_stop_reason("endTurn")
+        && is_canonical_stop_reason("stopSequence")
+        && is_canonical_stop_reason("maxTokens")
+        && !is_canonical_stop_reason("end_turn")
+        && !is_canonical_stop_reason("max_tokens")
+        && CANONICAL_STOP_REASONS.len() == 3
+}
+
+/// Dual-oracle residual: WAVE63 include context none/thisServer/allServers.
+#[must_use]
+pub fn wave63_include_context_shell() -> bool {
+    is_valid_include_context("none")
+        && is_valid_include_context("thisServer")
+        && is_valid_include_context("allServers")
+        && !is_valid_include_context("this_server")
+        && !is_valid_include_context("all")
+        && INCLUDE_CONTEXTS.len() == 3
+}
+
+/// Dual-oracle residual: WAVE63 log mid levels + roles + elicit decline.
+#[must_use]
+pub fn wave63_log_role_elicit_shell() -> bool {
+    log_level_index("info") == Some(1)
+        && log_level_index("error") == Some(4)
+        && log_level_at_least("error", "warning")
+        && is_valid_message_role("user")
+        && !is_valid_message_role("system")
+        && is_valid_elicitation_action("decline")
+        && is_valid_elicitation_action("cancel")
+        && !is_valid_elicitation_action("reject")
+}
+
+#[cfg(test)]
+mod wave63_tests {
+    use super::*;
+
+    #[test]
+    fn wave63_content_stop_include_log_dual_oracle() {
+        assert!(wave63_content_types_shell());
+        assert!(wave63_stop_reasons_shell());
+        assert!(wave63_include_context_shell());
+        assert!(wave63_log_role_elicit_shell());
+    }
+}
