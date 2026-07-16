@@ -7929,3 +7929,68 @@ mod wave55_tests {
         assert!(wave55_negotiate_log_shell());
     }
 }
+
+
+// ── WAVE56 pure residual dens: protocol negotiate log roles content dual-oracle residual ──
+// Dual-oracle residual of negotiate / LOG_LEVELS / MESSAGE_ROLES / CONTENT_TYPES pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE56 negotiate none/unknown → latest; known older exact.
+#[must_use]
+pub fn wave56_negotiate_shell() -> bool {
+    negotiate_protocol_version(None) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("nope")) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
+}
+
+/// Dual-oracle residual: WAVE56 log mid levels + length eight.
+#[must_use]
+pub fn wave56_log_mid_shell() -> bool {
+    LOG_LEVELS.len() == 8
+        && is_valid_log_level("info")
+        && is_valid_log_level("warning")
+        && is_valid_log_level("error")
+        && !is_valid_log_level("verbose")
+}
+
+/// Dual-oracle residual: WAVE56 roles closed user/assistant.
+#[must_use]
+pub fn wave56_roles_shell() -> bool {
+    MESSAGE_ROLES.len() == 2
+        && is_valid_message_role("user")
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+}
+
+/// Dual-oracle residual: WAVE56 content head text + audio membership.
+#[must_use]
+pub fn wave56_content_shell() -> bool {
+    CONTENT_TYPES[0] == "text"
+        && is_valid_content_type("audio")
+        && is_valid_content_type("resource")
+        && !is_valid_content_type("file")
+}
+
+/// Dual-oracle residual: WAVE56 supported versions order latest first.
+#[must_use]
+pub fn wave56_versions_order_shell() -> bool {
+    SUPPORTED_PROTOCOL_VERSIONS[0] == LATEST_PROTOCOL_VERSION
+        && SUPPORTED_PROTOCOL_VERSIONS[1] == "2024-11-05"
+        && is_supported_protocol_version("2024-11-05")
+}
+
+#[cfg(test)]
+mod wave56_tests {
+    use super::*;
+
+    #[test]
+    fn wave56_protocol_negotiate_log_roles_content_dual_oracle() {
+        assert!(wave56_negotiate_shell());
+        assert!(wave56_log_mid_shell());
+        assert!(wave56_roles_shell());
+        assert!(wave56_content_shell());
+        assert!(wave56_versions_order_shell());
+        assert!(wave55_stop_reasons_shell());
+    }
+}
