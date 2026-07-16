@@ -3762,6 +3762,72 @@ pub fn wave37_empty_object() -> serde_json::Value {
     serde_json::json!({})
 }
 
+// ── WAVE38 pure residual dens: method group membership dual-oracle dens ──
+// Dual-oracle residual of protocol method group catalogs pure halves
+// (tools/prompts/resources/lifecycle membership helpers).
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: method group labels catalog.
+pub const WAVE38_METHOD_GROUPS: &[&str] = &[
+    "lifecycle",
+    "tools",
+    "prompts",
+    "resources",
+    "notifications",
+    "logging",
+    "completion",
+    "sampling",
+];
+
+/// Dual-oracle residual: known method group.
+#[must_use]
+pub fn is_wave38_method_group(group: &str) -> bool {
+    WAVE38_METHOD_GROUPS.contains(&group)
+}
+
+/// Dual-oracle residual: classify method into group (pure prefix half).
+#[must_use]
+pub fn wave38_method_group(method: &str) -> Option<&'static str> {
+    if method == "initialize" || method == "ping" || method == "shutdown" {
+        Some("lifecycle")
+    } else if method.starts_with("tools/") {
+        Some("tools")
+    } else if method.starts_with("prompts/") {
+        Some("prompts")
+    } else if method.starts_with("resources/") {
+        Some("resources")
+    } else if method.starts_with("notifications/") {
+        Some("notifications")
+    } else if method.starts_with("logging/") {
+        Some("logging")
+    } else if method.starts_with("completion/") {
+        Some("completion")
+    } else if method.starts_with("sampling/") {
+        Some("sampling")
+    } else {
+        None
+    }
+}
+
+/// Dual-oracle residual: tools list vs call membership.
+#[must_use]
+pub fn is_wave38_tools_method(method: &str) -> bool {
+    wave38_method_group(method) == Some("tools")
+}
+
+/// Dual-oracle residual: notifications family.
+#[must_use]
+pub fn is_wave38_notification_method(method: &str) -> bool {
+    wave38_method_group(method) == Some("notifications")
+}
+
+/// Dual-oracle residual: empty object helper (parity with prior dens waves).
+#[must_use]
+pub fn wave38_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+
 
 
 
@@ -6313,6 +6379,42 @@ mod tests {
             SUPPORTED_PROTOCOL_VERSIONS
         );
     }
+
+    #[test]
+    fn wave38_method_group_membership_residual() {
+        assert_eq!(WAVE38_METHOD_GROUPS.len(), 8);
+        assert!(is_wave38_method_group("tools"));
+        assert!(is_wave38_method_group("lifecycle"));
+        assert!(!is_wave38_method_group("admin"));
+        assert_eq!(wave38_method_group("initialize"), Some("lifecycle"));
+        assert_eq!(wave38_method_group("ping"), Some("lifecycle"));
+        assert_eq!(wave38_method_group("tools/list"), Some("tools"));
+        assert_eq!(wave38_method_group("tools/call"), Some("tools"));
+        assert_eq!(wave38_method_group("prompts/get"), Some("prompts"));
+        assert_eq!(wave38_method_group("resources/read"), Some("resources"));
+        assert_eq!(
+            wave38_method_group("notifications/message"),
+            Some("notifications")
+        );
+        assert_eq!(wave38_method_group("logging/setLevel"), Some("logging"));
+        assert_eq!(
+            wave38_method_group("completion/complete"),
+            Some("completion")
+        );
+        assert_eq!(
+            wave38_method_group("sampling/createMessage"),
+            Some("sampling")
+        );
+        assert_eq!(wave38_method_group("unknown/method"), None);
+        assert!(is_wave38_tools_method("tools/call"));
+        assert!(!is_wave38_tools_method("prompts/list"));
+        assert!(is_wave38_notification_method("notifications/initialized"));
+        assert_eq!(wave38_empty_object(), serde_json::json!({}));
+        // dual-oracle: existing method constants map into groups
+        assert_eq!(wave38_method_group(METHOD_TOOLS_LIST), Some("tools"));
+        assert_eq!(wave38_method_group(METHOD_PING), Some("lifecycle"));
+    }
+
 
 
 
