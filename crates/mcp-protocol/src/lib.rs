@@ -8124,3 +8124,73 @@ mod wave58_tests {
     }
 }
 
+
+
+// ── WAVE59 pure residual dens: protocol include-context stop-reason log mid dual-oracle residual ──
+// Dual-oracle residual of include_context / stop_reason / log mid / content pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE59 include contexts closed three.
+#[must_use]
+pub fn wave59_include_context_shell() -> bool {
+    INCLUDE_CONTEXTS.len() == 3
+        && is_valid_include_context("none")
+        && is_valid_include_context("thisServer")
+        && is_valid_include_context("allServers")
+        && !is_valid_include_context("other")
+}
+
+/// Dual-oracle residual: WAVE59 canonical stop reasons closed three.
+#[must_use]
+pub fn wave59_stop_reason_shell() -> bool {
+    CANONICAL_STOP_REASONS.len() == 3
+        && is_canonical_stop_reason("endTurn")
+        && is_canonical_stop_reason("stopSequence")
+        && is_canonical_stop_reason("maxTokens")
+        && !is_canonical_stop_reason("abort")
+}
+
+/// Dual-oracle residual: WAVE59 log mid levels + reject verbose/trace.
+#[must_use]
+pub fn wave59_log_mid_shell() -> bool {
+    is_valid_log_level("info")
+        && is_valid_log_level("notice")
+        && is_valid_log_level("error")
+        && is_valid_log_level("critical")
+        && !is_valid_log_level("verbose")
+        && !is_valid_log_level("trace")
+        && LOG_LEVELS.len() == 8
+}
+
+/// Dual-oracle residual: WAVE59 content resource + roles closed.
+#[must_use]
+pub fn wave59_content_roles_shell() -> bool {
+    is_valid_content_type("resource")
+        && !is_valid_content_type("file")
+        && MESSAGE_ROLES == ["user", "assistant"]
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+}
+
+/// Dual-oracle residual: WAVE59 negotiate older exact + unknown → latest.
+#[must_use]
+pub fn wave59_negotiate_shell() -> bool {
+    negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && negotiate_protocol_version(Some("nope")) == LATEST_PROTOCOL_VERSION
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
+        && is_supported_protocol_version("2025-03-26")
+}
+
+#[cfg(test)]
+mod wave59_tests {
+    use super::*;
+
+    #[test]
+    fn wave59_include_context_stop_reason_log_mid_dual_oracle() {
+        assert!(wave59_include_context_shell());
+        assert!(wave59_stop_reason_shell());
+        assert!(wave59_log_mid_shell());
+        assert!(wave59_content_roles_shell());
+        assert!(wave59_negotiate_shell());
+    }
+}
