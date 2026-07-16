@@ -7804,48 +7804,52 @@ mod wave53_tests {
 
 
 
-// ── WAVE54 pure residual dens: tools/prompts/resources list dual-oracle residual ──
-// Dual-oracle residual of METHOD_* list plane pure halves.
+// ── WAVE54 pure residual dens: protocol negotiate log content dual-oracle residual ──
+// Dual-oracle residual of negotiate / LOG_LEVELS / CONTENT_TYPES pure halves.
 // Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
 
-/// Dual-oracle residual: WAVE54 list methods catalog.
-pub const WAVE54_LIST_METHODS: &[&str] = &[
-    METHOD_TOOLS_LIST,
-    METHOD_PROMPTS_LIST,
-    METHOD_RESOURCES_LIST,
-];
-
-/// Dual-oracle residual: WAVE54 list membership.
+/// Dual-oracle residual: WAVE54 negotiate supported older exact + latest const.
 #[must_use]
-pub fn is_wave54_list_method(method: &str) -> bool {
-    WAVE54_LIST_METHODS.contains(&method)
+pub fn wave54_negotiate_supported_shell() -> bool {
+    negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && negotiate_protocol_version(Some("2025-03-26")) == "2025-03-26"
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
 }
 
-/// Dual-oracle residual: WAVE54 list methods match SSOT.
+/// Dual-oracle residual: WAVE54 log emergency tail + debug head.
 #[must_use]
-pub fn wave54_list_methods_match_ssot() -> bool {
-    METHOD_TOOLS_LIST == "tools/list"
-        && METHOD_PROMPTS_LIST == "prompts/list"
-        && METHOD_RESOURCES_LIST == "resources/list"
-        && WAVE54_LIST_METHODS.len() == 3
+pub fn wave54_log_head_tail_shell() -> bool {
+    LOG_LEVELS[0] == "debug"
+        && LOG_LEVELS[LOG_LEVELS.len() - 1] == "emergency"
+        && is_valid_log_level("critical")
+        && is_valid_log_level("alert")
+        && !is_valid_log_level("trace")
 }
 
-/// Dual-oracle residual: WAVE54 list plane excludes call/get/read.
+/// Dual-oracle residual: WAVE54 content types closed four.
 #[must_use]
-pub fn wave54_list_not_invoke_plane() -> bool {
-    !WAVE54_LIST_METHODS.contains(&METHOD_TOOLS_CALL)
-        && !WAVE54_LIST_METHODS.contains(&METHOD_PROMPTS_GET)
-        && !WAVE54_LIST_METHODS.contains(&METHOD_RESOURCES_READ)
-        && is_wave54_list_method("tools/list")
-        && !is_wave54_list_method("tools/call")
+pub fn wave54_content_closed_shell() -> bool {
+    CONTENT_TYPES.len() == 4
+        && is_valid_content_type("text")
+        && is_valid_content_type("image")
+        && is_valid_content_type("audio")
+        && !is_valid_content_type("video")
 }
 
-/// Dual-oracle residual: WAVE54 does not claim negotiate plane.
+/// Dual-oracle residual: WAVE54 roles closed user/assistant.
 #[must_use]
-pub fn wave54_not_negotiate_plane() -> bool {
-    !is_wave54_list_method("initialize")
-        && wave53_supported_versions_shell()
-        && CONTENT_TYPES.len() == 4
+pub fn wave54_roles_closed_shell() -> bool {
+    MESSAGE_ROLES == ["user", "assistant"]
+        && is_valid_message_role("user")
+        && !is_valid_message_role("tool")
+}
+
+/// Dual-oracle residual: WAVE54 supported versions length two.
+#[must_use]
+pub fn wave54_versions_len_shell() -> bool {
+    SUPPORTED_PROTOCOL_VERSIONS.len() == 2
+        && is_supported_protocol_version(LATEST_PROTOCOL_VERSION)
+        && !is_supported_protocol_version("2020-01-01")
 }
 
 #[cfg(test)]
@@ -7853,12 +7857,12 @@ mod wave54_tests {
     use super::*;
 
     #[test]
-    fn wave54_tools_prompts_resources_list_dual_oracle() {
-        assert!(wave54_list_methods_match_ssot());
-        assert!(wave54_list_not_invoke_plane());
-        assert!(wave54_not_negotiate_plane());
-        assert_eq!(WAVE54_LIST_METHODS[0], "tools/list");
-        assert!(is_wave54_list_method("prompts/list"));
-        assert!(is_wave54_list_method("resources/list"));
+    fn wave54_protocol_negotiate_log_content_dual_oracle() {
+        assert!(wave54_negotiate_supported_shell());
+        assert!(wave54_log_head_tail_shell());
+        assert!(wave54_content_closed_shell());
+        assert!(wave54_roles_closed_shell());
+        assert!(wave54_versions_len_shell());
+        assert!(wave53_supported_versions_shell());
     }
 }
