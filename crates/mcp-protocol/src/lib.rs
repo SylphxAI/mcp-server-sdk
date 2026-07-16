@@ -6855,3 +6855,86 @@ mod wave43_tests {
         assert_eq!(WAVE43_METHOD_PING, methods::PING);
     }
 }
+
+// ── WAVE44 pure residual dens: tools/call + prompts/get + resources/read dual-oracle residual ──
+// Dual-oracle residual of MCP invoke/get/read methods pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+// Complementary to concurrent WAVE43 lifecycle dens.
+
+/// Dual-oracle residual: WAVE44 tools call method.
+pub const WAVE44_METHOD_TOOLS_CALL: &str = "tools/call";
+/// Dual-oracle residual: WAVE44 prompts get method.
+pub const WAVE44_METHOD_PROMPTS_GET: &str = "prompts/get";
+/// Dual-oracle residual: WAVE44 resources read method.
+pub const WAVE44_METHOD_RESOURCES_READ: &str = "resources/read";
+
+/// Dual-oracle residual: WAVE44 invoke methods catalog.
+pub const WAVE44_METHODS: &[&str] = &[
+    WAVE44_METHOD_TOOLS_CALL,
+    WAVE44_METHOD_PROMPTS_GET,
+    WAVE44_METHOD_RESOURCES_READ,
+];
+
+/// Dual-oracle residual: known WAVE44 method.
+#[must_use]
+pub fn is_wave44_method(method: &str) -> bool {
+    WAVE44_METHODS.contains(&method)
+}
+
+/// Dual-oracle residual: WAVE44 method group.
+#[must_use]
+pub fn wave44_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE44_METHOD_TOOLS_CALL => Some("tools"),
+        WAVE44_METHOD_PROMPTS_GET => Some("prompts"),
+        WAVE44_METHOD_RESOURCES_READ => Some("resources"),
+        _ => None,
+    }
+}
+
+/// Dual-oracle residual: WAVE44 methods match SSOT METHOD_* constants.
+#[must_use]
+pub fn wave44_methods_match_ssot() -> bool {
+    WAVE44_METHOD_TOOLS_CALL == METHOD_TOOLS_CALL
+        && WAVE44_METHOD_PROMPTS_GET == METHOD_PROMPTS_GET
+        && WAVE44_METHOD_RESOURCES_READ == METHOD_RESOURCES_READ
+}
+
+/// Dual-oracle residual: WAVE44 method count is 3.
+#[must_use]
+pub fn wave44_method_count() -> usize {
+    WAVE44_METHODS.len()
+}
+
+/// Dual-oracle residual: invoke methods are not list methods.
+#[must_use]
+pub fn wave44_invoke_not_list() -> bool {
+    !WAVE44_METHODS.contains(&METHOD_TOOLS_LIST)
+        && !WAVE44_METHODS.contains(&METHOD_PROMPTS_LIST)
+        && !WAVE44_METHODS.contains(&METHOD_RESOURCES_LIST)
+}
+
+#[cfg(test)]
+mod wave44_tests {
+    use super::*;
+
+    #[test]
+    fn wave44_tools_call_prompts_get_resources_read_dual_oracle() {
+        assert_eq!(WAVE44_METHOD_TOOLS_CALL, "tools/call");
+        assert_eq!(WAVE44_METHOD_PROMPTS_GET, "prompts/get");
+        assert_eq!(WAVE44_METHOD_RESOURCES_READ, "resources/read");
+        assert_eq!(wave44_method_count(), 3);
+        assert!(is_wave44_method("tools/call"));
+        assert!(is_wave44_method("prompts/get"));
+        assert!(is_wave44_method("resources/read"));
+        assert!(!is_wave44_method("tools/list"));
+        assert_eq!(wave44_method_group(WAVE44_METHOD_TOOLS_CALL), Some("tools"));
+        assert_eq!(wave44_method_group(WAVE44_METHOD_PROMPTS_GET), Some("prompts"));
+        assert_eq!(wave44_method_group(WAVE44_METHOD_RESOURCES_READ), Some("resources"));
+        assert!(wave44_methods_match_ssot());
+        assert!(wave44_invoke_not_list());
+        assert_eq!(WAVE44_METHOD_TOOLS_CALL, METHOD_TOOLS_CALL);
+        assert_eq!(WAVE44_METHOD_PROMPTS_GET, METHOD_PROMPTS_GET);
+        assert_eq!(WAVE44_METHOD_RESOURCES_READ, METHOD_RESOURCES_READ);
+    }
+}
