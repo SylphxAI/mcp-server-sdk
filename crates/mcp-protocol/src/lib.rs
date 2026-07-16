@@ -3423,6 +3423,67 @@ pub fn wave39_method_group(method: &str) -> Option<&'static str> {
     }
 }
 
+// ── WAVE40 pure residual dens: logging/setLevel + completion/complete method dual-oracle residual ──
+// Dual-oracle residual of METHOD_LOGGING_SET_LEVEL / METHOD_COMPLETION_COMPLETE pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE40 logging method.
+pub const WAVE40_METHOD_LOGGING_SET_LEVEL: &str = "logging/setLevel";
+/// Dual-oracle residual: WAVE40 completion method.
+pub const WAVE40_METHOD_COMPLETION_COMPLETE: &str = "completion/complete";
+
+/// Dual-oracle residual: WAVE40 methods catalog.
+pub const WAVE40_METHODS: &[&str] = &[
+    WAVE40_METHOD_LOGGING_SET_LEVEL,
+    WAVE40_METHOD_COMPLETION_COMPLETE,
+];
+
+/// Dual-oracle residual: known WAVE40 method.
+#[must_use]
+pub fn is_wave40_method(method: &str) -> bool {
+    WAVE40_METHODS.contains(&method)
+}
+
+/// Dual-oracle residual: empty object shell.
+#[must_use]
+pub fn wave40_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// Dual-oracle residual: method group for WAVE40 methods.
+#[must_use]
+pub fn wave40_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE40_METHOD_LOGGING_SET_LEVEL => Some("logging"),
+        WAVE40_METHOD_COMPLETION_COMPLETE => Some("completion"),
+        _ => None,
+    }
+}
+
+/// Dual-oracle residual: dual-oracle with existing METHOD_* constants.
+#[must_use]
+pub fn wave40_methods_match_ssot() -> bool {
+    WAVE40_METHOD_LOGGING_SET_LEVEL == METHOD_LOGGING_SET_LEVEL
+        && WAVE40_METHOD_COMPLETION_COMPLETE == METHOD_COMPLETION_COMPLETE
+}
+
+/// Dual-oracle residual: logging setLevel params require string level field.
+#[must_use]
+pub fn wave40_logging_set_level_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("level")
+        .and_then(|v| v.as_str())
+        .map(|s| !s.trim().is_empty())
+        .unwrap_or(false)
+}
+
+/// Dual-oracle residual: completion complete params require ref object.
+#[must_use]
+pub fn wave40_completion_complete_params_valid(params: &serde_json::Value) -> bool {
+    params.get("ref").map(|v| v.is_object()).unwrap_or(false)
+}
+
+
 #[cfg(test)]
 
 // ── WAVE31 pure residual dens: resources/subscribe + logging/setLevel + completion/complete gate kernels ──
@@ -6505,6 +6566,30 @@ mod tests {
             METHOD_RESOURCES_TEMPLATES_LIST
         );
     }
+
+    #[test]
+    fn wave40_logging_completion_method_residual() {
+        assert_eq!(WAVE40_METHOD_LOGGING_SET_LEVEL, "logging/setLevel");
+        assert_eq!(WAVE40_METHOD_COMPLETION_COMPLETE, "completion/complete");
+        assert_eq!(WAVE40_METHODS.len(), 2);
+        assert!(is_wave40_method("logging/setLevel"));
+        assert!(is_wave40_method("completion/complete"));
+        assert!(!is_wave40_method("tools/list"));
+        assert!(wave40_methods_match_ssot());
+        assert_eq!(wave40_method_group(WAVE40_METHOD_LOGGING_SET_LEVEL), Some("logging"));
+        assert_eq!(wave40_method_group(WAVE40_METHOD_COMPLETION_COMPLETE), Some("completion"));
+        assert_eq!(wave40_method_group("nope"), None);
+        assert!(wave40_logging_set_level_params_valid(&serde_json::json!({"level": "info"})));
+        assert!(!wave40_logging_set_level_params_valid(&serde_json::json!({"level": "  "})));
+        assert!(!wave40_logging_set_level_params_valid(&serde_json::json!({})));
+        assert!(wave40_completion_complete_params_valid(&serde_json::json!({"ref": {}})));
+        assert!(!wave40_completion_complete_params_valid(&serde_json::json!({"ref": "x"})));
+        assert!(!wave40_completion_complete_params_valid(&serde_json::json!({})));
+        assert_eq!(wave40_empty_object(), serde_json::json!({}));
+        assert_eq!(WAVE40_METHOD_LOGGING_SET_LEVEL, METHOD_LOGGING_SET_LEVEL);
+        assert_eq!(WAVE40_METHOD_COMPLETION_COMPLETE, METHOD_COMPLETION_COMPLETE);
+    }
+
 
 
 
