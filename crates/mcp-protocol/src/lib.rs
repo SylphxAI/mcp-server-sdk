@@ -8568,3 +8568,63 @@ mod wave65_tests {
         assert!(wave65_elicit_content_shell());
     }
 }
+
+
+// ── WAVE66 pure residual dens: protocol roles+content image+audience+log debug dual-oracle residual ──
+// Dual-oracle residual of message roles / content / audience / log pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE66 message roles closed two; reject system.
+#[must_use]
+pub fn wave66_message_roles_shell() -> bool {
+    is_valid_message_role("user")
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+        && !is_valid_message_role("User")
+        && MESSAGE_ROLES.len() == 2
+}
+
+/// Dual-oracle residual: WAVE66 content image/audio + reject markdown.
+#[must_use]
+pub fn wave66_content_image_shell() -> bool {
+    is_valid_content_type("image")
+        && is_valid_content_type("audio")
+        && is_valid_content_type("resource")
+        && !is_valid_content_type("markdown")
+        && CONTENT_TYPES.len() == 4
+}
+
+/// Dual-oracle residual: WAVE66 audience user/assistant + elicit accept.
+#[must_use]
+pub fn wave66_audience_elicit_shell() -> bool {
+    is_valid_audience("user")
+        && is_valid_audience("assistant")
+        && !is_valid_audience("system")
+        && is_valid_elicitation_action("accept")
+        && !is_valid_elicitation_action("reject")
+        && ELICITATION_ACTIONS.len() == 3
+}
+
+/// Dual-oracle residual: WAVE66 log debug head + error severity.
+#[must_use]
+pub fn wave66_log_debug_shell() -> bool {
+    is_valid_log_level("debug")
+        && log_level_index("debug") == Some(0)
+        && is_valid_log_level("error")
+        && log_level_at_least("error", "debug")
+        && !log_level_at_least("debug", "error")
+        && LOG_LEVELS.len() == 8
+}
+
+#[cfg(test)]
+mod wave66_tests {
+    use super::*;
+
+    #[test]
+    fn wave66_roles_content_audience_log_dual_oracle() {
+        assert!(wave66_message_roles_shell());
+        assert!(wave66_content_image_shell());
+        assert!(wave66_audience_elicit_shell());
+        assert!(wave66_log_debug_shell());
+    }
+}
