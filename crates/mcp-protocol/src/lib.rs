@@ -6761,3 +6761,97 @@ mod wave42_tests {
         assert_eq!(WAVE42_METHOD_RESOURCES_LIST, METHOD_RESOURCES_LIST);
     }
 }
+
+// ── WAVE43 pure residual dens: initialize/ping/notifications lifecycle dual-oracle residual ──
+// Dual-oracle residual of MCP session lifecycle methods pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE43 initialize method.
+pub const WAVE43_METHOD_INITIALIZE: &str = "initialize";
+/// Dual-oracle residual: WAVE43 initialized notification.
+pub const WAVE43_METHOD_INITIALIZED: &str = "notifications/initialized";
+/// Dual-oracle residual: WAVE43 ping method.
+pub const WAVE43_METHOD_PING: &str = "ping";
+/// Dual-oracle residual: WAVE43 cancelled notification.
+pub const WAVE43_METHOD_CANCELLED: &str = "notifications/cancelled";
+/// Dual-oracle residual: WAVE43 progress notification.
+pub const WAVE43_METHOD_PROGRESS: &str = "notifications/progress";
+
+/// Dual-oracle residual: WAVE43 lifecycle methods catalog.
+pub const WAVE43_METHODS: &[&str] = &[
+    WAVE43_METHOD_INITIALIZE,
+    WAVE43_METHOD_INITIALIZED,
+    WAVE43_METHOD_PING,
+    WAVE43_METHOD_CANCELLED,
+    WAVE43_METHOD_PROGRESS,
+];
+
+/// Dual-oracle residual: known WAVE43 method.
+#[must_use]
+pub fn is_wave43_method(method: &str) -> bool {
+    WAVE43_METHODS.contains(&method)
+}
+
+/// Dual-oracle residual: WAVE43 method group.
+#[must_use]
+pub fn wave43_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE43_METHOD_INITIALIZE => Some("session"),
+        WAVE43_METHOD_INITIALIZED => Some("session"),
+        WAVE43_METHOD_PING => Some("session"),
+        WAVE43_METHOD_CANCELLED => Some("notifications"),
+        WAVE43_METHOD_PROGRESS => Some("notifications"),
+        _ => None,
+    }
+}
+
+/// Dual-oracle residual: WAVE43 methods match SSOT Method / METHOD_* constants.
+#[must_use]
+pub fn wave43_methods_match_ssot() -> bool {
+    WAVE43_METHOD_INITIALIZE == methods::INITIALIZE
+        && WAVE43_METHOD_INITIALIZED == methods::INITIALIZED
+        && WAVE43_METHOD_PING == methods::PING
+        && WAVE43_METHOD_CANCELLED == METHOD_NOTIFICATIONS_CANCELLED
+        && WAVE43_METHOD_PROGRESS == METHOD_NOTIFICATIONS_PROGRESS
+}
+
+/// Dual-oracle residual: WAVE43 method count.
+#[must_use]
+pub fn wave43_method_count() -> usize {
+    WAVE43_METHODS.len()
+}
+
+/// Dual-oracle residual: session methods exclude tool call I/O residual.
+#[must_use]
+pub fn wave43_session_not_tools_call() -> bool {
+    !WAVE43_METHODS.contains(&METHOD_TOOLS_CALL)
+}
+
+#[cfg(test)]
+mod wave43_tests {
+    use super::*;
+
+    #[test]
+    fn wave43_initialize_ping_notifications_dual_oracle() {
+        assert_eq!(WAVE43_METHOD_INITIALIZE, "initialize");
+        assert_eq!(WAVE43_METHOD_INITIALIZED, "notifications/initialized");
+        assert_eq!(WAVE43_METHOD_PING, "ping");
+        assert_eq!(WAVE43_METHOD_CANCELLED, "notifications/cancelled");
+        assert_eq!(WAVE43_METHOD_PROGRESS, "notifications/progress");
+        assert_eq!(wave43_method_count(), 5);
+        assert!(is_wave43_method("initialize"));
+        assert!(is_wave43_method("ping"));
+        assert!(is_wave43_method("notifications/progress"));
+        assert!(!is_wave43_method("tools/list"));
+        assert_eq!(wave43_method_group(WAVE43_METHOD_INITIALIZE), Some("session"));
+        assert_eq!(wave43_method_group(WAVE43_METHOD_PING), Some("session"));
+        assert_eq!(
+            wave43_method_group(WAVE43_METHOD_PROGRESS),
+            Some("notifications")
+        );
+        assert!(wave43_methods_match_ssot());
+        assert!(wave43_session_not_tools_call());
+        assert_eq!(WAVE43_METHOD_INITIALIZE, methods::INITIALIZE);
+        assert_eq!(WAVE43_METHOD_PING, methods::PING);
+    }
+}
