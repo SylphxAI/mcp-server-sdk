@@ -6597,3 +6597,85 @@ mod tests {
 
 
 }
+
+// ── WAVE41 pure residual dens: resources subscribe/unsubscribe method dual-oracle residual ──
+// Dual-oracle residual of METHOD_RESOURCES_SUBSCRIBE / METHOD_RESOURCES_UNSUBSCRIBE pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE41 subscribe method.
+pub const WAVE41_METHOD_RESOURCES_SUBSCRIBE: &str = "resources/subscribe";
+/// Dual-oracle residual: WAVE41 unsubscribe method.
+pub const WAVE41_METHOD_RESOURCES_UNSUBSCRIBE: &str = "resources/unsubscribe";
+
+/// Dual-oracle residual: WAVE41 methods catalog.
+pub const WAVE41_METHODS: &[&str] = &[
+    WAVE41_METHOD_RESOURCES_SUBSCRIBE,
+    WAVE41_METHOD_RESOURCES_UNSUBSCRIBE,
+];
+
+/// Dual-oracle residual: known WAVE41 method.
+#[must_use]
+pub fn is_wave41_method(method: &str) -> bool {
+    WAVE41_METHODS.contains(&method)
+}
+
+/// Dual-oracle residual: method group for WAVE41 methods.
+#[must_use]
+pub fn wave41_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE41_METHOD_RESOURCES_SUBSCRIBE | WAVE41_METHOD_RESOURCES_UNSUBSCRIBE => Some("resources"),
+        _ => None,
+    }
+}
+
+/// Dual-oracle residual: dual-oracle with existing METHOD_* constants.
+#[must_use]
+pub fn wave41_methods_match_ssot() -> bool {
+    WAVE41_METHOD_RESOURCES_SUBSCRIBE == METHOD_RESOURCES_SUBSCRIBE
+        && WAVE41_METHOD_RESOURCES_UNSUBSCRIBE == METHOD_RESOURCES_UNSUBSCRIBE
+}
+
+/// Dual-oracle residual: subscribe/unsubscribe params require uri string.
+#[must_use]
+pub fn wave41_resource_sub_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("uri")
+        .and_then(|v| v.as_str())
+        .map(|s| !s.trim().is_empty())
+        .unwrap_or(false)
+}
+
+/// Dual-oracle residual: WAVE41 method count is 2.
+#[must_use]
+pub fn wave41_method_count() -> usize {
+    WAVE41_METHODS.len()
+}
+
+#[cfg(test)]
+mod wave41_tests {
+    use super::*;
+
+    #[test]
+    fn wave41_resources_subscribe_unsubscribe_dual_oracle() {
+        assert_eq!(WAVE41_METHOD_RESOURCES_SUBSCRIBE, "resources/subscribe");
+        assert_eq!(WAVE41_METHOD_RESOURCES_UNSUBSCRIBE, "resources/unsubscribe");
+        assert_eq!(wave41_method_count(), 2);
+        assert!(is_wave41_method("resources/subscribe"));
+        assert!(is_wave41_method("resources/unsubscribe"));
+        assert!(!is_wave41_method("resources/list"));
+        assert_eq!(
+            wave41_method_group(WAVE41_METHOD_RESOURCES_SUBSCRIBE),
+            Some("resources")
+        );
+        assert_eq!(
+            wave41_method_group(WAVE41_METHOD_RESOURCES_UNSUBSCRIBE),
+            Some("resources")
+        );
+        assert!(wave41_methods_match_ssot());
+        assert!(wave41_resource_sub_params_valid(&serde_json::json!({"uri": "file:///a"})));
+        assert!(!wave41_resource_sub_params_valid(&serde_json::json!({"uri": ""})));
+        assert!(!wave41_resource_sub_params_valid(&serde_json::json!({})));
+        assert_eq!(WAVE41_METHOD_RESOURCES_SUBSCRIBE, METHOD_RESOURCES_SUBSCRIBE);
+        assert_eq!(WAVE41_METHOD_RESOURCES_UNSUBSCRIBE, METHOD_RESOURCES_UNSUBSCRIBE);
+    }
+}
