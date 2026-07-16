@@ -8258,3 +8258,64 @@ mod wave60_tests {
         assert!(wave60_negotiate_shell());
     }
 }
+
+
+// ── WAVE61 pure residual dens: protocol elicitation+stop catalog dual-oracle residual ──
+// Dual-oracle residual of elicitation actions / stop reasons / include contexts pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE61 elicitation actions closed three.
+#[must_use]
+pub fn wave61_elicitation_actions_shell() -> bool {
+    ELICITATION_ACTIONS == ["accept", "decline", "cancel"]
+        && is_valid_elicitation_action("accept")
+        && is_valid_elicitation_action("decline")
+        && is_valid_elicitation_action("cancel")
+        && !is_valid_elicitation_action("Accept")
+        && !is_valid_elicitation_action("reject")
+}
+
+/// Dual-oracle residual: WAVE61 stop reasons closed three camelCase.
+#[must_use]
+pub fn wave61_stop_reason_shell() -> bool {
+    is_canonical_stop_reason("endTurn")
+        && is_canonical_stop_reason("stopSequence")
+        && is_canonical_stop_reason("maxTokens")
+        && !is_canonical_stop_reason("stop_sequence")
+        && CANONICAL_STOP_REASONS.len() == 3
+}
+
+/// Dual-oracle residual: WAVE61 include context thisServer + negotiate older.
+#[must_use]
+pub fn wave61_include_negotiate_shell() -> bool {
+    is_valid_include_context("thisServer")
+        && is_valid_include_context("none")
+        && !is_valid_include_context("this_server")
+        && INCLUDE_CONTEXTS.len() == 3
+        && negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
+}
+
+/// Dual-oracle residual: WAVE61 log mid severity warning index + roles reject system.
+#[must_use]
+pub fn wave61_log_roles_shell() -> bool {
+    log_level_index("warning") == Some(3)
+        && log_level_at_least("error", "warning")
+        && !log_level_at_least("debug", "info")
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+        && MESSAGE_ROLES.len() == 2
+}
+
+#[cfg(test)]
+mod wave61_tests {
+    use super::*;
+
+    #[test]
+    fn wave61_elicitation_stop_include_dual_oracle() {
+        assert!(wave61_elicitation_actions_shell());
+        assert!(wave61_stop_reason_shell());
+        assert!(wave61_include_negotiate_shell());
+        assert!(wave61_log_roles_shell());
+    }
+}
