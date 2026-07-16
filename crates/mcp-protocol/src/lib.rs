@@ -6679,3 +6679,85 @@ mod wave41_tests {
         assert_eq!(WAVE41_METHOD_RESOURCES_UNSUBSCRIBE, METHOD_RESOURCES_UNSUBSCRIBE);
     }
 }
+
+
+// ── WAVE42 pure residual dens: tools/prompts/resources list method dual-oracle residual ──
+// Dual-oracle residual of MCP list methods pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE42 tools list method.
+pub const WAVE42_METHOD_TOOLS_LIST: &str = "tools/list";
+/// Dual-oracle residual: WAVE42 prompts list method.
+pub const WAVE42_METHOD_PROMPTS_LIST: &str = "prompts/list";
+/// Dual-oracle residual: WAVE42 resources list method.
+pub const WAVE42_METHOD_RESOURCES_LIST: &str = "resources/list";
+
+/// Dual-oracle residual: WAVE42 list methods catalog.
+pub const WAVE42_METHODS: &[&str] = &[
+    WAVE42_METHOD_TOOLS_LIST,
+    WAVE42_METHOD_PROMPTS_LIST,
+    WAVE42_METHOD_RESOURCES_LIST,
+];
+
+/// Dual-oracle residual: known WAVE42 method.
+#[must_use]
+pub fn is_wave42_method(method: &str) -> bool {
+    WAVE42_METHODS.contains(&method)
+}
+
+/// Dual-oracle residual: WAVE42 method group (tools/prompts/resources).
+#[must_use]
+pub fn wave42_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE42_METHOD_TOOLS_LIST => Some("tools"),
+        WAVE42_METHOD_PROMPTS_LIST => Some("prompts"),
+        WAVE42_METHOD_RESOURCES_LIST => Some("resources"),
+        _ => None,
+    }
+}
+
+/// Dual-oracle residual: WAVE42 methods match SSOT METHOD_* constants.
+#[must_use]
+pub fn wave42_methods_match_ssot() -> bool {
+    WAVE42_METHOD_TOOLS_LIST == METHOD_TOOLS_LIST
+        && WAVE42_METHOD_PROMPTS_LIST == METHOD_PROMPTS_LIST
+        && WAVE42_METHOD_RESOURCES_LIST == METHOD_RESOURCES_LIST
+}
+
+/// Dual-oracle residual: WAVE42 method count is 3.
+#[must_use]
+pub fn wave42_method_count() -> usize {
+    WAVE42_METHODS.len()
+}
+
+/// Dual-oracle residual: list methods are not subscribe methods.
+#[must_use]
+pub fn wave42_list_not_subscribe() -> bool {
+    !WAVE42_METHODS.contains(&METHOD_RESOURCES_SUBSCRIBE)
+        && !WAVE42_METHODS.contains(&METHOD_RESOURCES_UNSUBSCRIBE)
+}
+
+#[cfg(test)]
+mod wave42_tests {
+    use super::*;
+
+    #[test]
+    fn wave42_tools_prompts_resources_list_dual_oracle() {
+        assert_eq!(WAVE42_METHOD_TOOLS_LIST, "tools/list");
+        assert_eq!(WAVE42_METHOD_PROMPTS_LIST, "prompts/list");
+        assert_eq!(WAVE42_METHOD_RESOURCES_LIST, "resources/list");
+        assert_eq!(wave42_method_count(), 3);
+        assert!(is_wave42_method("tools/list"));
+        assert!(is_wave42_method("prompts/list"));
+        assert!(is_wave42_method("resources/list"));
+        assert!(!is_wave42_method("tools/call"));
+        assert_eq!(wave42_method_group(WAVE42_METHOD_TOOLS_LIST), Some("tools"));
+        assert_eq!(wave42_method_group(WAVE42_METHOD_PROMPTS_LIST), Some("prompts"));
+        assert_eq!(wave42_method_group(WAVE42_METHOD_RESOURCES_LIST), Some("resources"));
+        assert!(wave42_methods_match_ssot());
+        assert!(wave42_list_not_subscribe());
+        assert_eq!(WAVE42_METHOD_TOOLS_LIST, METHOD_TOOLS_LIST);
+        assert_eq!(WAVE42_METHOD_PROMPTS_LIST, METHOD_PROMPTS_LIST);
+        assert_eq!(WAVE42_METHOD_RESOURCES_LIST, METHOD_RESOURCES_LIST);
+    }
+}
