@@ -7589,3 +7589,95 @@ mod wave50_tests {
         assert!(!is_wave50_method(WAVE49_METHOD_RESOURCES_LIST));
     }
 }
+
+
+// ── WAVE51 pure residual dens: protocol version + content/log role catalogs dual-oracle residual ──
+// Dual-oracle residual of LATEST_PROTOCOL_VERSION / CONTENT_TYPES / MESSAGE_ROLES / LOG_LEVELS pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+// product residual dens wave72
+
+/// Dual-oracle residual: WAVE51 latest protocol version pin.
+pub const WAVE51_LATEST_PROTOCOL_VERSION: &str = "2025-03-26";
+
+/// Dual-oracle residual: WAVE51 supported protocol versions newest-first.
+pub const WAVE51_SUPPORTED_PROTOCOL_VERSIONS: &[&str] = &["2025-03-26", "2024-11-05"];
+
+/// Dual-oracle residual: WAVE51 content type catalog.
+pub const WAVE51_CONTENT_TYPES: &[&str] = &["text", "image", "audio", "resource"];
+
+/// Dual-oracle residual: WAVE51 message roles.
+pub const WAVE51_MESSAGE_ROLES: &[&str] = &["user", "assistant"];
+
+/// Dual-oracle residual: WAVE51 log level head/tail.
+pub const WAVE51_LOG_LEVEL_HEAD: &str = "debug";
+pub const WAVE51_LOG_LEVEL_TAIL: &str = "emergency";
+
+#[must_use]
+pub fn wave51_protocol_versions_match_ssot() -> bool {
+    WAVE51_LATEST_PROTOCOL_VERSION == LATEST_PROTOCOL_VERSION
+        && WAVE51_SUPPORTED_PROTOCOL_VERSIONS == SUPPORTED_PROTOCOL_VERSIONS
+        && is_supported_protocol_version(WAVE51_LATEST_PROTOCOL_VERSION)
+        && !is_supported_protocol_version("2023-01-01")
+}
+
+#[must_use]
+pub fn wave51_content_types_match_ssot() -> bool {
+    WAVE51_CONTENT_TYPES == CONTENT_TYPES
+        && is_valid_content_type("text")
+        && is_valid_content_type("resource")
+        && !is_valid_content_type("video")
+}
+
+#[must_use]
+pub fn wave51_message_roles_match_ssot() -> bool {
+    WAVE51_MESSAGE_ROLES == MESSAGE_ROLES
+        && is_valid_message_role("user")
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+}
+
+#[must_use]
+pub fn wave51_log_levels_head_tail() -> bool {
+    LOG_LEVELS[0] == WAVE51_LOG_LEVEL_HEAD
+        && LOG_LEVELS[LOG_LEVELS.len() - 1] == WAVE51_LOG_LEVEL_TAIL
+        && is_valid_log_level("warning")
+        && logging_level_valid("error")
+        && !is_valid_log_level("trace")
+        && LOG_LEVELS.len() == 8
+}
+
+#[must_use]
+pub fn wave51_catalog_sizes_shell() -> (usize, usize, usize) {
+    (
+        WAVE51_SUPPORTED_PROTOCOL_VERSIONS.len(),
+        WAVE51_CONTENT_TYPES.len(),
+        WAVE51_MESSAGE_ROLES.len(),
+    )
+}
+
+#[must_use]
+pub fn wave51_not_wave50_methods_plane() -> bool {
+    !is_wave50_method("text") && is_wave50_method(WAVE50_METHOD_PING)
+}
+
+#[cfg(test)]
+mod wave51_tests {
+    use super::*;
+
+    #[test]
+    fn wave51_protocol_content_log_role_dual_oracle() {
+        assert!(wave51_protocol_versions_match_ssot());
+        assert!(wave51_content_types_match_ssot());
+        assert!(wave51_message_roles_match_ssot());
+        assert!(wave51_log_levels_head_tail());
+        assert_eq!(wave51_catalog_sizes_shell(), (2, 4, 2));
+        assert_eq!(WAVE51_LATEST_PROTOCOL_VERSION, "2025-03-26");
+        assert_eq!(negotiate_protocol_version(None), LATEST_PROTOCOL_VERSION);
+        assert_eq!(
+            negotiate_protocol_version(Some("2024-11-05")),
+            "2024-11-05"
+        );
+        assert!(wave51_not_wave50_methods_plane());
+        assert!(!is_wave50_method(WAVE51_LATEST_PROTOCOL_VERSION));
+    }
+}
