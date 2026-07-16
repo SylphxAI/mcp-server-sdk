@@ -7500,3 +7500,92 @@ mod wave49_tests {
         assert!(!is_wave49_method(WAVE48_METHOD_TOOLS_CALL));
     }
 }
+
+
+// ── WAVE50 pure residual dens: logging + completion + ping dual-oracle residual ──
+// Dual-oracle residual of MCP logging/setLevel + completion/complete + ping pure halves.
+// package main/exports still TS dist residual. dens ≠ package_main_rust.
+
+/// Dual-oracle residual: WAVE50 logging setLevel method.
+pub const WAVE50_METHOD_LOGGING_SET_LEVEL: &str = "logging/setLevel";
+/// Dual-oracle residual: WAVE50 completion complete method.
+pub const WAVE50_METHOD_COMPLETION_COMPLETE: &str = "completion/complete";
+/// Dual-oracle residual: WAVE50 ping method.
+pub const WAVE50_METHOD_PING: &str = "ping";
+
+/// Dual-oracle residual: WAVE50 method catalog.
+pub const WAVE50_METHODS: &[&str] = &[
+    WAVE50_METHOD_LOGGING_SET_LEVEL,
+    WAVE50_METHOD_COMPLETION_COMPLETE,
+    WAVE50_METHOD_PING,
+];
+
+/// Dual-oracle residual: WAVE50 method membership.
+#[must_use]
+pub fn is_wave50_method(method: &str) -> bool {
+    WAVE50_METHODS.contains(&method)
+}
+
+/// Dual-oracle residual: WAVE50 method group.
+#[must_use]
+pub fn wave50_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE50_METHOD_LOGGING_SET_LEVEL => Some("logging"),
+        WAVE50_METHOD_COMPLETION_COMPLETE => Some("completion"),
+        WAVE50_METHOD_PING => Some("ping"),
+        _ => None,
+    }
+}
+
+/// Dual-oracle residual: WAVE50 methods match SSOT METHOD_* constants.
+#[must_use]
+pub fn wave50_methods_match_ssot() -> bool {
+    WAVE50_METHOD_LOGGING_SET_LEVEL == METHOD_LOGGING_SET_LEVEL
+        && WAVE50_METHOD_COMPLETION_COMPLETE == METHOD_COMPLETION_COMPLETE
+        && WAVE50_METHOD_PING == METHOD_PING
+}
+
+/// Dual-oracle residual: WAVE50 does not claim WAVE48 tools plane.
+#[must_use]
+pub fn wave50_not_tools_call_plane() -> bool {
+    !WAVE50_METHODS.contains(&METHOD_TOOLS_CALL)
+        && !WAVE50_METHODS.contains(&METHOD_PROMPTS_GET)
+        && !WAVE50_METHODS.contains(&METHOD_RESOURCES_READ)
+        && !is_wave48_method(WAVE50_METHOD_PING)
+}
+
+/// Dual-oracle residual: WAVE50 catalog size three.
+#[must_use]
+pub fn wave50_method_count() -> usize {
+    WAVE50_METHODS.len()
+}
+
+#[cfg(test)]
+mod wave50_tests {
+    use super::*;
+
+    #[test]
+    fn wave50_logging_completion_ping_dual_oracle() {
+        assert_eq!(WAVE50_METHOD_LOGGING_SET_LEVEL, "logging/setLevel");
+        assert_eq!(WAVE50_METHOD_COMPLETION_COMPLETE, "completion/complete");
+        assert_eq!(WAVE50_METHOD_PING, "ping");
+        assert_eq!(wave50_method_count(), 3);
+        assert!(is_wave50_method(WAVE50_METHOD_LOGGING_SET_LEVEL));
+        assert!(is_wave50_method(WAVE50_METHOD_COMPLETION_COMPLETE));
+        assert!(is_wave50_method(WAVE50_METHOD_PING));
+        assert!(!is_wave50_method("tools/call"));
+        assert_eq!(
+            wave50_method_group(WAVE50_METHOD_LOGGING_SET_LEVEL),
+            Some("logging")
+        );
+        assert_eq!(
+            wave50_method_group(WAVE50_METHOD_COMPLETION_COMPLETE),
+            Some("completion")
+        );
+        assert_eq!(wave50_method_group(WAVE50_METHOD_PING), Some("ping"));
+        assert!(wave50_methods_match_ssot());
+        assert!(wave50_not_tools_call_plane());
+        assert!(!is_wave49_method(WAVE50_METHOD_PING));
+        assert!(!is_wave50_method(WAVE49_METHOD_RESOURCES_LIST));
+    }
+}
