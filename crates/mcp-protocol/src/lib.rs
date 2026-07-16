@@ -6938,3 +6938,102 @@ mod wave44_tests {
         assert_eq!(WAVE44_METHOD_RESOURCES_READ, METHOD_RESOURCES_READ);
     }
 }
+
+// ── WAVE45 pure residual dens: notifications lifecycle + roots/list dual-oracle residual ──
+// Dual-oracle residual of notifications/initialized|cancelled|progress + roots/list pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: notifications/initialized method.
+pub const WAVE45_METHOD_NOTIFICATIONS_INITIALIZED: &str = "notifications/initialized";
+/// Dual-oracle residual: notifications/cancelled method.
+pub const WAVE45_METHOD_NOTIFICATIONS_CANCELLED: &str = "notifications/cancelled";
+/// Dual-oracle residual: notifications/progress method.
+pub const WAVE45_METHOD_NOTIFICATIONS_PROGRESS: &str = "notifications/progress";
+/// Dual-oracle residual: roots/list method.
+pub const WAVE45_METHOD_ROOTS_LIST: &str = "roots/list";
+
+/// Dual-oracle residual: WAVE45 method catalog.
+pub const WAVE45_METHODS: &[&str] = &[
+    WAVE45_METHOD_NOTIFICATIONS_INITIALIZED,
+    WAVE45_METHOD_NOTIFICATIONS_CANCELLED,
+    WAVE45_METHOD_NOTIFICATIONS_PROGRESS,
+    WAVE45_METHOD_ROOTS_LIST,
+];
+
+/// Dual-oracle residual: WAVE45 method count.
+#[must_use]
+pub fn wave45_method_count() -> usize {
+    WAVE45_METHODS.len()
+}
+
+/// Dual-oracle residual: known WAVE45 method membership.
+#[must_use]
+pub fn is_wave45_method(method: &str) -> bool {
+    WAVE45_METHODS.contains(&method)
+}
+
+/// Dual-oracle residual: method group for WAVE45 methods.
+#[must_use]
+pub fn wave45_method_group(method: &str) -> Option<&'static str> {
+    match method {
+        WAVE45_METHOD_NOTIFICATIONS_INITIALIZED
+        | WAVE45_METHOD_NOTIFICATIONS_CANCELLED
+        | WAVE45_METHOD_NOTIFICATIONS_PROGRESS => Some("notifications"),
+        WAVE45_METHOD_ROOTS_LIST => Some("roots"),
+        _ => None,
+    }
+}
+
+/// Dual-oracle residual: WAVE45 methods match existing METHOD_* SSOT.
+#[must_use]
+pub fn wave45_methods_match_ssot() -> bool {
+    WAVE45_METHOD_NOTIFICATIONS_INITIALIZED == METHOD_NOTIFICATIONS_INITIALIZED
+        && WAVE45_METHOD_NOTIFICATIONS_CANCELLED == METHOD_NOTIFICATIONS_CANCELLED
+        && WAVE45_METHOD_NOTIFICATIONS_PROGRESS == METHOD_NOTIFICATIONS_PROGRESS
+        && WAVE45_METHOD_ROOTS_LIST == METHOD_ROOTS_LIST
+}
+
+/// Dual-oracle residual: WAVE45 is lifecycle/not catalog-list.
+#[must_use]
+pub fn wave45_lifecycle_not_list() -> bool {
+    !WAVE45_METHODS.contains(&METHOD_TOOLS_LIST)
+        && !WAVE45_METHODS.contains(&METHOD_PROMPTS_LIST)
+        && !WAVE45_METHODS.contains(&METHOD_RESOURCES_LIST)
+        && !WAVE45_METHODS.contains(&METHOD_TOOLS_CALL)
+}
+
+#[cfg(test)]
+mod wave45_tests {
+    use super::*;
+
+    #[test]
+    fn wave45_notifications_lifecycle_roots_list_dual_oracle() {
+        assert_eq!(
+            WAVE45_METHOD_NOTIFICATIONS_INITIALIZED,
+            "notifications/initialized"
+        );
+        assert_eq!(
+            WAVE45_METHOD_NOTIFICATIONS_CANCELLED,
+            "notifications/cancelled"
+        );
+        assert_eq!(WAVE45_METHOD_NOTIFICATIONS_PROGRESS, "notifications/progress");
+        assert_eq!(WAVE45_METHOD_ROOTS_LIST, "roots/list");
+        assert_eq!(wave45_method_count(), 4);
+        assert!(is_wave45_method("notifications/initialized"));
+        assert!(is_wave45_method("roots/list"));
+        assert!(!is_wave45_method("tools/list"));
+        assert_eq!(
+            wave45_method_group(WAVE45_METHOD_NOTIFICATIONS_PROGRESS),
+            Some("notifications")
+        );
+        assert_eq!(wave45_method_group(WAVE45_METHOD_ROOTS_LIST), Some("roots"));
+        assert!(wave45_methods_match_ssot());
+        assert!(wave45_lifecycle_not_list());
+        assert_eq!(
+            WAVE45_METHOD_NOTIFICATIONS_INITIALIZED,
+            METHOD_NOTIFICATIONS_INITIALIZED
+        );
+        assert_eq!(WAVE45_METHOD_ROOTS_LIST, METHOD_ROOTS_LIST);
+    }
+}
+
