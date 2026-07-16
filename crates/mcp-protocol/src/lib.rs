@@ -7743,3 +7743,62 @@ mod wave52_tests {
         assert!(wave51_protocol_versions_match_ssot());
     }
 }
+
+// ── WAVE53 pure residual dens: protocol negotiate+log catalog dual-oracle residual ──
+// Dual-oracle residual of negotiate / LOG_LEVELS / MESSAGE_ROLES pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE53 supported versions closed two.
+#[must_use]
+pub fn wave53_supported_versions_shell() -> bool {
+    SUPPORTED_PROTOCOL_VERSIONS == ["2025-03-26", "2024-11-05"]
+        && is_supported_protocol_version("2025-03-26")
+        && is_supported_protocol_version("2024-11-05")
+        && !is_supported_protocol_version("2023-01-01")
+        && LATEST_PROTOCOL_VERSION == "2025-03-26"
+}
+
+/// Dual-oracle residual: WAVE53 negotiate unknown → latest.
+#[must_use]
+pub fn wave53_negotiate_unknown_shell() -> bool {
+    negotiate_protocol_version(Some("9999-99-99")) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(None) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+}
+
+/// Dual-oracle residual: WAVE53 log levels head+tail closed eight.
+#[must_use]
+pub fn wave53_log_catalog_shell() -> bool {
+    LOG_LEVELS.len() == 8
+        && is_valid_log_level(LOG_LEVELS[0])
+        && is_valid_log_level(LOG_LEVELS[LOG_LEVELS.len() - 1])
+        && is_valid_log_level("debug")
+        && !is_valid_log_level("trace2")
+}
+
+/// Dual-oracle residual: WAVE53 content + roles closed sets.
+#[must_use]
+pub fn wave53_content_roles_shell() -> bool {
+    CONTENT_TYPES == ["text", "image", "audio", "resource"]
+        && MESSAGE_ROLES == ["user", "assistant"]
+        && is_valid_content_type("resource")
+        && !is_valid_content_type("blob")
+        && is_valid_message_role("assistant")
+        && !is_valid_message_role("system")
+}
+
+#[cfg(test)]
+mod wave53_tests {
+    use super::*;
+
+    #[test]
+    fn wave53_protocol_negotiate_log_catalog_dual_oracle() {
+        assert!(wave53_supported_versions_shell());
+        assert!(wave53_negotiate_unknown_shell());
+        assert!(wave53_log_catalog_shell());
+        assert!(wave53_content_roles_shell());
+        assert!(wave52_negotiate_latest_shell());
+        assert!(wave52_roles_closed_shell());
+    }
+}
+
