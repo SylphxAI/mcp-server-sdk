@@ -3664,6 +3664,60 @@ pub fn wave35_empty_object() -> serde_json::Value {
 }
 
 
+// ── WAVE36 pure residual dens: Content type catalog dual-oracle dens ──
+// Dual-oracle residual of `src/protocol/mcp.ts` Content union type tags.
+// Transport/handler I/O remains residual. dens ≠ flip; package_main_rust not claimed.
+
+/// Dual-oracle residual: Content type tags (stable order).
+pub const WAVE36_CONTENT_TYPES: &[&str] = &["text", "image", "audio", "resource"];
+
+/// Dual-oracle residual: content type count.
+pub const WAVE36_CONTENT_TYPE_COUNT: usize = 4;
+
+/// Dual-oracle residual: audience roles for content annotations.
+pub const WAVE36_CONTENT_AUDIENCE: &[&str] = &["user", "assistant"];
+
+/// Dual-oracle residual: known content type tag.
+#[must_use]
+pub fn is_wave36_content_type(ty: &str) -> bool {
+    WAVE36_CONTENT_TYPES.contains(&ty)
+}
+
+/// Dual-oracle residual: content is media (image|audio).
+#[must_use]
+pub fn is_wave36_media_content_type(ty: &str) -> bool {
+    matches!(ty, "image" | "audio")
+}
+
+/// Dual-oracle residual: content is resource embed.
+#[must_use]
+pub fn is_wave36_resource_content_type(ty: &str) -> bool {
+    ty == "resource"
+}
+
+/// Dual-oracle residual: known audience role.
+#[must_use]
+pub fn is_wave36_content_audience(role: &str) -> bool {
+    WAVE36_CONTENT_AUDIENCE.contains(&role)
+}
+
+/// Dual-oracle residual: priority annotation in [0, 1] if present.
+#[must_use]
+pub fn wave36_priority_valid(priority: Option<f64>) -> bool {
+    match priority {
+        None => true,
+        Some(p) if p.is_finite() => (0.0..=1.0).contains(&p),
+        Some(_) => false,
+    }
+}
+
+#[must_use]
+pub fn wave36_empty_object() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+
+
 
 mod tests {
     use super::*;
@@ -6149,5 +6203,37 @@ mod tests {
             assert!(is_wave35_method_catalog_member(m));
         }
     }
+
+    #[test]
+    fn wave36_content_type_catalog_residual() {
+        assert_eq!(WAVE36_CONTENT_TYPE_COUNT, 4);
+        assert_eq!(WAVE36_CONTENT_TYPES.len(), WAVE36_CONTENT_TYPE_COUNT);
+        assert_eq!(WAVE36_CONTENT_TYPES[0], "text");
+        assert_eq!(WAVE36_CONTENT_TYPES[3], "resource");
+        assert!(is_wave36_content_type("text"));
+        assert!(is_wave36_content_type("image"));
+        assert!(is_wave36_content_type("audio"));
+        assert!(is_wave36_content_type("resource"));
+        assert!(!is_wave36_content_type("video"));
+        assert!(is_wave36_media_content_type("image"));
+        assert!(is_wave36_media_content_type("audio"));
+        assert!(!is_wave36_media_content_type("text"));
+        assert!(is_wave36_resource_content_type("resource"));
+        assert!(!is_wave36_resource_content_type("text"));
+        assert!(is_wave36_content_audience("user"));
+        assert!(is_wave36_content_audience("assistant"));
+        assert!(!is_wave36_content_audience("system"));
+        assert!(wave36_priority_valid(None));
+        assert!(wave36_priority_valid(Some(0.0)));
+        assert!(wave36_priority_valid(Some(1.0)));
+        assert!(!wave36_priority_valid(Some(1.1)));
+        assert!(!wave36_priority_valid(Some(f64::NAN)));
+        assert_eq!(wave36_empty_object(), serde_json::json!({}));
+        for t in WAVE36_CONTENT_TYPES {
+            assert!(is_wave36_content_type(t));
+        }
+    }
+
+
 
 }
