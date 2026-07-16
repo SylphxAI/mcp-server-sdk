@@ -8052,3 +8052,75 @@ mod wave57_tests {
         assert!(wave57_versions_order_shell());
     }
 }
+
+
+// ── WAVE58 pure residual dens: protocol elicitation content log dual-oracle residual ──
+// residual6 rehome: concurrent WAVE57 negotiate/content kept; this dens advances WAVE58.
+// Dual-oracle residual of elicitation / content / log / negotiate pure halves.
+// Transport/handler I/O residual retained. dens ≠ flip. package_main_rust not claimed.
+
+/// Dual-oracle residual: WAVE58 elicitation actions closed accept/decline/cancel.
+#[must_use]
+pub fn wave58_elicitation_shell() -> bool {
+    ELICITATION_ACTIONS.len() == 3
+        && is_valid_elicitation_action("accept")
+        && is_valid_elicitation_action("decline")
+        && is_valid_elicitation_action("cancel")
+        && !is_valid_elicitation_action("defer")
+}
+
+/// Dual-oracle residual: WAVE58 content types closed four + image mid.
+#[must_use]
+pub fn wave58_content_closed_shell() -> bool {
+    CONTENT_TYPES.len() == 4
+        && is_valid_content_type("text")
+        && is_valid_content_type("image")
+        && is_valid_content_type("audio")
+        && is_valid_content_type("resource")
+        && !is_valid_content_type("video")
+}
+
+/// Dual-oracle residual: WAVE58 log head/tail + reject verbose.
+#[must_use]
+pub fn wave58_log_edges_shell() -> bool {
+    LOG_LEVELS[0] == "debug"
+        && LOG_LEVELS[LOG_LEVELS.len() - 1] == "emergency"
+        && is_valid_log_level("debug")
+        && is_valid_log_level("emergency")
+        && !is_valid_log_level("trace")
+}
+
+/// Dual-oracle residual: WAVE58 negotiate exact latest + older second.
+#[must_use]
+pub fn wave58_negotiate_shell() -> bool {
+    negotiate_protocol_version(Some(LATEST_PROTOCOL_VERSION)) == LATEST_PROTOCOL_VERSION
+        && negotiate_protocol_version(Some("2024-11-05")) == "2024-11-05"
+        && negotiate_protocol_version(None) == "2025-03-26"
+        && is_supported_protocol_version("2025-03-26")
+}
+
+/// Dual-oracle residual: WAVE58 roles + audience dual user/assistant.
+#[must_use]
+pub fn wave58_roles_audience_shell() -> bool {
+    MESSAGE_ROLES == ["user", "assistant"]
+        && is_valid_message_role("user")
+        && is_valid_audience("user")
+        && is_valid_audience("assistant")
+        && !is_valid_audience("system")
+}
+
+#[cfg(test)]
+mod wave58_tests {
+    use super::*;
+
+    #[test]
+    fn wave58_protocol_elicitation_content_log_dual_oracle() {
+        assert!(wave58_elicitation_shell());
+        assert!(wave58_content_closed_shell());
+        assert!(wave58_log_edges_shell());
+        assert!(wave58_negotiate_shell());
+        assert!(wave58_roles_audience_shell());
+        assert!(wave57_versions_order_shell());
+    }
+}
+
