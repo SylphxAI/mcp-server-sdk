@@ -1,5 +1,10 @@
 # @sylphx/mcp-server-sdk
 
+<p align="center">
+  <img src="docs/banner.png" alt="mcp-server-sdk banner" width="100%" />
+</p>
+
+
 Pure functional MCP (Model Context Protocol) server SDK for Bun.
 
 [![npm](https://img.shields.io/npm/v/@sylphx/mcp-server-sdk)](https://www.npmjs.com/package/@sylphx/mcp-server-sdk)
