@@ -3149,6 +3149,65 @@ pub fn empty_roots_list_result() -> serde_json::Value {
 }
 
 
+
+// ── WAVE27 pure residual dens: resource templates / elicitation / empty result kernels ──
+
+/// Dual-oracle resource templates list method residual.
+pub const METHOD_RESOURCES_TEMPLATES_LIST: &str = "resources/templates/list";
+
+/// Dual-oracle elicitation create method residual (client capability).
+pub const METHOD_ELICITATION_CREATE: &str = "elicitation/create";
+
+/// Dual-oracle: empty resource templates list result residual.
+#[must_use]
+pub fn empty_resource_templates_list_result() -> serde_json::Value {
+    serde_json::json!({"resourceTemplates": []})
+}
+
+/// Dual-oracle: resource template uriTemplate presence gate.
+#[must_use]
+pub fn resource_template_uri_present(template: &serde_json::Value) -> bool {
+    template
+        .get("uriTemplate")
+        .and_then(|v| v.as_str())
+        .is_some_and(|s| !s.is_empty())
+}
+
+/// Dual-oracle: count resource templates in list result.
+#[must_use]
+pub fn resource_templates_count(result: &serde_json::Value) -> usize {
+    result
+        .get("resourceTemplates")
+        .and_then(|v| v.as_array())
+        .map(|a| a.len())
+        .unwrap_or(0)
+}
+
+/// Dual-oracle: elicitation params require message residual.
+#[must_use]
+pub fn elicitation_params_valid(params: &serde_json::Value) -> bool {
+    params
+        .get("message")
+        .and_then(|v| v.as_str())
+        .is_some_and(|s| !s.is_empty())
+}
+
+/// Dual-oracle empty object result residual alias inventory.
+#[must_use]
+pub fn wave27_empty_object_result() -> serde_json::Value {
+    serde_json::json!({})
+}
+
+/// Dual-oracle: initialize result has serverInfo residual gate.
+#[must_use]
+pub fn initialize_result_has_server_info(result: &serde_json::Value) -> bool {
+    result
+        .get("serverInfo")
+        .and_then(|v| v.as_object())
+        .is_some_and(|o| o.contains_key("name"))
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -5387,4 +5446,27 @@ mod tests {
         assert!(call_params_has_progress_token(&with_tok));
         assert!(!call_params_has_progress_token(&serde_json::json!({"name": "t"})));
     }
+
+    #[test]
+    fn wave27_resource_templates_elicitation_residual() {
+        assert_eq!(METHOD_RESOURCES_TEMPLATES_LIST, "resources/templates/list");
+        assert_eq!(METHOD_ELICITATION_CREATE, "elicitation/create");
+        let empty = empty_resource_templates_list_result();
+        assert_eq!(resource_templates_count(&empty), 0);
+        assert_eq!(empty["resourceTemplates"], serde_json::json!([]));
+        let tpl = serde_json::json!({"uriTemplate": "file:///{path}", "name": "f"});
+        assert!(resource_template_uri_present(&tpl));
+        assert!(!resource_template_uri_present(&serde_json::json!({"name": "x"})));
+        let listed = serde_json::json!({"resourceTemplates": [tpl.clone(), tpl]});
+        assert_eq!(resource_templates_count(&listed), 2);
+        assert!(elicitation_params_valid(&serde_json::json!({"message": "ok"})));
+        assert!(!elicitation_params_valid(&serde_json::json!({"message": ""})));
+        assert!(!elicitation_params_valid(&serde_json::json!({})));
+        assert_eq!(wave27_empty_object_result(), serde_json::json!({}));
+        assert!(initialize_result_has_server_info(&serde_json::json!({
+            "serverInfo": {"name": "demo"}
+        })));
+        assert!(!initialize_result_has_server_info(&serde_json::json!({})));
+    }
+
 }
