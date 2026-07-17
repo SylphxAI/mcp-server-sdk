@@ -1,9 +1,8 @@
 # @sylphx/mcp-server-sdk
 
 <p align="center">
-  <img src="docs/banner.png" alt="mcp-server-sdk banner" width="100%" />
+  <img src="https://mark.sylphx.com/api/v1/banner?type=void&theme=tokyonight&text=mcp+server+sdk&desc=Pure+functional+MCP+server+SDK+for+Bun+-+zero+dependencies%2C+type-safe%2C+high+perf&height=200&animation=rise&credit=0" alt="mcp-server-sdk — Sylphx Mark banner" width="100%" />
 </p>
-
 
 Pure functional MCP (Model Context Protocol) server SDK for Bun.
 
