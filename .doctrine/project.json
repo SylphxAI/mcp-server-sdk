@@ -141,7 +141,7 @@
 		"deployable": false,
 		"requiredContexts": ["risk-classification/pass", "ci", "trunk-admission/pass"],
 		"deployPath": "Pull requests and merge groups run .github/workflows/ci.yml with ADR-29 admission plus lint, typecheck, test, and build; main uses .github/workflows/release.yml to call the central reusable release workflow.",
-		"productionProof": "Postsubmit ADR-29 proof exists, GroundAtlas package dogfood proves the project-control boundary, but npm/package readback, conformance result readback, and consumer smoke evidence are not yet documented as one release gate.",
+		"productionProof": "Postsubmit ADR-29 proof exists, but npm/package readback, conformance result readback, and consumer smoke evidence are not yet documented as one release gate.",
 		"recoveryClass": "forward-fix-only",
 		"packageRelease": {
 			"publishesPackages": true,
