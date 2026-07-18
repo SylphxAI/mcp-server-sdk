@@ -74,3 +74,8 @@ Adoption is migrating. The current gaps are tracked in
 `.doctrine/project.json` as the Sylphx adapter. Generated `.groundatlas*` files
 and GroundAtlas JSON/Markdown reports are evidence/read models only, not
 authoritative project-control inputs.
+
+
+## GroundAtlas
+
+GroundAtlas package dogfood is **retired** (Control Plane ADR-0014). Do not re-add required groundatlas CI jobs.
