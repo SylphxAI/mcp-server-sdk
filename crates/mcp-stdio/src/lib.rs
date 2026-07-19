@@ -132,7 +132,8 @@ pub fn classify_line(line: &str) -> StdioLineClass {
         Err(_) => return StdioLineClass::Invalid,
     };
     if let Some(id) = parsed.get("id").and_then(|v| v.as_str()) {
-        if is_server_request_id(id) && (parsed.get("result").is_some() || parsed.get("error").is_some())
+        if is_server_request_id(id)
+            && (parsed.get("result").is_some() || parsed.get("error").is_some())
         {
             let error_message = parsed
                 .get("error")
@@ -212,7 +213,11 @@ impl PendingRequests {
 
 /// Build a server→client JSON-RPC request object.
 #[must_use]
-pub fn server_request(id: impl Into<String>, method: impl Into<String>, params: Option<Value>) -> Value {
+pub fn server_request(
+    id: impl Into<String>,
+    method: impl Into<String>,
+    params: Option<Value>,
+) -> Value {
     let mut map = serde_json::Map::new();
     map.insert("jsonrpc".into(), Value::String("2.0".into()));
     map.insert("id".into(), Value::String(id.into()));
@@ -316,7 +321,11 @@ mod tests {
 
     #[test]
     fn server_request_shape() {
-        let r = server_request("server-1", "sampling/createMessage", Some(json!({"maxTokens":1})));
+        let r = server_request(
+            "server-1",
+            "sampling/createMessage",
+            Some(json!({"maxTokens":1})),
+        );
         assert_eq!(r["jsonrpc"], "2.0");
         assert_eq!(r["id"], "server-1");
         assert_eq!(r["method"], "sampling/createMessage");

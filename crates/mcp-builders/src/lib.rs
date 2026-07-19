@@ -9,10 +9,9 @@
 
 use mcp_protocol::{
     audio_content, image_content, interpolate, matches_template, normalize_tool_result,
-    protocol_prompt, protocol_resource, protocol_template, protocol_tool, prompt_message,
-    prompt_result, resource_blob, resource_text_result, text_content, tool_error,
-    user_message, Content, Prompt, PromptArgument, Resource, ResourceTemplate, Tool,
-    ToolAnnotations,
+    prompt_message, prompt_result, protocol_prompt, protocol_resource, protocol_template,
+    protocol_tool, resource_blob, resource_text_result, text_content, tool_error, user_message,
+    Content, Prompt, PromptArgument, Resource, ResourceTemplate, Tool, ToolAnnotations,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -410,7 +409,11 @@ pub fn normalize_result(result: &Value) -> Value {
 
 /// resourceText envelope.
 #[must_use]
-pub fn resource_text(uri: impl Into<String>, body: impl Into<String>, mime: Option<String>) -> Value {
+pub fn resource_text(
+    uri: impl Into<String>,
+    body: impl Into<String>,
+    mime: Option<String>,
+) -> Value {
     resource_text_result(uri, body, mime)
 }
 
@@ -489,13 +492,12 @@ pub fn prompts_to_protocol(defs: &BTreeMap<String, PromptDefinitionMeta>) -> Vec
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
 
     #[test]
     fn tool_builder_empty_schema_and_protocol() {
-        let def = tool()
-            .description("Ping")
-            .finish();
+        let def = tool().description("Ping").finish();
         assert_eq!(def.description.as_deref(), Some("Ping"));
         assert_eq!(def.input_schema, empty_object_schema());
         let pt = def.to_protocol("ping");
@@ -506,8 +508,12 @@ mod tests {
 
     #[test]
     fn tool_builder_with_schema() {
-        let schema = json!({"type":"object","properties":{"name":{"type":"string"}},"required":["name"]});
-        let def = tool().input_schema(schema.clone()).description("Greet").finish();
+        let schema =
+            json!({"type":"object","properties":{"name":{"type":"string"}},"required":["name"]});
+        let def = tool()
+            .input_schema(schema.clone())
+            .description("Greet")
+            .finish();
         assert_eq!(def.input_schema, schema);
         let pt = def.to_protocol("greet");
         assert_eq!(pt.input_schema["required"][0], "name");
@@ -594,10 +600,7 @@ mod tests {
         assert_eq!(list[0].name, "ping");
 
         let mut resources = BTreeMap::new();
-        resources.insert(
-            "r".into(),
-            resource().uri("u://r").finish().expect("uri"),
-        );
+        resources.insert("r".into(), resource().uri("u://r").finish().expect("uri"));
         assert_eq!(resources_to_protocol(&resources)[0].name, "r");
 
         let mut prompts = BTreeMap::new();

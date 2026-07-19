@@ -3,7 +3,8 @@
 //! Parity with:
 //! - `src/app/serve.ts` (canonical serve entry)
 //! - `src/app/http.ts` (Fetch adapter)
-//! - `src/transports/http.ts` (legacy http factory)
+//!
+//! The transport is the sole HTTP implementation in this repository.
 //! - `fixtures/streamable-http/**` golden contract
 //! - `docs/specs/streamable-http-transport-contract.md`
 //!
@@ -249,7 +250,8 @@ pub fn format_sse_value(value: &Value) -> String {
 // ─── CORS helpers ────────────────────────────────────────────────────────────
 
 /// Allowed request headers for CORS preflight (contract).
-pub const CORS_ALLOWED_HEADERS: &[&str] = &["Content-Type", "Accept", "Mcp-Session-Id", "X-API-Key"];
+pub const CORS_ALLOWED_HEADERS: &[&str] =
+    &["Content-Type", "Accept", "Mcp-Session-Id", "X-API-Key"];
 
 /// Exposed response headers for CORS.
 pub const CORS_EXPOSED_HEADERS: &[&str] = &[MCP_SESSION_ID_HEADER];
@@ -480,12 +482,7 @@ pub fn handle_request(
 
     // JSON-RPC POST — auth gate.
     let x_api_key = read_header_map(headers, "x-api-key");
-    let auth_decision = authorize_request(
-        &config.auth,
-        method,
-        path,
-        x_api_key.as_deref(),
-    );
+    let auth_decision = authorize_request(&config.auth, method, path, x_api_key.as_deref());
     if auth_decision.is_deny() {
         return TransportResponse::json(
             UNAUTHORIZED_STATUS,
@@ -551,7 +548,8 @@ pub fn handle_request(
     };
 
     // Session allocation on initialize.
-    let is_init = matches!(&message, JsonRpcMessage::Request(r) if method_allocates_session(&r.method));
+    let is_init =
+        matches!(&message, JsonRpcMessage::Request(r) if method_allocates_session(&r.method));
     let mut response_headers: Vec<(String, String)> = Vec::new();
 
     if is_init {
@@ -664,7 +662,10 @@ pub fn run_fixture(
 /// Loose match of actual response against fixture expectation.
 ///
 /// Supports `{ "pattern": "..." }` and `{ "contains": "..." }` body/header values.
-pub fn assert_fixture_match(actual: &TransportResponse, expect: &FixtureResponseExpect) -> Result<(), String> {
+pub fn assert_fixture_match(
+    actual: &TransportResponse,
+    expect: &FixtureResponseExpect,
+) -> Result<(), String> {
     if actual.status != expect.status {
         return Err(format!(
             "status: actual {} expected {}",
@@ -718,7 +719,10 @@ fn match_value(actual: &Value, expected: &Value, label: &str) -> Result<(), Stri
             let owned = actual.to_string();
             let s = actual.as_str().unwrap_or(owned.as_str());
             // Case-insensitive contains for contract fixtures (message wording).
-            if !s.to_ascii_lowercase().contains(&contains.to_ascii_lowercase()) {
+            if !s
+                .to_ascii_lowercase()
+                .contains(&contains.to_ascii_lowercase())
+            {
                 return Err(format!("{label}: {s:?} missing {contains:?}"));
             }
             return Ok(());
@@ -877,6 +881,7 @@ pub use mcp_session_guard::guard_session_id as guard_session;
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used, clippy::unwrap_used)]
     use super::*;
     use mcp_app::AppConfig;
 
@@ -908,22 +913,13 @@ mod tests {
             classify_route("GET", "/mcp/health", &cfg),
             RouteClass::Health
         );
-        assert_eq!(
-            classify_route("POST", "/mcp", &cfg),
-            RouteClass::JsonRpc
-        );
-        assert_eq!(
-            classify_route("OPTIONS", "/mcp", &cfg),
-            RouteClass::Options
-        );
+        assert_eq!(classify_route("POST", "/mcp", &cfg), RouteClass::JsonRpc);
+        assert_eq!(classify_route("OPTIONS", "/mcp", &cfg), RouteClass::Options);
         assert_eq!(
             classify_route("GET", "/mcp", &cfg),
             RouteClass::MethodNotAllowed
         );
-        assert_eq!(
-            classify_route("POST", "/other", &cfg),
-            RouteClass::NotFound
-        );
+        assert_eq!(classify_route("POST", "/other", &cfg), RouteClass::NotFound);
     }
 
     fn call(
@@ -958,7 +954,10 @@ mod tests {
         let res = call(&cfg, &mut store, &state, "GET", "/mcp/health", &empty, None);
         assert_eq!(res.status, 200);
         assert_eq!(res.body.as_ref().unwrap()["status"], "ok");
-        assert_eq!(res.body.as_ref().unwrap()["server"], "contract-fixture-server");
+        assert_eq!(
+            res.body.as_ref().unwrap()["server"],
+            "contract-fixture-server"
+        );
     }
 
     #[test]
@@ -997,7 +996,10 @@ mod tests {
         ]);
         let res = call(&cfg, &mut store, &state, "POST", "/mcp", &h, Some(body));
         assert_eq!(res.status, 200);
-        assert_eq!(res.body.as_ref().unwrap()["result"]["protocolVersion"], "2025-03-26");
+        assert_eq!(
+            res.body.as_ref().unwrap()["result"]["protocolVersion"],
+            "2025-03-26"
+        );
         assert!(res.header(MCP_SESSION_ID_HEADER).is_some());
         assert_eq!(store.len(), 1);
     }
@@ -1045,7 +1047,15 @@ mod tests {
         let mut store = SessionStore::new();
         let cfg = HttpConfig::default();
         let h = headers(&[("Content-Type", "application/json")]);
-        let res = call(&cfg, &mut store, &state, "POST", "/mcp", &h, Some("not-json"));
+        let res = call(
+            &cfg,
+            &mut store,
+            &state,
+            "POST",
+            "/mcp",
+            &h,
+            Some("not-json"),
+        );
         assert_eq!(res.status, 400);
         let msg = res.body.as_ref().unwrap()["error"]["message"]
             .as_str()
@@ -1069,7 +1079,9 @@ mod tests {
 
     #[test]
     fn is_jsonrpc_response_detection() {
-        assert!(is_jsonrpc_response_value(&json!({"jsonrpc":"2.0","id":"server-1","result":{}})));
+        assert!(is_jsonrpc_response_value(
+            &json!({"jsonrpc":"2.0","id":"server-1","result":{}})
+        ));
         assert!(is_jsonrpc_response_value(
             &json!({"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"x"}})
         ));
@@ -1083,15 +1095,9 @@ mod tests {
         let state = contract_state();
         let mut store = SessionStore::new();
         let sid = store.create(0);
-        let rid = store
-            .get_mut(&sid)
-            .expect("session")
-            .pending
-            .allocate();
+        let rid = store.get_mut(&sid).expect("session").pending.allocate();
         let cfg = HttpConfig::default();
-        let body = format!(
-            r#"{{"jsonrpc":"2.0","id":"{rid}","result":{{"ok":true}}}}"#
-        );
+        let body = format!(r#"{{"jsonrpc":"2.0","id":"{rid}","result":{{"ok":true}}}}"#);
         let h = headers(&[
             ("Content-Type", "application/json"),
             ("Mcp-Session-Id", &sid),
@@ -1103,7 +1109,8 @@ mod tests {
     #[test]
     fn golden_fixtures_from_repo() {
         let state = contract_state();
-        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/streamable-http");
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/streamable-http");
         let names = [
             "health-check.json",
             "health-open-when-auth.json",

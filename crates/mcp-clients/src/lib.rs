@@ -91,15 +91,13 @@ pub fn build_sampling_result(
 /// Extract text from a sampling result content field when type=text.
 #[must_use]
 pub fn sampling_result_text(result: &Value) -> Option<&str> {
-    result
-        .get("content")
-        .and_then(|c| {
-            if c.get("type").and_then(|t| t.as_str()) == Some("text") {
-                c.get("text").and_then(|t| t.as_str())
-            } else {
-                None
-            }
-        })
+    result.get("content").and_then(|c| {
+        if c.get("type").and_then(|t| t.as_str()) == Some("text") {
+            c.get("text").and_then(|t| t.as_str())
+        } else {
+            None
+        }
+    })
 }
 
 /// Extract model from sampling result.
@@ -159,7 +157,10 @@ impl ElicitationSchemaMeta {
 
 /// Build elicitation/create params (parity: createElicitationClient.elicit).
 #[must_use]
-pub fn build_elicitation_params(message: impl Into<String>, schema: &ElicitationSchemaMeta) -> Value {
+pub fn build_elicitation_params(
+    message: impl Into<String>,
+    schema: &ElicitationSchemaMeta,
+) -> Value {
     elicitation_create_params(message, schema.to_value())
 }
 
@@ -285,7 +286,9 @@ mod tests {
         let accepted = build_elicitation_result("accept", Some(json!({"apiKey":"k"})));
         assert_eq!(elicitation_result_action(&accepted), Some("accept"));
         assert_eq!(
-            elicitation_result_content(&accepted).and_then(|c| c.get("apiKey")).and_then(|v| v.as_str()),
+            elicitation_result_content(&accepted)
+                .and_then(|c| c.get("apiKey"))
+                .and_then(|v| v.as_str()),
             Some("k")
         );
         let declined = build_elicitation_result("decline", None);

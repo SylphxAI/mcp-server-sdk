@@ -137,7 +137,13 @@ mod tests {
         let p = progress(json!("tok"), 50.0, Some(100.0), Some("half".into()));
         let w = to_jsonrpc(&p);
         assert!(w.method.contains("progress"));
-        assert_eq!(w.params.as_ref().and_then(|p| p.get("progress")).and_then(|v| v.as_f64()), Some(50.0));
+        assert_eq!(
+            w.params
+                .as_ref()
+                .and_then(|p| p.get("progress"))
+                .and_then(|v| v.as_f64()),
+            Some(50.0)
+        );
 
         let l = log("info", json!({"ok":true}), Some("test".into()));
         let w = to_jsonrpc(&l);

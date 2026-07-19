@@ -38,8 +38,7 @@ pub const SESSION_NOT_FOUND_CONTENT_TYPE: &str = "application/json";
 pub const DEFAULT_PENDING_TIMEOUT_MS: u64 = mcp_stdio::DEFAULT_REQUEST_TIMEOUT_MS;
 
 /// UUID v4 pattern used by golden fixtures for `Mcp-Session-Id`.
-pub const UUID_V4_PATTERN: &str =
-    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$";
+pub const UUID_V4_PATTERN: &str = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$";
 
 /// Mint a new session id (UUID v4, lowercase hex — parity with `crypto.randomUUID()`).
 #[must_use]
@@ -137,14 +136,16 @@ impl SessionStore {
     /// Create and store a fresh session; returns the new id.
     pub fn create(&mut self, created_at_ms: u64) -> String {
         let id = new_session_id();
-        self.sessions.insert(id.clone(), Session::new(created_at_ms));
+        self.sessions
+            .insert(id.clone(), Session::new(created_at_ms));
         id
     }
 
     /// Create with a caller-provided id (tests / deterministic fixtures).
     pub fn create_with_id(&mut self, id: impl Into<String>, created_at_ms: u64) -> String {
         let id = id.into();
-        self.sessions.insert(id.clone(), Session::new(created_at_ms));
+        self.sessions
+            .insert(id.clone(), Session::new(created_at_ms));
         id
     }
 
@@ -239,29 +240,20 @@ pub fn should_emit_new_session_header(
 pub fn new_session_response_headers(session_id: &str) -> Vec<(String, String)> {
     vec![
         (MCP_SESSION_ID_HEADER.to_string(), session_id.to_string()),
-        (
-            "Content-Type".into(),
-            SESSION_NOT_FOUND_CONTENT_TYPE.into(),
-        ),
+        ("Content-Type".into(), SESSION_NOT_FOUND_CONTENT_TYPE.into()),
     ]
 }
 
 /// Response headers for session-not-found.
 #[must_use]
 pub fn session_not_found_headers() -> Vec<(String, String)> {
-    vec![(
-        "Content-Type".into(),
-        SESSION_NOT_FOUND_CONTENT_TYPE.into(),
-    )]
+    vec![("Content-Type".into(), SESSION_NOT_FOUND_CONTENT_TYPE.into())]
 }
 
 /// Allocate a pending server→client request id on a known session.
 ///
 /// Returns `None` if the session does not exist.
-pub fn allocate_pending_on_session(
-    store: &mut SessionStore,
-    session_id: &str,
-) -> Option<String> {
+pub fn allocate_pending_on_session(store: &mut SessionStore, session_id: &str) -> Option<String> {
     let session = store.get_mut(session_id)?;
     Some(session.pending.allocate())
 }
@@ -282,6 +274,7 @@ pub fn take_pending_on_session(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
 
     #[test]
@@ -295,8 +288,12 @@ mod tests {
     fn looks_like_session_id_rejects_junk() {
         assert!(!looks_like_session_id(""));
         assert!(!looks_like_session_id("not-a-uuid"));
-        assert!(!looks_like_session_id("00000000-0000-4000-8000-00000000000")); // short
-        assert!(looks_like_session_id("00000000-0000-4000-8000-000000000000"));
+        assert!(!looks_like_session_id(
+            "00000000-0000-4000-8000-00000000000"
+        )); // short
+        assert!(looks_like_session_id(
+            "00000000-0000-4000-8000-000000000000"
+        ));
     }
 
     #[test]
@@ -383,7 +380,9 @@ mod tests {
     #[test]
     fn new_session_response_headers_include_id() {
         let h = new_session_response_headers("sid-1");
-        assert!(h.iter().any(|(k, v)| k == MCP_SESSION_ID_HEADER && v == "sid-1"));
+        assert!(h
+            .iter()
+            .any(|(k, v)| k == MCP_SESSION_ID_HEADER && v == "sid-1"));
     }
 
     #[test]

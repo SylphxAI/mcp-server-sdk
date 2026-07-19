@@ -89,10 +89,7 @@ pub fn mcp_app_capabilities(counts: InventoryCounts) -> Value {
         map.insert("tools".into(), serde_json::json!({}));
     }
     if counts.has_resources_surface() {
-        map.insert(
-            "resources".into(),
-            serde_json::json!({ "subscribe": true }),
-        );
+        map.insert("resources".into(), serde_json::json!({ "subscribe": true }));
     }
     if counts.prompts > 0 {
         map.insert("prompts".into(), serde_json::json!({}));
@@ -114,7 +111,11 @@ pub struct ServerIdentity {
 
 impl ServerIdentity {
     #[must_use]
-    pub fn resolve(name: Option<String>, version: Option<String>, instructions: Option<String>) -> Self {
+    pub fn resolve(
+        name: Option<String>,
+        version: Option<String>,
+        instructions: Option<String>,
+    ) -> Self {
         Self {
             name: name.unwrap_or_else(|| DEFAULT_SERVER_NAME.into()),
             version: version.unwrap_or_else(|| DEFAULT_SERVER_VERSION.into()),
@@ -302,10 +303,8 @@ pub const CONFORMANCE_TOOL_NAMES: &[&str] = &[
 ];
 
 /// Conformance resource URIs present in the example server.
-pub const CONFORMANCE_RESOURCE_URIS: &[&str] = &[
-    "test://static/resource",
-    "test://static/resource/blob",
-];
+pub const CONFORMANCE_RESOURCE_URIS: &[&str] =
+    &["test://static/resource", "test://static/resource/blob"];
 
 /// Conformance prompt names.
 pub const CONFORMANCE_PROMPT_NAMES: &[&str] = &["test_simple_prompt", "test_prompt_with_args"];
@@ -363,6 +362,7 @@ pub fn conformance_app_config() -> AppConfig {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::expect_used)]
     use super::*;
     use mcp_builders::{prompt, resource, resource_template, tool};
 
@@ -417,10 +417,7 @@ mod tests {
                 .with_tool("ping", tool().description("p").finish())
                 .with_resource(
                     "readme",
-                    resource()
-                        .uri("file:///README.md")
-                        .finish()
-                        .expect("uri"),
+                    resource().uri("file:///README.md").finish().expect("uri"),
                 )
                 .with_resource_template(
                     "file",
@@ -494,7 +491,9 @@ mod tests {
         assert_eq!(state.name, "conformance-server");
         assert_eq!(state.tools.len(), CONFORMANCE_TOOL_NAMES.len());
         assert!(state.capabilities["tools"].is_object());
-        assert!(state.capabilities["resources"]["subscribe"].as_bool().unwrap_or(false));
+        assert!(state.capabilities["resources"]["subscribe"]
+            .as_bool()
+            .unwrap_or(false));
         assert!(state.prompts.contains_key(CONFORMANCE_PROMPT_NAMES[1]));
     }
 }

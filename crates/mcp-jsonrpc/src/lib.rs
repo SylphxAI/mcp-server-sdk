@@ -421,11 +421,7 @@ pub fn request_id_kind(id: Option<&RequestId>) -> &'static str {
 
 /// Construct a JSON-RPC error body (parity with wire `error` object).
 #[must_use]
-pub fn error_body(
-    code: i64,
-    message: impl Into<String>,
-    data: Option<Value>,
-) -> JsonRpcErrorBody {
+pub fn error_body(code: i64, message: impl Into<String>, data: Option<Value>) -> JsonRpcErrorBody {
     JsonRpcErrorBody {
         code,
         message: message.into(),
@@ -670,7 +666,6 @@ pub fn request_id_is_string(id: &RequestId) -> bool {
     matches!(id, RequestId::String(_))
 }
 
-
 // --- WAVE19 pure residual ---
 
 /// Parse a JSON-RPC **batch** payload (JSON array of messages).
@@ -681,8 +676,8 @@ pub fn parse_batch_messages(input: &str) -> Result<Vec<JsonRpcMessage>, String> 
     if !trimmed.starts_with('[') {
         return Err("batch payload must be a JSON array".into());
     }
-    let value: serde_json::Value = serde_json::from_str(trimmed)
-        .map_err(|e| format!("JSON parse error: {e}"))?;
+    let value: serde_json::Value =
+        serde_json::from_str(trimmed).map_err(|e| format!("JSON parse error: {e}"))?;
     let arr = value
         .as_array()
         .ok_or_else(|| "batch payload must be a JSON array".to_string())?;
@@ -725,7 +720,6 @@ pub fn request_id_display(id: &RequestId) -> String {
 pub fn request_ids_equal(a: &RequestId, b: &RequestId) -> bool {
     a == b
 }
-
 
 // --- WAVE20 pure residual ---
 
@@ -862,7 +856,6 @@ pub fn method_not_found_response(id: RequestId, method: &str) -> JsonRpcMessage 
     JsonRpcMessage::Error(method_not_found(id, method))
 }
 
-
 // --- WAVE22 pure residual ---
 
 /// Standard invalid-params error response dual-oracle (message enum form).
@@ -991,18 +984,23 @@ mod tests {
         assert_eq!(error_code::INTERNAL_ERROR, -32603);
     }
 
-
     #[test]
     fn bulk_parse_rejects_array_and_missing_fields() {
         match parse_message("[]") {
-            ParseResult::Err(e) => assert!(e.to_lowercase().contains("object") || e.contains("object") || !e.is_empty()),
+            ParseResult::Err(e) => assert!(
+                e.to_lowercase().contains("object") || e.contains("object") || !e.is_empty()
+            ),
             ParseResult::Ok(_) => panic!("expected err"),
         }
         match parse_message(r#"{"jsonrpc":"2.0"}"#) {
             ParseResult::Err(_) => {}
             ParseResult::Ok(_) => panic!("ambiguous message should fail"),
         }
-        let req = request(RequestId::Number(7), "tools/list", Some(serde_json::json!({})));
+        let req = request(
+            RequestId::Number(7),
+            "tools/list",
+            Some(serde_json::json!({})),
+        );
         let msg = JsonRpcMessage::Request(req);
         let s = stringify(&msg);
         assert!(s.contains("tools/list"));
@@ -1099,10 +1097,7 @@ mod tests {
             Err(e) => panic!("jsonrpc_golden.json: {e}"),
         };
         if let Some(codes) = doc.get("standardErrorCodes") {
-            assert_eq!(
-                codes["parseError"].as_i64(),
-                Some(error_code::PARSE_ERROR)
-            );
+            assert_eq!(codes["parseError"].as_i64(), Some(error_code::PARSE_ERROR));
             assert_eq!(
                 codes["invalidRequest"].as_i64(),
                 Some(error_code::INVALID_REQUEST)
@@ -1138,12 +1133,20 @@ mod tests {
                 let input = case["input"].as_str().unwrap_or("");
                 match parse_message(input) {
                     ParseResult::Ok(msg) => {
-                        if case.get("hasResult").and_then(|v| v.as_bool()).unwrap_or(false) {
+                        if case
+                            .get("hasResult")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false)
+                        {
                             assert!(message_result(&msg).is_some(), "{name}");
                         } else {
                             assert!(message_result(&msg).is_none(), "{name}");
                         }
-                        if case.get("hasError").and_then(|v| v.as_bool()).unwrap_or(false) {
+                        if case
+                            .get("hasError")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false)
+                        {
                             assert!(message_error(&msg).is_some(), "{name}");
                         } else {
                             assert!(message_error(&msg).is_none(), "{name}");
@@ -1278,7 +1281,10 @@ mod tests {
                 },
                 ParseResult::Err(e) => match kind {
                     "err_version" => {
-                        assert!(e.contains("version") || e.contains("Invalid"), "{name}: {e}")
+                        assert!(
+                            e.contains("version") || e.contains("Invalid"),
+                            "{name}: {e}"
+                        )
                     }
                     "err_object" => {
                         assert!(e.to_lowercase().contains("object"), "{name}: {e}")
@@ -1361,11 +1367,23 @@ mod tests {
 
     #[test]
     fn wave13_error_names_application_range_and_params() {
-        assert_eq!(standard_error_name(error_code::PARSE_ERROR), Some("ParseError"));
-        assert_eq!(standard_error_name(error_code::METHOD_NOT_FOUND), Some("MethodNotFound"));
+        assert_eq!(
+            standard_error_name(error_code::PARSE_ERROR),
+            Some("ParseError")
+        );
+        assert_eq!(
+            standard_error_name(error_code::METHOD_NOT_FOUND),
+            Some("MethodNotFound")
+        );
         assert_eq!(standard_error_name(-32000), None);
-        assert_eq!(error_code_from_name("InvalidParams"), Some(error_code::INVALID_PARAMS));
-        assert_eq!(error_code_from_name("invalidParams"), Some(error_code::INVALID_PARAMS));
+        assert_eq!(
+            error_code_from_name("InvalidParams"),
+            Some(error_code::INVALID_PARAMS)
+        );
+        assert_eq!(
+            error_code_from_name("invalidParams"),
+            Some(error_code::INVALID_PARAMS)
+        );
         assert_eq!(error_code_from_name("nope"), None);
 
         assert!(is_application_error_code(-1));
@@ -1389,7 +1407,11 @@ mod tests {
         assert!(e.error.message.contains("tools/unknown"));
         assert_eq!(e.error.data, Some(json!({"hint": "tools/list"})));
 
-        let req = request(RequestId::Number(1), "tools/call", Some(json!({"name": "ping"})));
+        let req = request(
+            RequestId::Number(1),
+            "tools/call",
+            Some(json!({"name": "ping"})),
+        );
         let msg = JsonRpcMessage::Request(req);
         assert_eq!(message_params(&msg), Some(&json!({"name": "ping"})));
         let n = notification("notifications/initialized", None);
@@ -1432,18 +1454,12 @@ mod tests {
         assert!(message_result(&msg).is_none());
         assert!(message_error(&msg).is_none());
 
-        assert_eq!(
-            request_id_to_value(&RequestId::Number(7)),
-            json!(7)
-        );
+        assert_eq!(request_id_to_value(&RequestId::Number(7)), json!(7));
         assert_eq!(
             request_id_to_value(&RequestId::String("x".into())),
             json!("x")
         );
-        assert_eq!(
-            request_id_from_value(&json!(9)),
-            Some(RequestId::Number(9))
-        );
+        assert_eq!(request_id_from_value(&json!(9)), Some(RequestId::Number(9)));
         assert_eq!(
             request_id_from_value(&json!("id-1")),
             Some(RequestId::String("id-1".into()))
@@ -1487,10 +1503,7 @@ mod tests {
         let err = invalid_params(RequestId::Number(3), "bad field");
         let msg = JsonRpcMessage::Error(err);
         assert_eq!(message_kind(&msg), "error");
-        assert_eq!(
-            message_error_code(&msg),
-            Some(error_code::INVALID_PARAMS)
-        );
+        assert_eq!(message_error_code(&msg), Some(error_code::INVALID_PARAMS));
         assert_eq!(message_error_message(&msg), Some("bad field"));
     }
 
@@ -1551,9 +1564,13 @@ mod tests {
             ParseResult::Ok(_) => panic!("expected err"),
         }
 
-        assert!(is_batch_payload(r#"[{"jsonrpc":"2.0","id":1,"method":"ping"}]"#));
+        assert!(is_batch_payload(
+            r#"[{"jsonrpc":"2.0","id":1,"method":"ping"}]"#
+        ));
         assert!(is_batch_payload("  [1,2,3]"));
-        assert!(!is_batch_payload(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#));
+        assert!(!is_batch_payload(
+            r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#
+        ));
         assert!(!is_batch_payload("not-json"));
         assert!(!is_batch_payload(""));
     }
@@ -1649,17 +1666,20 @@ mod tests {
 
         assert_eq!(request_id_display(&RequestId::Number(42)), "42");
         assert_eq!(request_id_display(&RequestId::String("abc".into())), "abc");
-        assert!(request_ids_equal(&RequestId::Number(1), &RequestId::Number(1)));
+        assert!(request_ids_equal(
+            &RequestId::Number(1),
+            &RequestId::Number(1)
+        ));
         assert!(!request_ids_equal(
             &RequestId::Number(1),
             &RequestId::String("1".into())
         ));
     }
 
-
     #[test]
     fn wave20_batch_and_error_extractors() {
-        let raw = r#"[{"jsonrpc":"2.0","id":1,"method":"ping"},{"jsonrpc":"2.0","method":"notify"}]"#;
+        let raw =
+            r#"[{"jsonrpc":"2.0","id":1,"method":"ping"},{"jsonrpc":"2.0","method":"notify"}]"#;
         let batch = match parse_batch_messages(raw) {
             Ok(b) => b,
             Err(e) => panic!("{e}"),
@@ -1705,11 +1725,8 @@ mod tests {
 
         let bare = JsonRpcMessage::Request(request(RequestId::Number(1), "ping", None));
         assert!(params_absent_or_empty(&bare));
-        let with_empty = JsonRpcMessage::Request(request(
-            RequestId::Number(2),
-            "tools/list",
-            Some(json!({})),
-        ));
+        let with_empty =
+            JsonRpcMessage::Request(request(RequestId::Number(2), "tools/list", Some(json!({}))));
         assert!(params_absent_or_empty(&with_empty));
         let with_params = JsonRpcMessage::Request(request(
             RequestId::Number(3),
@@ -1723,7 +1740,9 @@ mod tests {
             {"jsonrpc":"2.0","method":"notifications/initialized"}
         ]"#;
         assert_eq!(batch_payload_message_count(batch_raw), Some(2));
-        assert!(batch_payload_message_count(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#).is_none());
+        assert!(
+            batch_payload_message_count(r#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#).is_none()
+        );
 
         let msgs = match parse_batch_messages(batch_raw) {
             Ok(m) => m,
@@ -1735,15 +1754,18 @@ mod tests {
 
         assert!(is_request_method(&msgs[0], "ping"));
         assert!(!is_request_method(&msgs[0], "tools/list"));
-        assert!(is_notification_method(&msgs[1], "notifications/initialized"));
+        assert!(is_notification_method(
+            &msgs[1],
+            "notifications/initialized"
+        ));
 
         let mnf = method_not_found_response(RequestId::Number(5), "nope");
         assert!(is_error(&mnf));
-        assert_eq!(response_error_code(&mnf), Some(error_code::METHOD_NOT_FOUND));
         assert_eq!(
-            response_error_message(&mnf),
-            Some("Method not found: nope")
+            response_error_code(&mnf),
+            Some(error_code::METHOD_NOT_FOUND)
         );
+        assert_eq!(response_error_message(&mnf), Some("Method not found: nope"));
     }
 
     #[test]
@@ -1759,7 +1781,7 @@ mod tests {
         assert!(!batch_all_responses(&[req.clone(), ok.clone()]));
         assert!(batch_all_responses(&[ok.clone(), inv.clone()]));
         assert!(first_error_in_batch(&[ok.clone(), inv.clone()]).is_some());
-        assert!(first_error_in_batch(&[ok.clone()]).is_none());
+        assert!(first_error_in_batch(std::slice::from_ref(&ok)).is_none());
 
         let note = JsonRpcMessage::Notification(notification(
             "notifications/message",

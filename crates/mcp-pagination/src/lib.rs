@@ -167,7 +167,10 @@ pub fn page_bounds(offset: usize, page_size: usize, total_len: usize) -> (usize,
 #[must_use]
 pub fn next_page_cursor(offset: usize, page_size: usize, total_len: usize) -> Option<String> {
     if page_has_more(offset, page_size, total_len) {
-        Some(encode_page_cursor(next_page_offset(offset, page_size), page_size))
+        Some(encode_page_cursor(
+            next_page_offset(offset, page_size),
+            page_size,
+        ))
     } else {
         None
     }
@@ -257,7 +260,11 @@ pub fn is_offset_past_end(offset: usize, total_len: usize) -> bool {
 /// Product TS keeps `0` as-is after min with max; this helper documents the pure residual clamp for
 /// non-zero requested sizes only.
 #[must_use]
-pub fn effective_page_size(requested: usize, default_page_size: usize, max_page_size: usize) -> usize {
+pub fn effective_page_size(
+    requested: usize,
+    default_page_size: usize,
+    max_page_size: usize,
+) -> usize {
     if requested == 0 {
         default_page_size.min(max_page_size)
     } else {
@@ -351,7 +358,6 @@ pub fn paginate<T: Clone>(
     }
 }
 
-
 // --- WAVE19 pure residual ---
 
 /// Remaining item count after `offset` (0 when past end).
@@ -383,7 +389,11 @@ pub fn cursors_equal(a: Option<&str>, b: Option<&str>) -> bool {
 pub fn normalize_cursor_option(cursor: Option<&str>) -> Option<&str> {
     cursor.and_then(|c| {
         let t = c.trim();
-        if t.is_empty() { None } else { Some(t) }
+        if t.is_empty() {
+            None
+        } else {
+            Some(t)
+        }
     })
 }
 
@@ -392,7 +402,6 @@ pub fn normalize_cursor_option(cursor: Option<&str>) -> Option<&str> {
 pub fn is_valid_page_size(page_size: usize, max_page_size: usize) -> bool {
     page_size > 0 && page_size <= max_page_size
 }
-
 
 // --- WAVE20 pure residual ---
 
@@ -482,7 +491,6 @@ pub fn cursor_is_usable(cursor: Option<&str>) -> bool {
         None => false,
     }
 }
-
 
 // --- WAVE22 pure residual ---
 
@@ -592,7 +600,6 @@ mod tests {
         assert_eq!(page.items.len(), 100);
     }
 
-
     #[test]
     fn bulk_paginate_empty_and_offset_past_end() {
         let items: Vec<i32> = vec![];
@@ -600,7 +607,10 @@ mod tests {
         assert!(page.items.is_empty());
         assert!(page.next_cursor.is_none());
         let items = vec![1, 2, 3];
-        let cursor = encode_cursor(&CursorData { offset: 99, page_size: 2 });
+        let cursor = encode_cursor(&CursorData {
+            offset: 99,
+            page_size: 2,
+        });
         let page = paginate(&items, Some(&cursor), PaginationOptions::default());
         assert!(page.items.is_empty());
         assert!(page.next_cursor.is_none());
@@ -641,12 +651,14 @@ mod tests {
         assert!(page.next_cursor.is_some());
     }
 
-
     #[test]
     fn wave13_page_math_and_empty_page() {
         assert_eq!(DEFAULT_PAGE_SIZE, 50);
         assert_eq!(MAX_PAGE_SIZE, 100);
-        assert_eq!(PaginationOptions::default().default_page_size, DEFAULT_PAGE_SIZE);
+        assert_eq!(
+            PaginationOptions::default().default_page_size,
+            DEFAULT_PAGE_SIZE
+        );
         assert_eq!(PaginationOptions::default().max_page_size, MAX_PAGE_SIZE);
 
         assert!(page_has_more(0, 50, 120));
@@ -798,17 +810,12 @@ mod tests {
             let name = case["name"].as_str().unwrap_or("?");
             let item_count = case["itemCount"].as_u64().unwrap_or(0) as usize;
             let items: Vec<i32> = (0..item_count as i32).collect();
-            let cursor = case.get("cursor").and_then(|v| {
-                if v.is_null() {
-                    None
-                } else {
-                    v.as_str()
-                }
-            });
+            let cursor = case
+                .get("cursor")
+                .and_then(|v| if v.is_null() { None } else { v.as_str() });
             let opts = PaginationOptions {
-                default_page_size: case["options"]["defaultPageSize"]
-                    .as_u64()
-                    .unwrap_or(50) as usize,
+                default_page_size: case["options"]["defaultPageSize"].as_u64().unwrap_or(50)
+                    as usize,
                 max_page_size: case["options"]["maxPageSize"].as_u64().unwrap_or(100) as usize,
             };
             let page = paginate(&items, cursor, opts);
@@ -860,11 +867,7 @@ mod tests {
                 let page_size = case["pageSize"].as_u64().unwrap_or(0) as usize;
                 let total = case["total"].as_u64().unwrap_or(0) as usize;
                 let expected = case["expectedEnd"].as_u64().unwrap_or(0) as usize;
-                assert_eq!(
-                    page_end(offset, page_size, total),
-                    expected,
-                    "case {name}"
-                );
+                assert_eq!(page_end(offset, page_size, total), expected, "case {name}");
                 if let Some(rem) = case.get("remaining").and_then(|v| v.as_u64()) {
                     assert_eq!(
                         items_remaining(offset, total),
@@ -1017,10 +1020,14 @@ mod tests {
         assert_eq!(effective_page_size(25, 50, 100), 25);
 
         let items: Vec<i32> = (0..5).collect();
-        let page = paginate(&items, None, PaginationOptions {
-            default_page_size: 2,
-            max_page_size: 100,
-        });
+        let page = paginate(
+            &items,
+            None,
+            PaginationOptions {
+                default_page_size: 2,
+                max_page_size: 100,
+            },
+        );
         assert!(!page_is_empty(&page));
         assert!(page_has_next_cursor(&page));
         let empty = empty_page::<i32>();
@@ -1069,7 +1076,6 @@ mod tests {
         assert!(!is_valid_page_size(0, 50));
         assert!(!is_valid_page_size(51, 50));
     }
-
 
     #[test]
     fn wave20_page_window_helpers() {
@@ -1134,7 +1140,9 @@ mod tests {
         assert!(!is_page_aligned(101, 50));
         assert!(!is_page_aligned(0, 0));
 
-        let cur = next_cursor_if_more(0, 50, 120).expect("more");
+        let Some(cur) = next_cursor_if_more(0, 50, 120) else {
+            panic!("expected another page");
+        };
         assert_eq!(cursor_offset(&cur), Some(50));
         assert!(next_cursor_if_more(100, 50, 120).is_none());
     }

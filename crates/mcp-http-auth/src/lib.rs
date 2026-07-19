@@ -127,10 +127,7 @@ pub fn read_header_multi(
 /// - no apiKey configured → allow
 /// - apiKey configured → verify `X-API-Key` header
 #[must_use]
-pub fn is_authorized_api_key(
-    options: &AuthOptions,
-    x_api_key: Option<&str>,
-) -> bool {
+pub fn is_authorized_api_key(options: &AuthOptions, x_api_key: Option<&str>) -> bool {
     match options.api_key.as_deref() {
         None => true,
         Some(expected) => verify_api_key(expected, x_api_key),
@@ -206,10 +203,7 @@ impl AuthDecision {
 #[must_use]
 pub fn unauthorized_headers() -> Vec<(String, String)> {
     vec![
-        (
-            "WWW-Authenticate".into(),
-            WWW_AUTHENTICATE.into(),
-        ),
+        ("WWW-Authenticate".into(), WWW_AUTHENTICATE.into()),
         ("Content-Type".into(), "application/json".into()),
     ]
 }
@@ -296,7 +290,9 @@ mod tests {
     #[test]
     fn unauthorized_headers_include_www_authenticate() {
         let h = unauthorized_headers();
-        assert!(h.iter().any(|(k, v)| k == "WWW-Authenticate" && v == WWW_AUTHENTICATE));
+        assert!(h
+            .iter()
+            .any(|(k, v)| k == "WWW-Authenticate" && v == WWW_AUTHENTICATE));
         assert_eq!(UNAUTHORIZED_STATUS, 401);
     }
 

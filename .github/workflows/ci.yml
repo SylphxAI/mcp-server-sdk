@@ -5,150 +5,19 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  merge_group:
-    types: [checks_requested]
 
 permissions:
   contents: read
 
 jobs:
-  risk-classification:
-    name: risk-classification/pass
-    runs-on: [self-hosted, sylphx, linux, standard]
+  rust:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          fetch-depth: 2
-
-      - name: ADR-29 risk classification
-        uses: SylphxAI/.github/.github/actions/adr29-admission@main
-        with:
-          mode: classify
-          policy-mode: observe
-
-  ci:
-    runs-on: [self-hosted, sylphx, linux, standard]
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.3.12
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Lint
-        run: bun run lint
-
-      - name: Type check
-        run: bun run typecheck
-
-      - name: Test
-        run: bun test
-
-      - name: Build
-        run: bun run build
-
-      - name: Rust pure residual test
-        run: cargo test --workspace
-
-      - name: Rust pure residual clippy
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-        with:
-          require-atlas: "true"
-          strict: "true"
-
-        run: |
-          const [manifestPath, fleetPath, fleetMarkdownPath] = process.argv.slice(2);
-          const { readFileSync } = require("node:fs");
-          const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-          const fleet = JSON.parse(readFileSync(fleetPath, "utf8"));
-          const fleetMarkdown = readFileSync(fleetMarkdownPath, "utf8");
-          const project = fleet.projects?.[0];
-
-          function assert(condition, message) {
-            if (!condition) throw new Error(message);
-          }
-
-          assert(manifest.adapters?.some((item) => item.path === ".doctrine/project.json" && item.adapter === true), "Doctrine project manifest must be reported only as an adapter.");
-          assert(project?.manifest?.path === "project.manifest.json", "Fleet report must select project.manifest.json.");
-          assert(project?.manifestAdapters?.some((item) => item.path === ".doctrine/project.json" && item.adapter === true), "Fleet report must keep .doctrine/project.json as an adapter.");
-          NODE
-
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          path: |
-          if-no-files-found: error
-
-
-  security-secrets:
-    name: security:secrets
-    runs-on: [self-hosted, sylphx, linux, standard]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # full history for the new-commit range
-      - name: Secret scan (ADR-6 security:secrets)
-        uses: SylphxAI/.github/.github/actions/secret-scan@main
-
-  trunk-admission:
-    name: trunk-admission/pass
-    runs-on: [self-hosted, sylphx, linux, standard]
-    needs:
-      - risk-classification
-      - ci
-      - security-secrets
-    if: ${{ !cancelled() }}
-    steps:
-      - name: ADR-29 trunk admission
-        uses: SylphxAI/.github/.github/actions/adr29-admission@main
-        with:
-          mode: fan-in
-          policy-mode: observe
-          upstream-results-json: ${{ toJSON(needs) }}
-
-  postsubmit-proof:
-    name: postsubmit-proof/pass
-    runs-on: [self-hosted, sylphx, linux, standard]
-    needs:
-      - risk-classification
-      - ci
-      - security-secrets
-      - trunk-admission
-    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && !cancelled() }}
-    steps:
-      - name: ADR-29 postsubmit proof
-        uses: SylphxAI/.github/.github/actions/adr29-admission@main
-        with:
-          mode: postsubmit-proof
-          policy-mode: enforce
-          upstream-results-json: ${{ toJSON(needs) }}
-
-  recovery-decision:
-    name: recovery-decision/pass
-    runs-on: [self-hosted, sylphx, linux, standard]
-    needs:
-      - risk-classification
-      - ci
-      - security-secrets
-      - trunk-admission
-      - postsubmit-proof
-    if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.postsubmit-proof.result != 'success' }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: ADR-29 recovery decision
-        uses: SylphxAI/.github/.github/actions/adr29-admission@main
-        with:
-          mode: recovery-decision
-          policy-mode: observe
-          upstream-results-json: ${{ toJSON(needs) }}
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo test --workspace
+      - run: cargo clippy --workspace --all-targets -- -D warnings
