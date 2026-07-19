@@ -1,5 +1,10 @@
 # MCP Server SDK
 
+> **Archived.** This repository is retired and receives no maintenance or
+> releases. Use the official
+> [`@modelcontextprotocol/sdk`](https://www.npmjs.com/package/@modelcontextprotocol/sdk)
+> or a maintained project-local implementation.
+
 Rust libraries for building Model Context Protocol servers.
 
 ## Capabilities

@@ -1,13 +1,13 @@
 # MCP Server SDK
 
-- Lifecycle: active
+- Lifecycle: archived
 - Layer: foundation
 - Runtime authority: Rust workspace
 
 ## Boundary
 
-This repository owns reusable MCP protocol, builder, client, and transport
-libraries. Product-specific tools and business logic belong in consumers.
+This repository is retained as read-only history. It no longer owns an active
+SDK or delivery surface. Consumers must use a maintained implementation.
 
 ## Public surfaces
 
@@ -20,5 +20,4 @@ libraries. Product-specific tools and business logic belong in consumers.
 
 ## Delivery
 
-CI runs Rust formatting, tests, and Clippy. The repository has no npm release
-path and no TypeScript runtime fallback.
+No builds or releases are produced after retirement.
